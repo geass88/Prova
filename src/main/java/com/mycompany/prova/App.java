@@ -45,14 +45,13 @@ public class App
     private final static double MaxLatitude = 85.05112878;
     private final static double MinLongitude = -180.;
     private final static double MaxLongitude = 180.;
-    private final static Envelope2D bound = new Envelope2D(new DirectPosition2D(12., 46.), new DirectPosition2D(13., 56.));
-    private final static int MaxScale = 18;
-    private static int count = 0;
+    private final static Envelope2D bound = new Envelope2D(new DirectPosition2D(12, 41.5), new DirectPosition2D(13, 42.5));
+    private final static int MaxScale = 17;
+    private static long count = 0;
     
     public static void dividi(DirectPosition p1, DirectPosition p2, int scale) throws Exception {
-        //tr.transform(p1, null)
-        //z.lat2<NE_LatLimit AND z.lon1>SW_LonLimit AND LAT_M>SW_LatLimit AND  LON_M<NE_LonLimit
-        if(scale > MaxScale || p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY()) return;
+//       if(scale > MaxScale || p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY()) return;
+        if(scale > MaxScale || !new Envelope2D(p1, p2).intersects(bound)) return;
         DirectPosition p1m = tr.transform(p1, null);
         DirectPosition p2m = tr.transform(p2, null);
         //Envelope2D r = new Envelope2D(p1, p2);
@@ -108,7 +107,7 @@ public class App
         System.out.println("Source point: " + sourcePt);
         System.out.println("Target point: " + targetPt);*/
         
-        //dividi(new DirectPosition2D(MinLongitude, MinLatitude), new DirectPosition2D(MaxLongitude, MaxLatitude), 0);
+        dividi(new DirectPosition2D(MinLongitude, MinLatitude), new DirectPosition2D(MaxLongitude, MaxLatitude), 0);
         /*Class.forName("org.postgresql.Driver").newInstance();
         Connection conn = DriverManager.getConnection("jdbc:postgresql://192.168.128.128:5432/routing", "postgres", "");
         Statement st = conn.createStatement();
@@ -132,7 +131,7 @@ public class App
         double preciseX=(p1m.getOrdinate(0) - p2m.getOrdinate(0)) / r.getWidth()*16, preciseY=(p3m.getOrdinate(1) - p1m.getOrdinate(1)) / r.getHeight()*16;
         System.out.println(preciseX + " " + preciseY);
         System.out.println(tileX + " " + tileY);
-        System.out.println(p2m);
-        System.out.println(p3m);
+        //System.out.println(p2m);
+        System.out.println(count);
     }
 }
