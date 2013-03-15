@@ -49,10 +49,10 @@ public class App
     private final static int MaxScale = 5;
     private static int count = 0;
     
-    public static double dividi(DirectPosition p1, DirectPosition p2, int scale) throws Exception {
+    public static void dividi(DirectPosition p1, DirectPosition p2, int scale) throws Exception {
         //tr.transform(p1, null)
         //z.lat2<NE_LatLimit AND z.lon1>SW_LonLimit AND LAT_M>SW_LatLimit AND  LON_M<NE_LonLimit
-        if(scale > MaxScale || p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY()) return 0.;
+        if(scale > MaxScale || p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY()) return;
         DirectPosition p1m = tr.transform(p1, null);
         DirectPosition p2m = tr.transform(p2, null);
         //Envelope2D r = new Envelope2D(p1, p2);
@@ -65,8 +65,6 @@ public class App
         //DirectPosition m = 
         System.out.println("scale="+scale +" " +new Envelope2D(p1, p2));
         count ++;
-        
-        return 0.;
     }
     
     static MathTransform tr;
