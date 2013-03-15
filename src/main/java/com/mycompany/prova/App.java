@@ -4,6 +4,7 @@ import java.io.File;
 import java.sql.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeNode;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
@@ -78,7 +79,7 @@ public class App {
     }
     
     //12.460774, 41.901514 center
-    public static void dividi(DirectPosition p1, DirectPosition p2, int scale) throws Exception {
+    public static void dividi(DirectPosition p1, DirectPosition p2, int scale, MutableTreeNode parent) throws Exception {
 //       if(scale > MaxScale || p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY()) return;
         if(scale > MaxScale || !new Envelope2D(p1, p2).intersects(bound)) return;
         DirectPosition p1m = DefaultCRS.geographicToProjectedTr.transform(p1, null);
@@ -87,10 +88,12 @@ public class App {
         DirectPosition m = DefaultCRS.projectedToGeographicTr.transform(new DirectPosition2D((p1m.getOrdinate(0)+p2m.getOrdinate(0))/2., (p1m.getOrdinate(1)+p2m.getOrdinate(1))/2.), null);
         m.setOrdinate(0, round(m.getOrdinate(0)));
         m.setOrdinate(1, round(m.getOrdinate(1)));
-        dividi(new DirectPosition2D(p1.getOrdinate(0), m.getOrdinate(1)), new DirectPosition2D(m.getOrdinate(0), p2.getOrdinate(1)), scale + 1);
-        dividi(m, p2, scale + 1);
-        dividi(p1, m, scale + 1);
-        dividi(new DirectPosition2D(m.getOrdinate(0), p1.getOrdinate(1)), new DirectPosition2D(p2.getOrdinate(0), m.getOrdinate(1)), scale + 1);
+        MutableTreeNode node = new DefaultMutableTreeNode();
+        parent.insert(node, parent.getChildCount());
+        dividi(new DirectPosition2D(p1.getOrdinate(0), m.getOrdinate(1)), new DirectPosition2D(m.getOrdinate(0), p2.getOrdinate(1)), scale + 1, node);
+        dividi(m, p2, scale + 1, node);
+        dividi(p1, m, scale + 1, node);
+        dividi(new DirectPosition2D(m.getOrdinate(0), p1.getOrdinate(1)), new DirectPosition2D(p2.getOrdinate(0), m.getOrdinate(1)), scale + 1, node);
         //DirectPosition m = 
        // System.out.println("scale="+scale +" " +new Envelope2D(p1, p2));
         count ++;
@@ -106,30 +109,13 @@ public class App {
        // CoordinateReferenceSystem targetCRS = DefaultGeocentricCRS.CARTESIAN;
         
         /*
-         * From this point we can convert an arbitrary amount of coordinates using the
-         * same MathTransform object. It could be in concurrent threads if we wish.
-         *//*
-        DirectPosition sourcePt = new GeneralDirectPosition(
-                -10//27 + (59 + 17.0 / 60) / 60,   // 27°59'17"N
-               , 10);// 86 + (55 + 31.0 / 60) / 60,0);  // 86°55'31"E
-        DirectPosition targetPt = tr.transform(sourcePt, null);
-        System.out.println("Source point: " + sourcePt);
-        System.out.println("Target point: " + targetPt);
-        System.out.println(x + " "+ y);
-        System.out.println(lon + " "+ lat);
-        File f = new File("prova");
-        if(!f.exists())
-        System.out.println( "Hello World!" );
-        
-        System.out.println(((DefaultMutableTreeNode)m.getRoot()).getUserObject());
-        /*
         sourcePt.setOrdinate(0, MinLongitude);
         sourcePt.setOrdinate(1, -10);
         targetPt = tr.transform(sourcePt, null);
         System.out.println("Source point: " + sourcePt);
         System.out.println("Target point: " + targetPt);*/
         
-        //dividi(new DirectPosition2D(MinLongitude, MinLatitude), new DirectPosition2D(MaxLongitude, MaxLatitude), 0);
+        
         /*Class.forName("org.postgresql.Driver").newInstance();
         Connection conn = DriverManager.getConnection("jdbc:postgresql://192.168.128.128:5432/routing", "postgres", "");
         Statement st = conn.createStatement();
@@ -148,11 +134,23 @@ public class App {
         System.out.println(tileX + " " + tileY);
         //System.out.println(p2m);
         System.out.println(count);
+        
+        MutableTreeNode root = new DefaultMutableTreeNode();
+        root.setUserObject(count);
+        DefaultTreeModel tree = new DefaultTreeModel(root);
+        root.insert(new DefaultMutableTreeNode(), 0);
+        System.out.println(root.getChildCount());
+        /*dividi(DefaultCRS.geographicRect.getLowerCorner(), DefaultCRS.geographicRect.getUpperCorner(), 0, root);
+        System.out.println(root.getChildAt(0).getChildCount());
+        System.out.println(root.getChildAt(0).getChildAt(0).getChildCount());
+        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
+        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
+        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
+        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
+        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
+        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
+        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
         /*
-        DefaultMutableTreeNode g = new DefaultMutableTreeNode();
-        g.setUserObject("root");
-        DefaultTreeModel m = new DefaultTreeModel(g);
-        *//*
         QuadTree tree = new QuadTree();
         tree.root = new QuadNode<Long>();
         tree.root.children[0] = new QuadNode<Long>();
