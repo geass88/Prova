@@ -63,7 +63,10 @@ public class DefaultCRS {
         projectedToGeographicTr = rtr;
         projectedRect = new Envelope2D(projectedSW, projectedNE);
     }
-    
+    /*
+         * From this point we can convert an arbitrary amount of coordinates using the
+         * same MathTransform object. It could be in concurrent threads if we wish.
+         */
     public static int[] pointToTileXY(final DirectPosition2D geographicPoint, int scale) throws MismatchedDimensionException, TransformException {
         DirectPosition projectedPoint = geographicToProjectedTr.transform(geographicPoint, null);
         
