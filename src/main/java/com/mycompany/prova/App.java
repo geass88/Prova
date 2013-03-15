@@ -45,8 +45,8 @@ public class App
     private final static double MaxLatitude = 85.05112878;
     private final static double MinLongitude = -180.;
     private final static double MaxLongitude = 180.;
-    private final static Envelope2D bound = new Envelope2D();
-    private final static int MaxScale = 5;
+    private final static Envelope2D bound = new Envelope2D(new DirectPosition2D(12., 46.), new DirectPosition2D(13., 56.));
+    private final static int MaxScale = 18;
     private static int count = 0;
     
     public static void dividi(DirectPosition p1, DirectPosition p2, int scale) throws Exception {
@@ -63,7 +63,7 @@ public class App
         dividi(p1, m, scale + 1);
         dividi(new DirectPosition2D(m.getOrdinate(0), p1.getOrdinate(1)), new DirectPosition2D(p2.getOrdinate(0), m.getOrdinate(1)), scale + 1);
         //DirectPosition m = 
-        System.out.println("scale="+scale +" " +new Envelope2D(p1, p2));
+        //System.out.println("scale="+scale +" " +new Envelope2D(p1, p2));
         count ++;
     }
     
@@ -118,17 +118,17 @@ public class App
         rs.close();
         st.close();
         conn.close();*/
-        DirectPosition p1 = new DirectPosition2D(12.42, 41.85);
-        DirectPosition p2 = new DirectPosition2D(MinLongitude, MinLatitude);
-        DirectPosition p3 = new DirectPosition2D(MaxLongitude, MaxLatitude);
+        DirectPosition p1 = new DirectPosition2D(sourceCRS, 12.42, 41.8445);
+        DirectPosition p2 = new DirectPosition2D(sourceCRS, MinLongitude, MinLatitude);
+        DirectPosition p3 = new DirectPosition2D(sourceCRS, MaxLongitude, MaxLatitude);
         
         DirectPosition p1m = tr.transform(p1, null);
         DirectPosition p2m = tr.transform(p2, null);
         DirectPosition p3m = tr.transform(p3, null);
         Envelope2D r = new Envelope2D(p2m, p3m);
         
-        int tileX = (int)Math.floor((p1m.getOrdinate(0) - p2m.getOrdinate(0)) / r.getWidth()*32.);
-        int tileY = (int)Math.floor((p3m.getOrdinate(1) - p1m.getOrdinate(1)) / r.getHeight()*32.);
+        int tileY = (int)Math.floor((p1m.getOrdinate(0) - p2m.getOrdinate(0)) / r.getWidth()*131072.);
+        int tileX = (int)Math.floor((p3m.getOrdinate(1) - p1m.getOrdinate(1)) / r.getHeight()*131072.);
         double preciseX=(p1m.getOrdinate(0) - p2m.getOrdinate(0)) / r.getWidth()*16, preciseY=(p3m.getOrdinate(1) - p1m.getOrdinate(1)) / r.getHeight()*16;
         System.out.println(preciseX + " " + preciseY);
         System.out.println(tileX + " " + tileY);
