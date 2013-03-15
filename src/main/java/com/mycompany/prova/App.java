@@ -81,10 +81,10 @@ public class App {
     public static void dividi(DirectPosition p1, DirectPosition p2, int scale) throws Exception {
 //       if(scale > MaxScale || p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY()) return;
         if(scale > MaxScale || !new Envelope2D(p1, p2).intersects(bound)) return;
-        DirectPosition p1m = DefaultCRS.geographicToGeocentricTr.transform(p1, null);
-        DirectPosition p2m = DefaultCRS.geographicToGeocentricTr.transform(p2, null);
+        DirectPosition p1m = DefaultCRS.geographicToProjectedTr.transform(p1, null);
+        DirectPosition p2m = DefaultCRS.geographicToProjectedTr.transform(p2, null);
         //Envelope2D r = new Envelope2D(p1, p2);
-        DirectPosition m = DefaultCRS.geocentricToGeographicTr.transform(new DirectPosition2D((p1m.getOrdinate(0)+p2m.getOrdinate(0))/2., (p1m.getOrdinate(1)+p2m.getOrdinate(1))/2.), null);
+        DirectPosition m = DefaultCRS.projectedToGeographicTr.transform(new DirectPosition2D((p1m.getOrdinate(0)+p2m.getOrdinate(0))/2., (p1m.getOrdinate(1)+p2m.getOrdinate(1))/2.), null);
         m.setOrdinate(0, round(m.getOrdinate(0)));
         m.setOrdinate(1, round(m.getOrdinate(1)));
         dividi(new DirectPosition2D(p1.getOrdinate(0), m.getOrdinate(1)), new DirectPosition2D(m.getOrdinate(0), p2.getOrdinate(1)), scale + 1);
