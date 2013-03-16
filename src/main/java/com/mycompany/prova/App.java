@@ -157,10 +157,10 @@ public class App {
         tree.root.children[0] = new QuadNode<Long>();
         tree.root.children[0] = new QuadNode<Long>();
         tree.root.children[0] = new QuadNode<Long>();*/
-        System.out.println(QuadKey.fromTileXY(tileX, tileY, scale));
+        System.out.println(QuadKeyManager.fromTile(new Tile(tileX, tileY), scale));
         
-        tile = QuadKey.toTileXY(QuadKey.fromTileXY(tileX, tileY, scale));
-        System.out.println(tile[0] + " " + tile[1]);
+        Tile t = QuadKeyManager.toTile(QuadKeyManager.fromTile(new Tile(tileX, tileY), scale));
+        System.out.println(t.getX() + " " + t.getY());
     }
     
 }

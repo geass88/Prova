@@ -1,13 +1,13 @@
 ----------------------------------------------------------------
-Fri Mar 15 18:08:51 CET 2013:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.9.1.0 - (1344872): instance a816c00e-013d-6f06-867a-0000064c8ad8 
-on database directory C:\Users\Tommaso\AppData\Roaming\Geotoolkit.org\EPSG\7.09  with class loader sun.misc.Launcher$AppClassLoader@709db0ad 
-Loaded from file:/C:/Users/Tommaso/.m2/repository/org/apache/derby/derby/10.9.1.0/derby-10.9.1.0.jar
+Sat Mar 16 10:54:18 CET 2013:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.9.1.0 - (1344872): instance a816c00e-013d-729f-0939-0000021c5700 
+on database directory /home/tobia/.geotoolkit.org/EPSG/7.09  with class loader sun.misc.Launcher$AppClassLoader@9c5842 
+Loaded from file:/home/tobia/.m2/repository/org/apache/derby/derby/10.9.1.0/derby-10.9.1.0.jar
 java.vendor=Oracle Corporation
 java.runtime.version=1.7.0_17-b02
-user.dir=D:\Workspace\Netbeans\Prova
+user.dir=/home/tobia/twork/java/Prova
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Fri Mar 15 18:08:53 CET 2013:
-Shutting down instance a816c00e-013d-6f06-867a-0000064c8ad8 on database directory C:\Users\Tommaso\AppData\Roaming\Geotoolkit.org\EPSG\7.09 with class loader sun.misc.Launcher$AppClassLoader@709db0ad 
+Sat Mar 16 10:54:47 CET 2013:
+Shutting down instance a816c00e-013d-729f-0939-0000021c5700 on database directory /home/tobia/.geotoolkit.org/EPSG/7.09 with class loader sun.misc.Launcher$AppClassLoader@9c5842 

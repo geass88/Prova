@@ -39,6 +39,7 @@ public class DefaultCRS {
     public final static MathTransform projectedToGeographicTr;
     public final static Envelope2D geographicRect;
     public final static Envelope2D projectedRect;
+    
     public final static double MinLatitude = -85.05112878;
     public final static double MaxLatitude = 85.05112878;
     public final static double MinLongitude = -180.;
@@ -71,8 +72,8 @@ public class DefaultCRS {
         DirectPosition projectedPoint = geographicToProjectedTr.transform(geographicPoint, null);
         
         double value = 1 << scale;
-        int tileY = (int)Math.floor((projectedPoint.getOrdinate(0) - projectedRect.getLowerCorner().getOrdinate(0)) / projectedRect.getWidth() * value);
-        int tileX = (int)Math.floor((projectedRect.getUpperCorner().getOrdinate(1) - projectedPoint.getOrdinate(1)) / projectedRect.getHeight() * value);
+        int tileY = (int) Math.floor((projectedPoint.getOrdinate(0) - projectedRect.getLowerCorner().getOrdinate(0)) / projectedRect.getWidth() * value);
+        int tileX = (int) Math.floor((projectedRect.getUpperCorner().getOrdinate(1) - projectedPoint.getOrdinate(1)) / projectedRect.getHeight() * value);
         
         return new int[] { tileX, tileY };
     }
