@@ -44,18 +44,20 @@ public class TilesCalculator {
         this.projectedRootRect = null;
     }
     
-    public void computeTree() {
-        computeTree(DefaultCRS.geographicRect.getLowerCorner(), DefaultCRS.geographicRect.getUpperCorner());
+    public boolean computeTree() {
+        return computeTree(DefaultCRS.geographicRect.getLowerCorner(), DefaultCRS.geographicRect.getUpperCorner());
     }
     
-    public void computeTree(DirectPosition p1, DirectPosition p2) {
+    public boolean computeTree(DirectPosition p1, DirectPosition p2) {
         try {
             this.tree = new DefaultTreeModel(compute(p1, p2, 0));
             projectedRootRect = new Envelope2D(DefaultCRS.geographicToProjectedTr.transform(p1, null), 
-                    DefaultCRS.geographicToProjectedTr.transform(p2, null));
+                    DefaultCRS.geographicToProjectedTr.transform(p2, null));            
         } catch (Exception ex) {
             Logger.getLogger(TilesCalculator.class.getName()).log(Level.SEVERE, null, ex);
+            return false;
         }
+        return true;
     }
     
     public Envelope2D getTile(String key) {
