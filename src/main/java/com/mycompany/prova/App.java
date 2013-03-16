@@ -49,12 +49,11 @@ public class App {
         conn.close();*/
         DirectPosition2D p1 = new DirectPosition2D(DefaultCRS.geographicCRS, 12.42, 41.8445);
         int scale = 11;
-        
-        TileXY t = TilesCalculator.pointToTileXY(p1, scale);
-        System.out.println(t.getX() + " " + t.getY());
         TilesCalculator calc = new TilesCalculator(bound, 17);
         calc.computeTree();
         
+        TileXY t = calc.pointToTileXY(p1, scale);
+        System.out.println(t.getX() + " " + t.getY());
         System.out.println(calc.getTile(t.getX(), t.getY(), scale));
         
         System.out.println(QuadKeyManager.fromTileXY(new TileXY(t.getX(), t.getY()), scale));

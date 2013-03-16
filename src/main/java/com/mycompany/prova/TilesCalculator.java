@@ -34,12 +34,14 @@ public class TilesCalculator {
     
     private final Envelope2D bound;
     private TreeModel tree;
-    public final int maxDepth;    
+    private Envelope2D projectedRootRect;
+    public final int maxDepth;
 
     public TilesCalculator(final Envelope2D bound, final int maxDepth) {
         this.bound = bound;
         this.maxDepth = maxDepth;
         this.tree = null;
+        this.projectedRootRect = null;
     }
     
     public void computeTree() {
@@ -49,6 +51,8 @@ public class TilesCalculator {
     public void computeTree(DirectPosition p1, DirectPosition p2) {
         try {
             this.tree = new DefaultTreeModel(compute(p1, p2, 0));
+            projectedRootRect = new Envelope2D(DefaultCRS.geographicToProjectedTr.transform(p1, null), 
+                    DefaultCRS.geographicToProjectedTr.transform(p2, null));
         } catch (Exception ex) {
             Logger.getLogger(TilesCalculator.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -81,14 +85,15 @@ public class TilesCalculator {
      * @throws MismatchedDimensionException
      * @throws TransformException
      */
-    public static TileXY pointToTileXY(final DirectPosition2D geographicPoint, final int scale) throws Exception {
-        if (geographicPoint == null || scale < 0 || !DefaultCRS.geographicRect.contains(geographicPoint)) {
+    public TileXY pointToTileXY(final DirectPosition2D geographicPoint, final int scale) throws Exception {
+        if (geographicPoint == null || scale < 0 || !bound.contains(geographicPoint)) 
             return null;
-        }
+        
         DirectPosition projectedPoint = DefaultCRS.geographicToProjectedTr.transform(geographicPoint, null);
         double value = 1 << scale;
-        int tileY = (int) Math.floor((projectedPoint.getOrdinate(0) - DefaultCRS.projectedRect.getLowerCorner().getOrdinate(0)) / DefaultCRS.projectedRect.getWidth() * value);
-        int tileX = (int) Math.floor((DefaultCRS.projectedRect.getUpperCorner().getOrdinate(1) - projectedPoint.getOrdinate(1)) / DefaultCRS.projectedRect.getHeight() * value);
+        
+        int tileY = (int) Math.floor((projectedPoint.getOrdinate(0) - projectedRootRect.getLowerCorner().getOrdinate(0)) / projectedRootRect.getWidth() * value);
+        int tileX = (int) Math.floor((projectedRootRect.getUpperCorner().getOrdinate(1) - projectedPoint.getOrdinate(1)) / projectedRootRect.getHeight() * value);
         return new TileXY(tileX, tileY);
     }
     
