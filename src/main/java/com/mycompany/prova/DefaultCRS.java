@@ -77,7 +77,7 @@ public class DefaultCRS {
      * @throws MismatchedDimensionException
      * @throws TransformException 
      */
-    public static TileXY pointToTile(final DirectPosition2D geographicPoint, final int scale) throws MismatchedDimensionException, TransformException {
+    public static TileXY pointToTileXY(final DirectPosition2D geographicPoint, final int scale) throws MismatchedDimensionException, TransformException {
         if(geographicPoint == null || scale < 0 || !geographicRect.contains(geographicPoint)) return null;
         
         DirectPosition projectedPoint = geographicToProjectedTr.transform(geographicPoint, null);

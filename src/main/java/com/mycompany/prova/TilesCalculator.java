@@ -86,8 +86,6 @@ public class TilesCalculator {
         return parent;
     }
     
-    
-    
     private static double round(double val) {
         return Math.round(val*1e12)/1e12;
     }
