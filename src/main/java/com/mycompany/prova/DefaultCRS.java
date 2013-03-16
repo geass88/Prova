@@ -22,16 +22,14 @@ import org.geotoolkit.geometry.Envelope2D;
 import org.geotoolkit.referencing.CRS;
 import org.geotoolkit.referencing.crs.DefaultGeographicCRS;
 import org.opengis.geometry.DirectPosition;
-import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
 
 /**
  *
  * @author Tommaso
  */
-public class DefaultCRS {
+public abstract class DefaultCRS {
     
     public final static CoordinateReferenceSystem geographicCRS = DefaultGeographicCRS.WGS84;
     public final static CoordinateReferenceSystem projectedCRS;
@@ -67,26 +65,5 @@ public class DefaultCRS {
          * From this point we can convert an arbitrary amount of coordinates using the
          * same MathTransform object. It could be in concurrent threads if we wish.
          */
-    }
-    
-    /**
-     * Find the tile that contains a given point
-     * @param geographicPoint
-     * @param scale
-     * @return the tile that contains the point at the specified scale (null if the point isn't in the geographicRect)
-     * @throws MismatchedDimensionException
-     * @throws TransformException 
-     */
-    public static TileXY pointToTileXY(final DirectPosition2D geographicPoint, final int scale) throws MismatchedDimensionException, TransformException {
-        if(geographicPoint == null || scale < 0 || !geographicRect.contains(geographicPoint)) return null;
-        
-        DirectPosition projectedPoint = geographicToProjectedTr.transform(geographicPoint, null);
-        
-        double value = 1 << scale;
-        int tileY = (int) Math.floor((projectedPoint.getOrdinate(0) - projectedRect.getLowerCorner().getOrdinate(0)) / projectedRect.getWidth() * value);
-        int tileX = (int) Math.floor((projectedRect.getUpperCorner().getOrdinate(1) - projectedPoint.getOrdinate(1)) / projectedRect.getHeight() * value);
-        
-        return new TileXY(tileX, tileY);
-    }
-    
+    }    
 }

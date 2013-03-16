@@ -15,6 +15,8 @@
  */
 package com.mycompany.prova;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.MutableTreeNode;
@@ -40,8 +42,12 @@ public class TilesCalculator {
         this.tree = null;
     }
     
-    public void computeTree(DirectPosition p1, DirectPosition p2) throws Exception {
-        this.tree = new DefaultTreeModel(compute(p1, p2, 0));
+    public void computeTree(DirectPosition p1, DirectPosition p2) {
+        try {
+            this.tree = new DefaultTreeModel(compute(p1, p2, 0));
+        } catch (Exception ex) {
+            Logger.getLogger(TilesCalculator.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public Envelope2D getTile(String key) {
@@ -59,6 +65,25 @@ public class TilesCalculator {
     
     public Envelope2D getTile(int x, int y, int scale) {
         return getTile(new TileXY(x, y), scale);
+    }
+    
+    /**
+     * Find the tile that contains a given point
+     * @param geographicPoint
+     * @param scale
+     * @return the tile that contains the point at the specified scale (null if the point isn't in the geographicRect)
+     * @throws MismatchedDimensionException
+     * @throws TransformException
+     */
+    public static TileXY pointToTileXY(final DirectPosition2D geographicPoint, final int scale) throws Exception {
+        if (geographicPoint == null || scale < 0 || !DefaultCRS.geographicRect.contains(geographicPoint)) {
+            return null;
+        }
+        DirectPosition projectedPoint = DefaultCRS.geographicToProjectedTr.transform(geographicPoint, null);
+        double value = 1 << scale;
+        int tileY = (int) Math.floor((projectedPoint.getOrdinate(0) - DefaultCRS.projectedRect.getLowerCorner().getOrdinate(0)) / DefaultCRS.projectedRect.getWidth() * value);
+        int tileX = (int) Math.floor((DefaultCRS.projectedRect.getUpperCorner().getOrdinate(1) - projectedPoint.getOrdinate(1)) / DefaultCRS.projectedRect.getHeight() * value);
+        return new TileXY(tileX, tileY);
     }
     
     private MutableTreeNode compute(DirectPosition p1, DirectPosition p2, int scale) throws Exception {

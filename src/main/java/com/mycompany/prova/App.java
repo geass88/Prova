@@ -50,7 +50,7 @@ public class App {
         DirectPosition2D p1 = new DirectPosition2D(DefaultCRS.geographicCRS, 12.42, 41.8445);
         int scale = 11;
         
-        TileXY t = DefaultCRS.pointToTileXY(p1, scale);
+        TileXY t = TilesCalculator.pointToTileXY(p1, scale);
         System.out.println(t.getX() + " " + t.getY());
         TilesCalculator calc = new TilesCalculator(bound, 17);
         calc.computeTree(DefaultCRS.geographicRect.getLowerCorner(), DefaultCRS.geographicRect.getUpperCorner());
