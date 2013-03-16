@@ -21,16 +21,16 @@ import java.io.Serializable;
  *
  * @author Tommaso
  */
-public class Tile implements Serializable {
+public class TileXY implements Serializable {
  
     private int x;
     private int y;
     
-    public Tile() {
+    public TileXY() {
         this.x = this.y = 0;
     }
     
-    public Tile(int x, int y) {
+    public TileXY(int x, int y) {
         this.x = x;
         this.y = y;
     }

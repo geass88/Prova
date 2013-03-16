@@ -1,22 +1,10 @@
 package com.mycompany.prova;
 
-import java.io.File;
-import java.sql.*;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.MutableTreeNode;
+import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
-import org.geotoolkit.geometry.GeneralDirectPosition;
-import org.geotoolkit.referencing.CRS;
-import org.geotoolkit.referencing.crs.DefaultGeographicCRS;
-import org.opengis.geometry.DirectPosition;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
-import org.opengis.util.FactoryException;
 
 class SphericalMercator {
     private final static double R = 6378137.;
@@ -38,69 +26,11 @@ class SphericalMercator {
     }
 }
 
-class QuadNode<T> {
-    public QuadNode() {
-        
-    }
-    
-    public void setUserData(T userData) {
-        this.userData = userData;
-    }
-    
-    public T getUserData() {
-        return userData;
-    }
-    
-    public void setChildren(int i, QuadNode node) {
-        children[i] = node;
-    }
-    
-    private T userData;
-    public QuadNode children[] = new QuadNode[4];
-}
 
-class QuadTree extends DefaultTreeModel {
-    public QuadTree(TreeNode root) {
-        super(root);
-    }
-}
-
-/**
- * Hello world!
- *
- */
 public class App {
     private final static Envelope2D bound = new Envelope2D(new DirectPosition2D(12, 41.5), new DirectPosition2D(13, 42.5));
-    private final static int MaxScale = 17;
-    private static long count = 0;
     
-    static double round(double val) {
-        return Math.round(val*1e12)/1e12;
-    }
-    
-    //12.460774, 41.901514 center
-    public static void dividi(DirectPosition p1, DirectPosition p2, int scale, MutableTreeNode parent) throws Exception {
-//       if(scale > MaxScale || p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY()) return;
-        if(scale > MaxScale || !new Envelope2D(p1, p2).intersects(bound)) return;
-        DirectPosition p1m = DefaultCRS.geographicToProjectedTr.transform(p1, null);
-        DirectPosition p2m = DefaultCRS.geographicToProjectedTr.transform(p2, null);
-        //Envelope2D r = new Envelope2D(p1, p2);
-        DirectPosition m = DefaultCRS.projectedToGeographicTr.transform(new DirectPosition2D((p1m.getOrdinate(0)+p2m.getOrdinate(0))/2., (p1m.getOrdinate(1)+p2m.getOrdinate(1))/2.), null);
-        m.setOrdinate(0, round(m.getOrdinate(0)));
-        m.setOrdinate(1, round(m.getOrdinate(1)));
-        MutableTreeNode node = new DefaultMutableTreeNode();
-        parent.insert(node, parent.getChildCount());
-        dividi(new DirectPosition2D(p1.getOrdinate(0), m.getOrdinate(1)), new DirectPosition2D(m.getOrdinate(0), p2.getOrdinate(1)), scale + 1, node);
-        dividi(m, p2, scale + 1, node);
-        dividi(p1, m, scale + 1, node);
-        dividi(new DirectPosition2D(m.getOrdinate(0), p1.getOrdinate(1)), new DirectPosition2D(p2.getOrdinate(0), m.getOrdinate(1)), scale + 1, node);
-        //DirectPosition m = 
-       // System.out.println("scale="+scale +" " +new Envelope2D(p1, p2));
-        count ++;
-    }
-    
-    public static void main( String[] args ) throws Exception
-    {
+    public static void main( String[] args ) throws Exception {
         double y = SphericalMercator.lat2y(10);
         double x = SphericalMercator.lon2x(-10);
         double lat = SphericalMercator.y2lat(y);
@@ -108,15 +38,7 @@ public class App {
        
        // CoordinateReferenceSystem targetCRS = DefaultGeocentricCRS.CARTESIAN;
         
-        /*
-        sourcePt.setOrdinate(0, MinLongitude);
-        sourcePt.setOrdinate(1, -10);
-        targetPt = tr.transform(sourcePt, null);
-        System.out.println("Source point: " + sourcePt);
-        System.out.println("Target point: " + targetPt);*/
-        
-        
-        /*Class.forName("org.postgresql.Driver").newInstance();
+         /*Class.forName("org.postgresql.Driver").newInstance();
         Connection conn = DriverManager.getConnection("jdbc:postgresql://192.168.128.128:5432/routing", "postgres", "");
         Statement st = conn.createStatement();
         ResultSet rs = st.executeQuery("SELECT count(*) as size FROM zone");
@@ -126,40 +48,18 @@ public class App {
         st.close();
         conn.close();*/
         DirectPosition2D p1 = new DirectPosition2D(DefaultCRS.geographicCRS, 12.42, 41.8445);
-        int scale = 6;
+        int scale = 0;
         
-        int tile[] = DefaultCRS.pointToTileXY(p1, scale);
-        int tileX = tile[0];
-        int tileY = tile[1];
-        System.out.println(tileX + " " + tileY);
-        //System.out.println(p2m);
-        System.out.println(count);
+        TileXY t = DefaultCRS.pointToTile(p1, scale);
+        System.out.println(t.getX() + " " + t.getY());
+        TilesCalculator calc = new TilesCalculator(bound, 17);
+        calc.computeTree(DefaultCRS.geographicRect.getLowerCorner(), DefaultCRS.geographicRect.getUpperCorner());
         
-        MutableTreeNode root = new DefaultMutableTreeNode();
-        root.setUserObject(count);
-        DefaultTreeModel tree = new DefaultTreeModel(root);
-        root.insert(new DefaultMutableTreeNode(), 0);
-        System.out.println(root.getChildCount());
-        /*dividi(DefaultCRS.geographicRect.getLowerCorner(), DefaultCRS.geographicRect.getUpperCorner(), 0, root);
-        System.out.println(root.getChildAt(0).getChildCount());
-        System.out.println(root.getChildAt(0).getChildAt(0).getChildCount());
-        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
-        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
-        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
-        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
-        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
-        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
-        System.out.println(root.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(0).getChildCount());
-        /*
-        QuadTree tree = new QuadTree();
-        tree.root = new QuadNode<Long>();
-        tree.root.children[0] = new QuadNode<Long>();
-        tree.root.children[0] = new QuadNode<Long>();
-        tree.root.children[0] = new QuadNode<Long>();
-        tree.root.children[0] = new QuadNode<Long>();*/
-        System.out.println(QuadKeyManager.fromTile(new Tile(tileX, tileY), scale));
+        System.out.println(calc.getTile(t.getX(), t.getY(), scale));
         
-        Tile t = QuadKeyManager.toTile(QuadKeyManager.fromTile(new Tile(tileX, tileY), scale));
+        System.out.println(QuadKeyManager.fromTileXY(new TileXY(t.getX(), t.getY()), scale));
+        
+        t = QuadKeyManager.toTileXY(QuadKeyManager.fromTileXY(new TileXY(t.getX(), t.getY()), scale));
         System.out.println(t.getX() + " " + t.getY());
     }
     

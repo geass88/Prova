@@ -21,7 +21,7 @@ package com.mycompany.prova;
  */
 public class QuadKeyManager {
     
-    public static String fromTile(final Tile tile, final int scale) {
+    public static String fromTileXY(final TileXY tile, final int scale) {
         if(tile == null || scale < 0) return null;
         StringBuilder quadKey = new StringBuilder();
         for (int i = scale; i > 0; i--) {
@@ -37,7 +37,7 @@ public class QuadKeyManager {
         return quadKey.toString();   
     }
     
-    public static Tile toTile(final String quadKey) throws Exception {
+    public static TileXY toTileXY(final String quadKey) throws Exception {
         if(quadKey == null) return null;
         int tileX = 0, tileY = 0;
         int scale = quadKey.length();
@@ -64,6 +64,6 @@ public class QuadKeyManager {
                     throw new Exception("Invalid QuadKey digit sequence.");
             }
         }
-        return new Tile(tileX, tileY);
+        return new TileXY(tileX, tileY);
     }
 }

@@ -53,7 +53,7 @@ public class DefaultCRS {
         try {
             crs = CRS.decode("EPSG:3857"); // Universal Transverse Mercator
             tr = CRS.findMathTransform(geographicCRS, crs);
-            rtr = CRS.findMathTransform(crs, geographicCRS);//geographicToGeocentricTr.inverse();
+            rtr = CRS.findMathTransform(crs, geographicCRS); //geographicToGeocentricTr.inverse();
             projectedSW = tr.transform(geographicRect.getLowerCorner(), null);
             projectedNE = tr.transform(geographicRect.getUpperCorner(), null);
         } catch (Exception ex) {
@@ -63,19 +63,30 @@ public class DefaultCRS {
         geographicToProjectedTr = tr;
         projectedToGeographicTr = rtr;
         projectedRect = new Envelope2D(projectedSW, projectedNE);
-    }
-    /*
+        /*
          * From this point we can convert an arbitrary amount of coordinates using the
          * same MathTransform object. It could be in concurrent threads if we wish.
          */
-    public static int[] pointToTileXY(final DirectPosition2D geographicPoint, int scale) throws MismatchedDimensionException, TransformException {
+    }
+    
+    /**
+     * Find the tile that contains a given point
+     * @param geographicPoint
+     * @param scale
+     * @return the tile that contains the point at the specified scale (null if the point isn't in the geographicRect)
+     * @throws MismatchedDimensionException
+     * @throws TransformException 
+     */
+    public static TileXY pointToTile(final DirectPosition2D geographicPoint, final int scale) throws MismatchedDimensionException, TransformException {
+        if(geographicPoint == null || scale < 0 || !geographicRect.contains(geographicPoint)) return null;
+        
         DirectPosition projectedPoint = geographicToProjectedTr.transform(geographicPoint, null);
         
         double value = 1 << scale;
         int tileY = (int) Math.floor((projectedPoint.getOrdinate(0) - projectedRect.getLowerCorner().getOrdinate(0)) / projectedRect.getWidth() * value);
         int tileX = (int) Math.floor((projectedRect.getUpperCorner().getOrdinate(1) - projectedPoint.getOrdinate(1)) / projectedRect.getHeight() * value);
         
-        return new int[] { tileX, tileY };
+        return new TileXY(tileX, tileY);
     }
     
 }
