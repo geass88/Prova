@@ -42,6 +42,10 @@ public class TilesCalculator {
         this.tree = null;
     }
     
+    public void computeTree() {
+        computeTree(DefaultCRS.geographicRect.getLowerCorner(), DefaultCRS.geographicRect.getUpperCorner());
+    }
+    
     public void computeTree(DirectPosition p1, DirectPosition p2) {
         try {
             this.tree = new DefaultTreeModel(compute(p1, p2, 0));
@@ -51,6 +55,7 @@ public class TilesCalculator {
     }
     
     public Envelope2D getTile(String key) {
+        if(key == null) return null;
         TreeNode node = (TreeNode) tree.getRoot();
         for(int i = 0; i < key.length(); i++)
             node = node.getChildAt(key.charAt(i) - '0');
@@ -59,6 +64,7 @@ public class TilesCalculator {
     }
     
     public Envelope2D getTile(TileXY t, int scale) {
+        if(t == null || scale < 0) return null;
         String key = QuadKeyManager.fromTileXY(t, scale);
         return getTile(key);
     }

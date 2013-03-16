@@ -53,7 +53,7 @@ public class App {
         TileXY t = TilesCalculator.pointToTileXY(p1, scale);
         System.out.println(t.getX() + " " + t.getY());
         TilesCalculator calc = new TilesCalculator(bound, 17);
-        calc.computeTree(DefaultCRS.geographicRect.getLowerCorner(), DefaultCRS.geographicRect.getUpperCorner());
+        calc.computeTree();
         
         System.out.println(calc.getTile(t.getX(), t.getY(), scale));
         
