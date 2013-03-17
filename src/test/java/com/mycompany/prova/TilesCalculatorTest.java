@@ -70,7 +70,7 @@ public class TilesCalculatorTest extends TestCase {
         String key = "12023222112";
         TilesCalculator instance = new TilesCalculator(bound, 17);
         instance.computeTree();
-        Envelope2D result = instance.getTile(key);
+        Envelope2D result = instance.getTile(key).getRect();
         assertNotNull(result);
     }
 
@@ -83,7 +83,7 @@ public class TilesCalculatorTest extends TestCase {
         int scale = 11;
         TilesCalculator instance = new TilesCalculator(bound, 17);
         instance.computeTree();
-        Envelope2D result = instance.getTile(t, scale);
+        Envelope2D result = instance.getTile(t, scale).getRect();
         assertNotNull(result);
         
     }
@@ -98,7 +98,7 @@ public class TilesCalculatorTest extends TestCase {
         int scale = 11;
         TilesCalculator instance = new TilesCalculator(bound, 17);
         instance.computeTree();
-        Envelope2D result = instance.getTile(x, y, scale);
+        Envelope2D result = instance.getTile(x, y, scale).getRect();
         assertNotNull(result);
     }
 

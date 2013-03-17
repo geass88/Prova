@@ -54,7 +54,7 @@ public class App {
         
         TileXY t = calc.pointToTileXY(p1, scale);
         System.out.println(t.getX() + " " + t.getY());
-        System.out.println(calc.getTile(t.getX(), t.getY(), scale));
+        System.out.println(calc.getTile(t.getX(), t.getY(), scale).getRect());
         
         System.out.println(QuadKeyManager.fromTileXY(new TileXY(t.getX(), t.getY()), scale));
         

@@ -32,10 +32,11 @@ import org.opengis.geometry.DirectPosition;
  */
 public class TilesCalculator {
     
-    private final Envelope2D bound;
+    public final Envelope2D bound;
+    public final int maxDepth;
     private TreeModel tree;
     private Envelope2D projectedRootRect;
-    public final int maxDepth;
+    
 
     public TilesCalculator(final Envelope2D bound, final int maxDepth) {
         this.bound = bound;
@@ -45,14 +46,19 @@ public class TilesCalculator {
     }
     
     public boolean computeTree() {
-        return computeTree(DefaultCRS.geographicRect.getLowerCorner(), DefaultCRS.geographicRect.getUpperCorner());
+        return computeTree(DefaultCRS.geographicRect);
     }
     
-    public boolean computeTree(DirectPosition p1, DirectPosition p2) {
+    public boolean computeTree(final Envelope2D rect) {
+        if(rect == null) return false;
+        return computeTree(rect.getLowerCorner(), rect.getUpperCorner());
+    }
+    
+    public boolean computeTree(final DirectPosition lowerCorner, final DirectPosition upperCorner) {
         try {
-            this.tree = new DefaultTreeModel(compute(p1, p2, 0));
-            projectedRootRect = new Envelope2D(DefaultCRS.geographicToProjectedTr.transform(p1, null), 
-                    DefaultCRS.geographicToProjectedTr.transform(p2, null));            
+            this.tree = new DefaultTreeModel(compute(lowerCorner, upperCorner, 0));
+            this.projectedRootRect = new Envelope2D(DefaultCRS.geographicToProjectedTr.transform(lowerCorner, null), 
+                    DefaultCRS.geographicToProjectedTr.transform(upperCorner, null));            
         } catch (Exception ex) {
             Logger.getLogger(TilesCalculator.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -60,22 +66,22 @@ public class TilesCalculator {
         return true;
     }
     
-    public Envelope2D getTile(String key) {
+    public Tile getTile(String key) {
         if(key == null) return null;
-        TreeNode node = (TreeNode) tree.getRoot();
+        TreeNode node = (TreeNode) this.tree.getRoot();
         for(int i = 0; i < key.length(); i++)
             node = node.getChildAt(key.charAt(i) - '0');
         
-        return (Envelope2D) ((DefaultMutableTreeNode) node).getUserObject();
+        return (Tile) ((DefaultMutableTreeNode) node).getUserObject();
     }
     
-    public Envelope2D getTile(TileXY t, int scale) {
+    public Tile getTile(TileXY t, int scale) {
         if(t == null || scale < 0) return null;
         String key = QuadKeyManager.fromTileXY(t, scale);
         return getTile(key);
     }
     
-    public Envelope2D getTile(int x, int y, int scale) {
+    public Tile getTile(int x, int y, int scale) {
         return getTile(new TileXY(x, y), scale);
     }
     
@@ -88,7 +94,7 @@ public class TilesCalculator {
      * @throws TransformException
      */
     public TileXY pointToTileXY(final DirectPosition2D geographicPoint, final int scale) throws Exception {
-        if (geographicPoint == null || scale < 0 || !bound.contains(geographicPoint)) 
+        if (geographicPoint == null || scale < 0 || !this.bound.contains(geographicPoint)) 
             return null;
         
         DirectPosition projectedPoint = DefaultCRS.geographicToProjectedTr.transform(geographicPoint, null);
@@ -99,24 +105,24 @@ public class TilesCalculator {
         return new TileXY(tileX, tileY);
     }
     
-    private MutableTreeNode compute(DirectPosition p1, DirectPosition p2, int scale) throws Exception {
+    private MutableTreeNode compute(DirectPosition lowerCorner, DirectPosition upperCorner, int scale) throws Exception {
         if(scale > maxDepth) return null;
-        Envelope2D rect = new Envelope2D(p1, p2);
+        Envelope2D rect = new Envelope2D(lowerCorner, upperCorner);
         if(!rect.intersects(bound)) return new DefaultMutableTreeNode(null); // if(p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY())
         
-        DirectPosition p1m = DefaultCRS.geographicToProjectedTr.transform(p1, null);
-        DirectPosition p2m = DefaultCRS.geographicToProjectedTr.transform(p2, null);
+        DirectPosition p1m = DefaultCRS.geographicToProjectedTr.transform(lowerCorner, null);
+        DirectPosition p2m = DefaultCRS.geographicToProjectedTr.transform(upperCorner, null);
         
-        DirectPosition m = DefaultCRS.projectedToGeographicTr.transform(new DirectPosition2D((p1m.getOrdinate(0)+p2m.getOrdinate(0))/2., (p1m.getOrdinate(1)+p2m.getOrdinate(1))/2.), null);
-        m.setOrdinate(0, round(m.getOrdinate(0)));
-        m.setOrdinate(1, round(m.getOrdinate(1)));
-        MutableTreeNode parent = new DefaultMutableTreeNode(rect);
+        DirectPosition center = DefaultCRS.projectedToGeographicTr.transform(new DirectPosition2D((p1m.getOrdinate(0)+p2m.getOrdinate(0))/2., (p1m.getOrdinate(1)+p2m.getOrdinate(1))/2.), null);
+        center.setOrdinate(0, round(center.getOrdinate(0)));
+        center.setOrdinate(1, round(center.getOrdinate(1)));        
         DirectPosition[] dots = {
-            new DirectPosition2D(p1.getOrdinate(0), m.getOrdinate(1)), new DirectPosition2D(m.getOrdinate(0), p2.getOrdinate(1)),
-            m, p2,
-            p1, m,
-            new DirectPosition2D(m.getOrdinate(0), p1.getOrdinate(1)), new DirectPosition2D(p2.getOrdinate(0), m.getOrdinate(1))
+            new DirectPosition2D(lowerCorner.getOrdinate(0), center.getOrdinate(1)), new DirectPosition2D(center.getOrdinate(0), upperCorner.getOrdinate(1)),
+            center, upperCorner,
+            lowerCorner, center,
+            new DirectPosition2D(center.getOrdinate(0), lowerCorner.getOrdinate(1)), new DirectPosition2D(upperCorner.getOrdinate(0), center.getOrdinate(1))
         };
+        MutableTreeNode parent = new DefaultMutableTreeNode(new Tile(rect));
         for(int i = 0; i < 4; i ++) {
             MutableTreeNode child = compute(dots[i*2], dots[i*2+1], scale + 1);
             if(child != null) parent.insert(child, i);        
