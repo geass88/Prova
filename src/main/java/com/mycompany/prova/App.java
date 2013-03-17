@@ -1,11 +1,10 @@
 package com.mycompany.prova;
 
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreeNode;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
-
+/*
 class SphericalMercator {
     private final static double R = 6378137.;
     
@@ -25,17 +24,18 @@ class SphericalMercator {
         return Math.toRadians(aLon)*R;
     }
 }
-
+*/
 
 public class App {
     private final static Envelope2D bound = new Envelope2D(new DirectPosition2D(12, 41.5), new DirectPosition2D(13, 42.5));
     
     public static void main( String[] args ) throws Exception {
+        /*
         double y = SphericalMercator.lat2y(10);
         double x = SphericalMercator.lon2x(-10);
         double lat = SphericalMercator.y2lat(y);
         double lon = SphericalMercator.x2lon(x);
-       
+       */
        // CoordinateReferenceSystem targetCRS = DefaultGeocentricCRS.CARTESIAN;
         
          /*Class.forName("org.postgresql.Driver").newInstance();
