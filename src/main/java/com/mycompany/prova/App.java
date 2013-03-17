@@ -1,7 +1,5 @@
 package com.mycompany.prova;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
 /*
