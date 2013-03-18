@@ -1,5 +1,7 @@
 package com.mycompany.prova;
 
+import java.util.LinkedList;
+import java.util.List;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
 /*
@@ -58,6 +60,56 @@ public class App {
         
         t = QuadKeyManager.toTileXY(QuadKeyManager.fromTileXY(new TileXY(t.getX(), t.getY()), scale));
         System.out.println(t.getX() + " " + t.getY());
+          int count = 0;
+        TileXY obs = new TileXY(2,2);
+        for(Envelope2D item: buildRect1(new TileXY(0,0), new TileXY(4,4), obs)) {
+            System.out.println(item); count++;
+        }
+        System.out.println(count);
+        
+        /*
+         * implements Comparable<Tile>
+            @Override
+            public int compareTo(Tile o) {
+                return this.rect.equals(o.rect)? 0:1;
+            }
+        Set<Tile> set = new TreeSet<>();
+        set.add(new Tile(new Envelope2D(DefaultCRS.projectedCRS,1,1,1,1)));
+        set.add(new Tile(new Envelope2D()));
+        System.out.println(set.size());
+        * */
     }
+    
+    static List<Envelope2D> buildRect(TileXY tile1, TileXY tile2) {
+        int N = Math.abs(tile1.getX()-tile2.getX())+1, 
+            M = Math.abs(tile1.getY()-tile2.getY())+1;
+        TileXY lowerCorner = new TileXY(Math.min(tile1.getX(), tile2.getX()), Math.min(tile1.getY(), tile2.getY()));
+        TileXY upperCorner = new TileXY(Math.max(tile1.getX(), tile2.getX()), Math.max(tile1.getY(), tile2.getY()));
+        
+        List<Envelope2D> list = new LinkedList<>();
+        int threshold = (N*M)/2;
+        for(int x = N; x > 0; x --)
+            for(int y = M; y > 0; y --)// x*y>threshold
+                for(int i = 0; i < N+1-x; i ++)
+                    for(int j = 0; j < M+1-y; j ++)
+                        list.add(new Envelope2D(DefaultCRS.projectedCRS, lowerCorner.getX()+i, lowerCorner.getY()+j, x-1, y-1));
+        return list;
+    }
+    
+    static List<Envelope2D> buildRect1(TileXY tile1, TileXY tile2, TileXY obs) {
+        int N = Math.abs(tile1.getX()-tile2.getX())+1, 
+            M = Math.abs(tile1.getY()-tile2.getY())+1;
+        TileXY lowerCorner = new TileXY(Math.min(tile1.getX(), tile2.getX()), Math.min(tile1.getY(), tile2.getY()));
+        TileXY upperCorner = new TileXY(Math.max(tile1.getX(), tile2.getX()), Math.max(tile1.getY(), tile2.getY()));
+        List<Envelope2D> list = new LinkedList<>();
+        int threshold = N*M/2;
+        for(int l_sx = lowerCorner.getX()+1; l_sx <= obs.getX(); l_sx ++)
+            for(int l_dx = upperCorner.getX()-1; l_dx >= obs.getX(); l_dx --)// x*y>threshold
+                for(int l_up = upperCorner.getY()-1; l_up >= obs.getY(); l_up --)
+                    for(int l_dw = lowerCorner.getY()+1; l_dw <= obs.getY(); l_dw ++)
+                        list.add(new Envelope2D(DefaultCRS.projectedCRS, l_sx, l_dw, l_dx-l_sx, l_up-l_dw));
+        return list;
+    }
+    
     
 }
