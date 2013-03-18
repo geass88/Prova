@@ -66,7 +66,7 @@ public class TilesCalculator {
         return true;
     }
     
-    public Tile getTile(String key) {
+    public Tile getTile(final String key) {
         if(key == null) return null;
         TreeNode node = (TreeNode) this.tree.getRoot();
         for(int i = 0; i < key.length(); i++)
@@ -75,18 +75,18 @@ public class TilesCalculator {
         return (Tile) ((DefaultMutableTreeNode) node).getUserObject();
     }
     
-    public Tile getTile(TileXY t, int scale) {
+    public Tile getTile(final TileXY t, final int scale) {
         if(t == null || scale < 0) return null;
         String key = QuadKeyManager.fromTileXY(t, scale);
         return getTile(key);
     }
     
-    public Tile getTile(int x, int y, int scale) {
+    public Tile getTile(final int x, final int y, final int scale) {
         return getTile(new TileXY(x, y), scale);
     }
     
     /**
-     * Find the tile that contains a given point
+     * Find the coordinates of the tile that contains a given point
      * @param geographicPoint
      * @param scale
      * @return the tile that contains the point at the specified scale (null if the point isn't in the geographicRect)
@@ -105,7 +105,11 @@ public class TilesCalculator {
         return new TileXY(tileX, tileY);
     }
     
-    private MutableTreeNode compute(DirectPosition lowerCorner, DirectPosition upperCorner, int scale) throws Exception {
+    public Tile pointToTile(final DirectPosition2D geographicPoint, final int scale) throws Exception {
+        return getTile(pointToTileXY(geographicPoint, scale), scale);
+    }
+    
+    private MutableTreeNode compute(final DirectPosition lowerCorner, final DirectPosition upperCorner, final int scale) throws Exception {
         if(scale > maxDepth) return null;
         Envelope2D rect = new Envelope2D(lowerCorner, upperCorner);
         if(!rect.intersects(bound)) return new DefaultMutableTreeNode(null); // if(p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY())
@@ -130,7 +134,7 @@ public class TilesCalculator {
         return parent;
     }
     
-    private static double round(double val) {
+    private static double round(final double val) {
         return Math.round(val*1e12)/1e12;
     }
 }
