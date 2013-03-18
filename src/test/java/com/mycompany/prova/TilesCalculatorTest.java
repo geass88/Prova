@@ -84,8 +84,7 @@ public class TilesCalculatorTest extends TestCase {
         TilesCalculator instance = new TilesCalculator(bound, 17);
         instance.computeTree();
         Envelope2D result = instance.getTile(t, scale).getRect();
-        assertNotNull(result);
-        
+        assertNotNull(result);        
     }
 
     /**
@@ -115,5 +114,20 @@ public class TilesCalculatorTest extends TestCase {
         TileXY result = instance.pointToTileXY(geographicPoint, scale);
         assertEquals(expResult.getX(), result.getX());
         assertEquals(expResult.getY(), result.getY());
+    }
+    
+    /**
+     * Test of pointToTileXY method, of class TilesCalculator.
+     */
+    public void testPointToTile() throws Exception {
+        System.out.println("pointToTile");
+        DirectPosition2D geographicPoint = new DirectPosition2D(DefaultCRS.geographicCRS, 12.42, 41.8445);
+        int scale = 11;
+        TilesCalculator instance = new TilesCalculator(bound, 17);
+        instance.computeTree();
+        TileXY tileXY = new TileXY(761, 1094);
+        Tile expResult = instance.getTile(tileXY, scale);
+        Tile result = instance.pointToTile(geographicPoint, scale);           
+        assertEquals(expResult.getRect(), result.getRect());
     }
 }
