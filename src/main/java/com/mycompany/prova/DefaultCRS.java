@@ -22,8 +22,11 @@ import org.geotoolkit.geometry.Envelope2D;
 import org.geotoolkit.referencing.CRS;
 import org.geotoolkit.referencing.crs.DefaultGeographicCRS;
 import org.opengis.geometry.DirectPosition;
+import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.MathTransform;
+import org.opengis.referencing.operation.TransformException;
+import org.opengis.util.FactoryException;
 
 /**
  *
@@ -54,7 +57,7 @@ public abstract class DefaultCRS {
             rtr = CRS.findMathTransform(crs, geographicCRS); //geographicToGeocentricTr.inverse();
             projectedSW = tr.transform(geographicRect.getLowerCorner(), null);
             projectedNE = tr.transform(geographicRect.getUpperCorner(), null);
-        } catch (Exception ex) {
+        } catch (FactoryException | MismatchedDimensionException | TransformException ex) {
             Logger.getLogger(DefaultCRS.class.getName()).log(Level.SEVERE, null, ex);
         }
         projectedCRS = crs;
