@@ -62,17 +62,19 @@ public class App {
         
         t = QuadKeyManager.toTileXY(QuadKeyManager.fromTileXY(new TileXY(t.getX(), t.getY()), scale));
         System.out.println(t.getX() + " " + t.getY());
-        int count = 0;
+        
         TileXY obs = new TileXY(2,0);
         TileXY corner1 = new TileXY(0,1);
         TileXY corner2 = new TileXY(5,0);
         TileXYRectangle rect = new TileXYRectangle(corner2, corner1);
-        
+        /*
+        int count = 0;
         for(TileXYRectangle item: buildRect1(rect, obs)) {
             System.out.println(item); count++;
-        }
+        }       
         System.out.println(count);
-        
+        */
+        maxSpeed(rect, new TileXYRectangle(new TileXY(2,1), new TileXY(4,0)));
         /*
          * implements Comparable<Tile>
             @Override
@@ -127,18 +129,20 @@ public class App {
         return list;
     }
     
-    static int maxSpeed(TileXYRectangle rect, Envelope2D obs) {
+    static int maxSpeed(TileXYRectangle rect, TileXYRectangle obs) {
         int N = rect.getWidth() + 1, 
             M = rect.getHeight() + 1;
         
         double inside_speed = 0.;
         double outside_speed = 0.;
-        for(int i = rect.getLowerCorner().getX(); i < rect.getUpperCorner().getX(); i ++)
-            for(int j = rect.getLowerCorner().getY(); j < rect.getUpperCorner().getY(); j ++)
-                if(obs.getLowerCorner().getX()<=i && i<=obs.getUpperCorner().getX() && obs.getLowerCorner().getY()<=j && j<= obs.getUpperCorner().getY())
+        for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
+            for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++)
+                if(obs.getLowerCorner().getX()<=i && i<=obs.getUpperCorner().getX() && 
+                        obs.getLowerCorner().getY()<=j && j<= obs.getUpperCorner().getY()) { // (i, j) in 
                     inside_speed ++;
-                else
+                } else {
                     outside_speed ++;
+                }
         System.out.println(inside_speed);
         System.out.println(outside_speed);
         return 0;
