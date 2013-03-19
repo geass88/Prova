@@ -127,20 +127,18 @@ public class App {
         return list;
     }
     
-    static int maxSpeed(TileXY tile1, TileXY tile2, Envelope2D obs) {
-        int N = Math.abs(tile1.getX()-tile2.getX())+1, 
-            M = Math.abs(tile1.getY()-tile2.getY())+1;
-        TileXY lowerCorner = new TileXY(Math.min(tile1.getX(), tile2.getX()), Math.min(tile1.getY(), tile2.getY()));
-        TileXY upperCorner = new TileXY(Math.max(tile1.getX(), tile2.getX()), Math.max(tile1.getY(), tile2.getY()));
+    static int maxSpeed(TileXYRectangle rect, Envelope2D obs) {
+        int N = rect.getWidth() + 1, 
+            M = rect.getHeight() + 1;
         
         double inside_speed = 0.;
         double outside_speed = 0.;
-        for(int i = lowerCorner.getX(); i < upperCorner.getX(); i ++)
-            for(int j = lowerCorner.getY(); j < upperCorner.getY(); j ++)
+        for(int i = rect.getLowerCorner().getX(); i < rect.getUpperCorner().getX(); i ++)
+            for(int j = rect.getLowerCorner().getY(); j < rect.getUpperCorner().getY(); j ++)
                 if(obs.getLowerCorner().getX()<=i && i<=obs.getUpperCorner().getX() && obs.getLowerCorner().getY()<=j && j<= obs.getUpperCorner().getY())
-                    inside_speed++;
+                    inside_speed ++;
                 else
-                    outside_speed++;
+                    outside_speed ++;
         System.out.println(inside_speed);
         System.out.println(outside_speed);
         return 0;
