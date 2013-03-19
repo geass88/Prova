@@ -50,4 +50,9 @@ public class TileXY implements Serializable {
     public void setY(int y) {
         this.y = y;
     }
+    
+    @Override
+    public String toString() {
+        return String.format("(%d, %d)", x, y);
+    }
 }
