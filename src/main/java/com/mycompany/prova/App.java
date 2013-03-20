@@ -54,7 +54,7 @@ public class App {
         
         DirectPosition2D p1 = new DirectPosition2D(DefaultCRS.geographicCRS, 12.42, 41.8445);
         int scale = 11;
-        TilesCalculator calc = new TilesCalculator(bound, 17);
+        TileSystem calc = new TileSystem(bound, 17);
         calc.computeTree();
         
         TileXY t = calc.pointToTileXY(p1, scale);
@@ -92,18 +92,18 @@ public class App {
         TreeModel tree = new DefaultTreeModel(new DefaultMutableTreeNode(new Tile(DefaultCRS.geographicRect)));
         
         Class.forName("org.postgresql.Driver").newInstance();
-        Connection conn = DriverManager.getConnection("jdbc:postgresql://192.168.128.128:5432/routing", "postgres", "");
-        Statement st = conn.createStatement();
-        ResultSet rs = st.executeQuery("SELECT lon1, lat1, lon2, lat2, scale FROM zone");
-        List<Tile> list = new LinkedList<>();
-        java.util.Queue<Integer> scales = new LinkedList<>();
-        while(rs.next()) {
-            list.add(new Tile(new Envelope2D(null, rs.getDouble(1),rs.getDouble(2),rs.getDouble(3),rs.getDouble(4))));
-            scales.add(rs.getInt(5));
+        List<Tile> list;
+        java.util.Queue<Integer> scales;
+        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://192.168.128.128:5432/routing", "postgres", ""); 
+                Statement st = conn.createStatement(); 
+                ResultSet rs = st.executeQuery("SELECT lon1, lat1, lon2, lat2, scale FROM zone")) {
+            list = new LinkedList<>();
+            scales = new LinkedList<>();
+            while(rs.next()) {
+                list.add(new Tile(new Envelope2D(null, rs.getDouble(1),rs.getDouble(2),rs.getDouble(3),rs.getDouble(4))));
+                scales.add(rs.getInt(5));
+            }
         }
-        rs.close();
-        st.close();
-        conn.close();
         loadTiles(tree,list,scales);
     }
     
@@ -168,7 +168,7 @@ public class App {
     }
     
     static void loadTiles(TreeModel tree, List<Tile> tiles, java.util.Queue<Integer> scale) {
-        TilesCalculator calc = new TilesCalculator(bound, 17);
+        TileSystem calc = new TileSystem(bound, 17);
         calc.computeTree();
         try {
             for(Tile tile: tiles) {

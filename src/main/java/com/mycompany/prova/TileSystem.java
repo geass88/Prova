@@ -32,14 +32,14 @@ import org.opengis.referencing.operation.TransformException;
  *
  * @author Tommaso
  */
-public class TilesCalculator {
+public class TileSystem {
     
     public final Envelope2D bound;
     public final int maxDepth;
     private TreeModel tree;
     private Envelope2D projectedRootRect;
     
-    public TilesCalculator(final Envelope2D bound, final int maxDepth) {
+    public TileSystem(final Envelope2D bound, final int maxDepth) {
         this.bound = bound;
         this.maxDepth = maxDepth;
         this.tree = null;
@@ -61,7 +61,7 @@ public class TilesCalculator {
             this.projectedRootRect = new Envelope2D(DefaultCRS.geographicToProjectedTr.transform(lowerCorner, null), 
                     DefaultCRS.geographicToProjectedTr.transform(upperCorner, null));            
         } catch (MismatchedDimensionException | TransformException ex) {
-            Logger.getLogger(TilesCalculator.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TileSystem.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
         return true;

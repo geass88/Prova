@@ -24,11 +24,11 @@ import org.opengis.geometry.DirectPosition;
  *
  * @author Tommaso
  */
-public class TilesCalculatorTest extends TestCase {
+public class TileSystemTest extends TestCase {
     
     private final static Envelope2D bound = new Envelope2D(new DirectPosition2D(12, 41.5), new DirectPosition2D(13, 42.5));
     
-    public TilesCalculatorTest(String testName) {
+    public TileSystemTest(String testName) {
         super(testName);
     }
     
@@ -47,7 +47,7 @@ public class TilesCalculatorTest extends TestCase {
      */
     public void testComputeTree_0args() {
         System.out.println("computeTree");
-        TilesCalculator instance = new TilesCalculator(bound, 17);
+        TileSystem instance = new TileSystem(bound, 17);
         assertTrue(instance.computeTree());
     }
 
@@ -58,7 +58,7 @@ public class TilesCalculatorTest extends TestCase {
         System.out.println("computeTree");
         DirectPosition p1 = DefaultCRS.geographicRect.getLowerCorner();
         DirectPosition p2 = DefaultCRS.geographicRect.getUpperCorner();
-        TilesCalculator instance = new TilesCalculator(bound, 17);
+        TileSystem instance = new TileSystem(bound, 17);
         assertTrue(instance.computeTree(p1, p2));
     }
 
@@ -68,7 +68,7 @@ public class TilesCalculatorTest extends TestCase {
     public void testGetTile_String() {
         System.out.println("getTile");
         String key = "12023222112";
-        TilesCalculator instance = new TilesCalculator(bound, 17);
+        TileSystem instance = new TileSystem(bound, 17);
         instance.computeTree();
         Envelope2D result = instance.getTile(key).getRect();
         assertNotNull(result);
@@ -81,7 +81,7 @@ public class TilesCalculatorTest extends TestCase {
         System.out.println("getTile");
         TileXY t = new TileXY(761, 1094);
         int scale = 11;
-        TilesCalculator instance = new TilesCalculator(bound, 17);
+        TileSystem instance = new TileSystem(bound, 17);
         instance.computeTree();
         Envelope2D result = instance.getTile(t, scale).getRect();
         assertNotNull(result);        
@@ -95,7 +95,7 @@ public class TilesCalculatorTest extends TestCase {
         int x = 761;
         int y = 1094;
         int scale = 11;
-        TilesCalculator instance = new TilesCalculator(bound, 17);
+        TileSystem instance = new TileSystem(bound, 17);
         instance.computeTree();
         Envelope2D result = instance.getTile(x, y, scale).getRect();
         assertNotNull(result);
@@ -108,7 +108,7 @@ public class TilesCalculatorTest extends TestCase {
         System.out.println("pointToTileXY");
         DirectPosition2D geographicPoint = new DirectPosition2D(DefaultCRS.geographicCRS, 12.42, 41.8445);
         int scale = 11;
-        TilesCalculator instance = new TilesCalculator(bound, 17);
+        TileSystem instance = new TileSystem(bound, 17);
         instance.computeTree();
         TileXY expResult = new TileXY(761, 1094);
         TileXY result = instance.pointToTileXY(geographicPoint, scale);
@@ -123,7 +123,7 @@ public class TilesCalculatorTest extends TestCase {
         System.out.println("pointToTile");
         DirectPosition2D geographicPoint = new DirectPosition2D(DefaultCRS.geographicCRS, 12.42, 41.8445);
         int scale = 11;
-        TilesCalculator instance = new TilesCalculator(bound, 17);
+        TileSystem instance = new TileSystem(bound, 17);
         instance.computeTree();
         TileXY tileXY = new TileXY(761, 1094);
         Tile expResult = instance.getTile(tileXY, scale);
