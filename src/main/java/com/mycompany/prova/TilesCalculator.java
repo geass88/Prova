@@ -25,6 +25,8 @@ import javax.swing.tree.TreeNode;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
 import org.opengis.geometry.DirectPosition;
+import org.opengis.geometry.MismatchedDimensionException;
+import org.opengis.referencing.operation.TransformException;
 
 /**
  *
@@ -59,7 +61,7 @@ public class TilesCalculator {
             this.tree = new DefaultTreeModel(compute(lowerCorner, upperCorner, 0));
             this.projectedRootRect = new Envelope2D(DefaultCRS.geographicToProjectedTr.transform(lowerCorner, null), 
                     DefaultCRS.geographicToProjectedTr.transform(upperCorner, null));            
-        } catch (Exception ex) {
+        } catch (MismatchedDimensionException | TransformException ex) {
             Logger.getLogger(TilesCalculator.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
@@ -109,7 +111,7 @@ public class TilesCalculator {
         return getTile(pointToTileXY(geographicPoint, scale), scale);
     }
     
-    private MutableTreeNode compute(final DirectPosition lowerCorner, final DirectPosition upperCorner, final int scale) throws Exception {
+    private MutableTreeNode compute(final DirectPosition lowerCorner, final DirectPosition upperCorner, final int scale) throws MismatchedDimensionException, TransformException {
         if(scale > maxDepth) return null;
         Envelope2D rect = new Envelope2D(lowerCorner, upperCorner);
         if(!rect.intersects(bound)) return new DefaultMutableTreeNode(null); // if(p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY())
