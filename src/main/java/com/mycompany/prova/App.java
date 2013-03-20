@@ -2,9 +2,16 @@ package com.mycompany.prova;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.MutableTreeNode;
+import javax.swing.tree.TreeModel;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
 import org.geotoolkit.referencing.crs.DefaultImageCRS;
+import org.opengis.geometry.MismatchedDimensionException;
+import org.opengis.referencing.operation.TransformException;
 
 /*
 class SphericalMercator {
@@ -138,7 +145,7 @@ public class App {
         for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
             for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++)
                 if(obs.getLowerCorner().getX()<=i && i<=obs.getUpperCorner().getX() && 
-                        obs.getLowerCorner().getY()<=j && j<= obs.getUpperCorner().getY()) { // (i, j) in 
+                        obs.getLowerCorner().getY()<=j && j<= obs.getUpperCorner().getY()) { // (i, j) in {rect intersection obs}
                     inside_speed ++;
                 } else {
                     outside_speed ++;
@@ -146,5 +153,24 @@ public class App {
         System.out.println(inside_speed);
         System.out.println(outside_speed);
         return 0;
+    }
+    
+    static void loadTiles(TreeModel tree, List<Tile> tiles, int scale) {
+        TilesCalculator calc = new TilesCalculator(null, 2);
+        try {
+            for(Tile tile: tiles) {
+                String key = QuadKeyManager.fromTileXY(calc.pointToTileXY(tile.getRect().getLowerCorner(), scale), scale);            
+                MutableTreeNode node = (MutableTreeNode) tree.getRoot();
+                for(int i = 0; i < key.length(); i ++) {
+                    int j = key.charAt(i) - '0';
+                    for(int k = node.getChildCount(); k <= j; k ++)
+                        node.insert(new DefaultMutableTreeNode(null), k);
+                    node = (MutableTreeNode)node.getChildAt(j);
+                }
+                ((DefaultMutableTreeNode)node).setUserObject(tile);
+            }
+        } catch (MismatchedDimensionException | TransformException ex) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }
