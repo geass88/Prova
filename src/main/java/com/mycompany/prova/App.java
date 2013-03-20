@@ -1,10 +1,15 @@
 package com.mycompany.prova;
 
+import java.sql.Statement;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeModel;
 import org.geotoolkit.geometry.DirectPosition2D;
@@ -47,15 +52,6 @@ public class App {
        */
        // CoordinateReferenceSystem targetCRS = DefaultGeocentricCRS.CARTESIAN;
         
-         /*Class.forName("org.postgresql.Driver").newInstance();
-        Connection conn = DriverManager.getConnection("jdbc:postgresql://192.168.128.128:5432/routing", "postgres", "");
-        Statement st = conn.createStatement();
-        ResultSet rs = st.executeQuery("SELECT count(*) as size FROM zone");
-        while(rs.next())
-            System.out.println(rs.getInt("size"));
-        rs.close();
-        st.close();
-        conn.close();*/
         DirectPosition2D p1 = new DirectPosition2D(DefaultCRS.geographicCRS, 12.42, 41.8445);
         int scale = 11;
         TilesCalculator calc = new TilesCalculator(bound, 17);
@@ -93,6 +89,22 @@ public class App {
         set.add(new Tile(new Envelope2D()));
         System.out.println(set.size());
         * */
+        TreeModel tree = new DefaultTreeModel(new DefaultMutableTreeNode(new Tile(DefaultCRS.geographicRect)));
+        
+        Class.forName("org.postgresql.Driver").newInstance();
+        Connection conn = DriverManager.getConnection("jdbc:postgresql://192.168.128.128:5432/routing", "postgres", "");
+        Statement st = conn.createStatement();
+        ResultSet rs = st.executeQuery("SELECT lon1, lat1, lon2, lat2, scale FROM zone");
+        List<Tile> list = new LinkedList<>();
+        java.util.Queue<Integer> scales = new LinkedList<>();
+        while(rs.next()) {
+            list.add(new Tile(new Envelope2D(null, rs.getDouble(1),rs.getDouble(2),rs.getDouble(3),rs.getDouble(4))));
+            scales.add(rs.getInt(5));
+        }
+        rs.close();
+        st.close();
+        conn.close();
+        loadTiles(tree,list,scales);
     }
     
     /**
@@ -155,11 +167,12 @@ public class App {
         return 0;
     }
     
-    static void loadTiles(TreeModel tree, List<Tile> tiles, int scale) {
-        TilesCalculator calc = new TilesCalculator(null, 2);
+    static void loadTiles(TreeModel tree, List<Tile> tiles, java.util.Queue<Integer> scale) {
+        TilesCalculator calc = new TilesCalculator(bound, 17);
+        calc.computeTree();
         try {
             for(Tile tile: tiles) {
-                String key = QuadKeyManager.fromTileXY(calc.pointToTileXY(tile.getRect().getLowerCorner(), scale), scale);            
+                String key = QuadKeyManager.fromTileXY(calc.pointToTileXY(tile.getRect().getLowerCorner(), scale.element()), scale.poll());            
                 MutableTreeNode node = (MutableTreeNode) tree.getRoot();
                 for(int i = 0; i < key.length(); i ++) {
                     int j = key.charAt(i) - '0';

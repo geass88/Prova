@@ -95,7 +95,7 @@ public class TilesCalculator {
      * @throws TransformException
      */
     public TileXY pointToTileXY(final DirectPosition2D geographicPoint, final int scale) throws MismatchedDimensionException, TransformException {
-        if (geographicPoint == null || scale < 0 || !this.bound.contains(geographicPoint)) 
+        if (geographicPoint == null || scale < 0) /*  || !this.bound.contains(geographicPoint) */
             return null;
         
         DirectPosition projectedPoint = DefaultCRS.geographicToProjectedTr.transform(geographicPoint, null);
