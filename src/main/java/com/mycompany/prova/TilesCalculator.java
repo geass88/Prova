@@ -39,7 +39,6 @@ public class TilesCalculator {
     private TreeModel tree;
     private Envelope2D projectedRootRect;
     
-
     public TilesCalculator(final Envelope2D bound, final int maxDepth) {
         this.bound = bound;
         this.maxDepth = maxDepth;
@@ -95,7 +94,7 @@ public class TilesCalculator {
      * @throws MismatchedDimensionException
      * @throws TransformException
      */
-    public TileXY pointToTileXY(final DirectPosition2D geographicPoint, final int scale) throws Exception {
+    public TileXY pointToTileXY(final DirectPosition2D geographicPoint, final int scale) throws MismatchedDimensionException, TransformException {
         if (geographicPoint == null || scale < 0 || !this.bound.contains(geographicPoint)) 
             return null;
         
