@@ -114,7 +114,8 @@ public class TileSystem {
         if(scale > maxDepth) return null;
         Envelope2D rect = new Envelope2D(lowerCorner, upperCorner);
         if(!rect.intersects(bound)) return new DefaultMutableTreeNode(null); // if(p2.getOrdinate(1)<bound.getMinY() || p2.getOrdinate(0) < bound.getMinX() || p1.getOrdinate(0) > bound.getMaxX() || p1.getOrdinate(1) > bound.getMaxY())
-        
+        // Tobia:
+        //if(!bound.contains(rect) && !rect.contains(new DirectPosition2D(12.460774, 41.901514))) return new DefaultMutableTreeNode(null);
         DirectPosition p1m = DefaultCRS.geographicToProjectedTr.transform(lowerCorner, null);
         DirectPosition p2m = DefaultCRS.geographicToProjectedTr.transform(upperCorner, null);
         

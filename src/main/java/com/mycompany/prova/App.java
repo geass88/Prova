@@ -43,7 +43,7 @@ class SphericalMercator {
 public class App {
     private final static Envelope2D bound = new Envelope2D(new DirectPosition2D(12, 41.5), new DirectPosition2D(13, 42.5));
     
-    public static void main( String[] args ) throws Exception {
+    public static void main(String[] args) throws Exception {
         /*
         double y = SphericalMercator.lat2y(10);
         double x = SphericalMercator.lon2x(-10);
@@ -56,6 +56,8 @@ public class App {
         int scale = 11;
         TileSystem calc = new TileSystem(bound, 17);
         calc.computeTree();
+        //TileSystem calc = new TileSystem(bound, 16);
+        //calc.computeTree(new Envelope2D(new DirectPosition2D(geographicCRS, 0, 0), new DirectPosition2D(geographicCRS, MaxLongitude, MaxLatitude)));
         
         TileXY t = calc.pointToTileXY(p1, scale);
         System.out.println(t.getX() + " " + t.getY());
@@ -89,8 +91,9 @@ public class App {
         set.add(new Tile(new Envelope2D()));
         System.out.println(set.size());
         * */
-        TreeModel tree = new DefaultTreeModel(new DefaultMutableTreeNode(new Tile(DefaultCRS.geographicRect)));
-        
+        /*
+         * caricamento dei Tile da db postgres
+        TreeModel tree = new DefaultTreeModel(new DefaultMutableTreeNode(new Tile(DefaultCRS.geographicRect)));        
         Class.forName("org.postgresql.Driver").newInstance();
         List<Tile> list;
         java.util.Queue<Integer> scales;
@@ -104,7 +107,7 @@ public class App {
                 scales.add(rs.getInt(5));
             }
         }
-        loadTiles(tree,list,scales);
+        loadTiles(tree,list,scales);*/
     }
     
     /**
