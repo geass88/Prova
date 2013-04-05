@@ -72,6 +72,7 @@ public class App {
         TileXY corner1 = new TileXY(0,1);
         TileXY corner2 = new TileXY(5,0);
         TileXYRectangle rect = new TileXYRectangle(corner2, corner1);
+        
         /*
         int count = 0;
         for(TileXYRectangle item: buildRect1(rect, obs)) {
