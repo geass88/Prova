@@ -27,7 +27,13 @@
     <netbeans.hint.license>apache20</netbeans.hint.license>
     <geotk.version>3.17</geotk.version>
   </properties>
-  
+  <repositories>
+    <repository>
+      <id>geotoolkit</id>
+      <name>Geotoolkit.org project</name>
+      <url>http://maven.geotoolkit.org</url>
+    </repository>
+  </repositories>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -68,42 +74,42 @@
     <dependency>
       <groupId>org.geotoolkit.pending</groupId>
       <artifactId>geotk-geometry</artifactId>
-      <version>3.17</version>
+      <version>3.21</version>
       <type>jar</type>
     </dependency>
     
     <dependency>
       <groupId>org.geotoolkit</groupId>
       <artifactId>geotk-referencing</artifactId>
-      <version>3.20-geoapi-3.0</version>
+      <version>3.21</version>
       <type>jar</type>
     </dependency>
     
     <dependency>
       <groupId>org.geotoolkit</groupId>
       <artifactId>geotk-utility</artifactId>
-      <version>3.20-geoapi-3.0</version>
+      <version>3.21</version>
       <type>jar</type>
     </dependency>
     
     <dependency>
       <groupId>org.geotoolkit</groupId>
       <artifactId>geotk-metadata</artifactId>
-      <version>3.20-geoapi-3.0</version>
+      <version>3.21</version>
       <type>jar</type>
     </dependency>
     
     <dependency>
       <groupId>org.geotoolkit</groupId>
       <artifactId>geotk-epsg</artifactId>
-      <version>3.20-geoapi-3.0</version>
+      <version>3.21</version>
       <type>jar</type>
     </dependency>
     
     <dependency>
       <groupId>org.geotoolkit</groupId>
       <artifactId>geotk-logging-log4j</artifactId>
-      <version>3.20-geoapi-3.0</version>
+      <version>3.21</version>
       <type>jar</type>
     </dependency>
 </dependencies>
