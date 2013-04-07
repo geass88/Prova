@@ -1,11 +1,17 @@
 package com.mycompany.prova;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.io.WKTReader;
 import java.sql.Statement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -56,6 +62,7 @@ public class App {
         int scale = 11;
         TileSystem calc = new TileSystem(bound, 17);
         calc.computeTree();
+        System.out.println("VISIT "+calc.visit(9).size());
         //TileSystem calc = new TileSystem(bound, 16);
         //calc.computeTree(new Envelope2D(new DirectPosition2D(geographicCRS, 0, 0), new DirectPosition2D(geographicCRS, MaxLongitude, MaxLatitude)));
         
@@ -81,6 +88,97 @@ public class App {
         System.out.println(count);
         */
         maxSpeed(rect, new TileXYRectangle(new TileXY(2,1), new TileXY(4,0)));
+        
+        Geometry g1 = new WKTReader().read("LINESTRING (0 0, 10 10, 20 21)");
+        System.out.println("Geometry 1: " + g1);
+        
+        // create a geometry by specifying the coordinates directly
+        Coordinate[] coordinates = new Coordinate[]{new Coordinate(0, 0),
+          new Coordinate(10, 10), new Coordinate(20, 20)};
+        // use the default factory, which gives full double-precision
+        Geometry g2 = new GeometryFactory().createLineString(coordinates);
+        System.out.println("Geometry 2: " + g2);
+
+        // compute the intersection of the two geometries
+        Geometry g3 = g1.intersection(g2);
+        System.out.println("G1 intersection G2: " + g3);
+        /*
+        GraphHopper hopper = new GraphHopper().graphHopperLocation("");
+        //hopper.contractionHierarchies(true);
+        hopper.forServer();                
+        hopper.load("F:/Tommaso/VM/Shared/berlin-latest.osm");
+        Graph g = hopper.getGraph();
+        AllEdgesIterator i = g.getAllEdges();
+        WKTReader r = new WKTReader();
+        Envelope2D bound1= new Envelope2D(new DirectPosition2D(13.062824973378143, 52.3279473705876), new DirectPosition2D(13.763971934407323, 52.67961645900346));
+        
+        TileSystem calc1 = new TileSystem(bound1, 17);
+        calc1.computeTree();
+        
+        List<Tile> lista = calc1.visit(15);
+        while(i.next()) {
+            String s = "LINESTRING(" + g.getLongitude(i.baseNode()) + " " + g.getLatitude(i.baseNode()) + ", ";
+            
+            for(Double[] d: i.wayGeometry().toGeoJson())
+                s += d[0] + " " + d[1] + ", ";
+            
+            s += g.getLongitude(i.adjNode()) + " " + g.getLatitude(i.adjNode()) + ")";
+            g1 = r.read(s);
+            for(Tile tile: lista) {
+                Geometry geo = org.geotoolkit.geometry.jts.JTS.toGeometry(tile.getRect());
+                if(g1.intersects(geo))
+                    ;//System.out.println("trovato");
+            }
+        }*/
+        
+        /*
+        GraphStorage graph = new GraphBuilder().create();
+        graph.setNode(1,1,1);
+        graph.setNode(2,2,2);
+        graph.setNode(3,3,3);
+        PointList pillar = new PointList();
+        pillar.add(1.5d, 1.2d);
+        graph.edge(2,3, 1, true);
+        graph.edge(1,3, 10, true);
+        graph.edge(1,2, 3, true).wayGeometry(pillar);
+        AlgorithmPreparation op= new NoOpAlgorithmPreparation() {
+            @Override public RoutingAlgorithm createAlgo() {
+                return new AStarBidirection(_graph, new CarFlagEncoder()).type(new ShortestCalc());
+            }
+        }.graph(graph);
+        System.out.println(op.createAlgo().calcPath(1,3 ).toDetailsString());
+        System.out.println(op.createAlgo().calcPath(1,3 ).calcPoints());
+        /*
+        
+        GraphStorage graph = new GraphBuilder().create();
+        Map<String, Integer> nodi = new HashMap<>();
+        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/routing", "postgres", "postgres"); 
+                Statement st = conn.createStatement(); 
+                ResultSet rs = st.executeQuery("select distinct * from ((select x1, y1 from berlin_2po_4pgr) union (select x2, y2 from berlin_2po_4pgr)) f")) {
+            int co=0;
+            while(rs.next()) {
+                graph.setNode(co, rs.getDouble(1), rs.getDouble(2));
+                nodi.put(rs.getDouble(1) +" "+ rs.getDouble(2), co);
+                co++;
+            }
+        }
+        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/routing", "postgres", "postgres"); 
+                Statement st = conn.createStatement(); 
+                ResultSet rs = st.executeQuery("select x1, y1, x2, y2, km, reverse_cost<>1000000 from berlin_2po_4pgr")) {
+            
+            while(rs.next()) {
+                graph.edge(nodi.get(rs.getDouble(1) +" "+ rs.getDouble(2)), nodi.get(rs.getDouble(3) +" "+ rs.getDouble(4)),
+                        rs.getDouble(5), rs.getBoolean(6));
+            }
+        }
+        
+        AlgorithmPreparation op= new NoOpAlgorithmPreparation() {
+            @Override public RoutingAlgorithm createAlgo() {
+                return new AStarBidirection(_graph, new CarFlagEncoder()).type(new ShortestCalc());
+            }
+        }.graph(graph);
+        System.out.println(op.createAlgo().calcPath(1,200 ).toDetailsString());
+        
         /*
          * implements Comparable<Tile>
             @Override

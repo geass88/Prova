@@ -15,6 +15,8 @@
  */
 package com.mycompany.prova;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -134,6 +136,19 @@ public class TileSystem {
             if(child != null) parent.insert(child, i);        
         }
         return parent;
+    }
+    
+    public List<Tile> visit(int level) {
+        List<Tile> list = new LinkedList<>();
+        visitHelper(list, (DefaultMutableTreeNode) this.tree.getRoot(), level);
+        return list;
+    }
+    
+    private void visitHelper(List<Tile> list, DefaultMutableTreeNode node, int limit) {
+        if(node.getUserObject() == null) return;
+        if(limit == 0) { list.add((Tile) node.getUserObject()); return; }
+        for(int i = 0; i < node.getChildCount(); i ++)
+            visitHelper(list, (DefaultMutableTreeNode)node.getChildAt(i), limit-1);
     }
     
     private static double round(final double val) {
