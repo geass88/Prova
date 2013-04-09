@@ -42,21 +42,25 @@ public class Main {
         }
     }
     
-    public static void create_tiles(Connection conn) throws SQLException {        
-        try (Statement st = conn.createStatement();
-            PreparedStatement pst = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
-            ResultSet rs;
-            rs = st.executeQuery("SELECT MIN(x1), MIN(x2), MIN(y1), MIN(y2), MAX(x1), MAX(x2), MAX(y1), MAX(y2) FROM ways");
+    public static Envelope2D getBound(Connection conn) throws SQLException {
+        try (Statement st = conn.createStatement(); 
+            ResultSet rs = st.executeQuery("SELECT MIN(x1), MIN(x2), MIN(y1), MIN(y2), MAX(x1), MAX(x2), MAX(y1), MAX(y2) FROM ways")) {
             rs.next();
             Envelope2D bound = new Envelope2D(
                 new DirectPosition2D(Math.min(rs.getDouble(1), rs.getDouble(2)), Math.min(rs.getDouble(3), rs.getDouble(4))), 
                 new DirectPosition2D(Math.max(rs.getDouble(5), rs.getDouble(6)), Math.max(rs.getDouble(7), rs.getDouble(8)))
             );
-            rs.close();
-
-            TileSystem calc = new TileSystem(bound, MAX_SCALE);
-            calc.computeTree();
-            Enumeration e = calc.getTreeEnumeration();
+            return bound;
+        }
+    }
+    
+    public static void create_tiles(Connection conn) throws SQLException {        
+        try (Statement st = conn.createStatement();
+            PreparedStatement pst = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
+            Envelope2D bound = getBound(conn);
+            TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
+            tileSystem.computeTree();
+            Enumeration e = tileSystem.getTreeEnumeration();
             st.execute("TRUNCATE TABLE tiles;");
             while(e.hasMoreElements()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
@@ -109,4 +113,11 @@ public class Main {
         WHERE tiles_qkey='120210232303' and not st_contains(shape, the_geom)
      
      */
+    
+    static void loadTiles(Connection conn) throws SQLException {
+        Statement st = conn.createStatement();
+        st.executeQuery("SELECT * FROM tiles");
+        Envelope2D bound = getBound(conn);
+        TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
+    }
 }
