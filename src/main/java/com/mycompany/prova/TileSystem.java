@@ -15,6 +15,7 @@
  */
 package com.mycompany.prova;
 
+import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -112,8 +113,8 @@ public class TileSystem {
         return getTile(pointToTileXY(geographicPoint, scale), scale);
     }
     
-    public TreeModel getTree() {
-        return tree;
+    public Enumeration getTreeEnumeration() {
+        return ((DefaultMutableTreeNode)tree.getRoot()).breadthFirstEnumeration();
     }
     
     public List<Tile> visit(int level) {
