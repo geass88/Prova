@@ -115,9 +115,14 @@ public class Main {
      */
     
     static void loadTiles(Connection conn) throws SQLException {
-        Statement st = conn.createStatement();
-        st.executeQuery("SELECT * FROM tiles");
         Envelope2D bound = getBound(conn);
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
+        Statement st = conn.createStatement();
+        ResultSet rs = st.executeQuery("SELECT qkey FROM tiles");
+        
+        while(rs.next()) {
+            Tile tile = tileSystem.getTile(rs.getString("qkey"));
+            
+        }
     }
 }
