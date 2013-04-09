@@ -112,6 +112,23 @@ public class TileSystem {
         return getTile(pointToTileXY(geographicPoint, scale), scale);
     }
     
+    public TreeModel getTree() {
+        return tree;
+    }
+    
+    public List<Tile> visit(int level) {
+        List<Tile> list = new LinkedList<>();
+        visitHelper(list, (DefaultMutableTreeNode) this.tree.getRoot(), level);
+        return list;
+    }
+    
+    private void visitHelper(List<Tile> list, DefaultMutableTreeNode node, int limit) {
+        if(node.getUserObject() == null) return;
+        if(limit == 0) { list.add((Tile) node.getUserObject()); return; }
+        for(int i = 0; i < node.getChildCount(); i ++)
+            visitHelper(list, (DefaultMutableTreeNode)node.getChildAt(i), limit-1);
+    }
+    
     private MutableTreeNode compute(final DirectPosition lowerCorner, final DirectPosition upperCorner, final int scale) throws MismatchedDimensionException, TransformException {
         if(scale > maxDepth) return null;
         Envelope2D rect = new Envelope2D(lowerCorner, upperCorner);
@@ -136,19 +153,6 @@ public class TileSystem {
             if(child != null) parent.insert(child, i);        
         }
         return parent;
-    }
-    
-    public List<Tile> visit(int level) {
-        List<Tile> list = new LinkedList<>();
-        visitHelper(list, (DefaultMutableTreeNode) this.tree.getRoot(), level);
-        return list;
-    }
-    
-    private void visitHelper(List<Tile> list, DefaultMutableTreeNode node, int limit) {
-        if(node.getUserObject() == null) return;
-        if(limit == 0) { list.add((Tile) node.getUserObject()); return; }
-        for(int i = 0; i < node.getChildCount(); i ++)
-            visitHelper(list, (DefaultMutableTreeNode)node.getChildAt(i), limit-1);
     }
     
     private static double round(final double val) {
