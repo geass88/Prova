@@ -26,11 +26,12 @@ import java.sql.*;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeNode;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
-import org.geotoolkit.geometry.jts.JTS;
 
 /**
  * Preprocessing: creazione e salvataggio tiles.
@@ -118,6 +119,7 @@ public class Main {
                 String qkey = rs1.getString(1);
                 Polygon rect = tileSystem.getTile(qkey).getPolygon();
                 LineString ring = rect.getExteriorRing();
+                Set<Integer> boundaryNodes = new TreeSet<>();
                 GraphStorage graph = new GraphBuilder().create();
                 Map<Integer, Integer> nodes = new HashMap<>();
                 int count = 0;
@@ -126,6 +128,7 @@ public class Main {
                 st2.setString(1, qkey);
                 ResultSet rs2 = st2.executeQuery();
                 while(rs2.next()) {
+                    Geometry geometry = reader.read(rs2.getString("geometry"));
                     if(rs2.getBoolean("contained")) {
                         Integer s = nodes.get(rs2.getInt("source"));
                         if(s == null) {
@@ -144,14 +147,16 @@ public class Main {
                         p.put("car", rs2.getInt("freeflow_speed"));
                         int flags = new AcceptWay(true, true, true).toFlags(p);
                         EdgeIterator i = graph.edge(s, t, rs2.getDouble("km")*1000., flags);
-                        Geometry geometry = reader.read(rs2.getString("geometry"));
                         PointList pillarNodes = getPillars(geometry);
                         if(pillarNodes != null) 
                             i.wayGeometry(pillarNodes);
-                        
                     } else {
-
+                        Geometry intersection = ring.intersection(geometry);
+                        for(Coordinate c: intersection.getCoordinates())
+                            //boundaryNodes.add();
+                            ;
                     }
+                    
                 }
                 rs2.close();
                 st2.clearParameters();
