@@ -15,7 +15,13 @@
  */
 package com.mycompany.prova;
 
+import com.graphhopper.routing.AStar;
+import com.graphhopper.routing.RoutingAlgorithm;
 import com.graphhopper.routing.util.AcceptWay;
+import com.graphhopper.routing.util.AlgorithmPreparation;
+import com.graphhopper.routing.util.CarFlagEncoder;
+import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
+import com.graphhopper.routing.util.ShortestCalc;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
@@ -104,16 +110,11 @@ public class Main {
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
         tileSystem.computeTree();
         WKTReader reader = new WKTReader();
-        GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
-        
-        /*LineString l1=factory.createLineString(new Coordinate[]{new Coordinate(0,0),new Coordinate(0,50)});
-        LineString l2=factory.createLineString(new Coordinate[]{new Coordinate(-10,10),new Coordinate(10,10)});
-        org.geotoolkit.geometry.jts.JTS.convertToCRS(l2, DefaultCRS.projectedCRS);
-        System.out.println(l1.intersection(l2).toText());*/
-        String sql = "SELECT ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost=1000000 AS oneway, ways.km, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
+        //GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
+        String sql = "SELECT ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost=1000000 AS oneway, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
         try (Statement st1 = conn.createStatement(); 
-            ResultSet rs1 = st1.executeQuery("SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)>13 ORDER BY tiles_qkey");
+            ResultSet rs1 = st1.executeQuery("SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=16 ORDER BY tiles_qkey");
             PreparedStatement st2 = conn.prepareStatement(sql)) {
             while(rs1.next()) {
                 String qkey = rs1.getString(1);
@@ -129,34 +130,71 @@ public class Main {
                 ResultSet rs2 = st2.executeQuery();
                 while(rs2.next()) {
                     Geometry geometry = reader.read(rs2.getString("geometry"));
-                    if(rs2.getBoolean("contained")) {
-                        Integer s = nodes.get(rs2.getInt("source"));
-                        if(s == null) {
-                            nodes.put(s=count, rs2.getInt("source")); 
-                            graph.setNode(s, rs2.getDouble("y1"), rs2.getDouble("x1"));
-                            count++;
-                        }
-                        Integer t = nodes.get(rs2.getInt("target"));
-                        if(t == null) {
-                            nodes.put(t=count, rs2.getInt("target")); 
-                            graph.setNode(t, rs2.getDouble("y2"), rs2.getDouble("x2"));
-                            count++;
-                        }
-                        Map<String, Object> p = new HashMap<>();
-                        p.put("caroneway", rs2.getBoolean("oneway"));
-                        p.put("car", rs2.getInt("freeflow_speed"));
-                        int flags = new AcceptWay(true, true, true).toFlags(p);
-                        EdgeIterator i = graph.edge(s, t, rs2.getDouble("km")*1000., flags);
+                    Integer s = nodes.get(rs2.getInt("source"));
+                    if(s == null) {
+                        nodes.put(rs2.getInt("source"), s = count); 
+                        graph.setNode(s, rs2.getDouble("y1"), rs2.getDouble("x1"));
+                        count ++;
+                    }
+                    Integer t = nodes.get(rs2.getInt("target"));
+                    if(t == null) {
+                        nodes.put(rs2.getInt("target"), t = count); 
+                        graph.setNode(t, rs2.getDouble("y2"), rs2.getDouble("x2"));
+                        count ++;
+                    }
+                    Map<String, Object> p = new HashMap<>();
+                    p.put("caroneway", rs2.getBoolean("oneway"));
+                    p.put("car", rs2.getInt("freeflow_speed"));
+                    int flags = new AcceptWay(true, true, true).toFlags(p);
+                    
+                    if(rs2.getBoolean("contained")) {                        
+                        EdgeIterator edge = graph.edge(s, t, rs2.getDouble("distance"), flags);
                         PointList pillarNodes = getPillars(geometry);
                         if(pillarNodes != null) 
-                            i.wayGeometry(pillarNodes);
+                            edge.wayGeometry(pillarNodes);
                     } else {
                         Geometry intersection = ring.intersection(geometry);
-                        for(Coordinate c: intersection.getCoordinates())
-                            //boundaryNodes.add();
-                            ;
+                        Map<String, Integer> index = new HashMap<>();
+                        index.put(rs2.getDouble("y1") + " " + rs2.getDouble("x1"), s);
+                        index.put(rs2.getDouble("y2") + " " + rs2.getDouble("x2"), t);
+                        for(Coordinate c: intersection.getCoordinates()) {
+                            String key = c.getOrdinate(1) + " " + c.getOrdinate(0);
+                            Integer val = index.get(key);
+                            if(val == null) {
+                                boundaryNodes.add(count);
+                                index.put(key, count);
+                                graph.setNode(count, c.getOrdinate(1), c.getOrdinate(0));
+                                count ++;
+                            } else // the intersection is in s or t
+                                boundaryNodes.add(val);
+                        }
+                        intersection = rect.intersection(geometry);
+                        double factor = rs2.getDouble("distance") / geometry.getLength();
+                        for(int i = 0; i < intersection.getNumGeometries(); i ++) {
+                            Geometry g = intersection.getGeometryN(i);
+                            if(g.getNumPoints() > 1) {
+                                Coordinate dot1 = g.getCoordinates()[0];
+                                Integer value1 = index.get(dot1.getOrdinate(1) + " " + dot1.getOrdinate(0));
+                                Coordinate dot2 = g.getCoordinates()[g.getNumPoints()-1];
+                                Integer value2 = index.get(dot2.getOrdinate(1) + " " + dot2.getOrdinate(0));
+                                if(value1 == null || value2 == null)
+                                    System.err.println("PROBLEM in: " + dot1 + " " +dot2);
+                                graph.edge(value1, value2, factor*g.getLength(), flags).wayGeometry(getPillars(g));
+                            } // else {} // nothing to do
+                        }
                     }
-                    
+                    for(Integer i: boundaryNodes) 
+                        for(Integer j: boundaryNodes) {
+                            if(i == j) continue;
+                            RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
+                                @Override public RoutingAlgorithm createAlgo() {
+                                    return new AStar(_graph, new CarFlagEncoder()).type(new ShortestCalc());
+                                }
+                            }.graph(graph).createAlgo();
+                            double distance = algo.calcPath(i,j).distance();
+                            double time = algo.calcPath(i,j).time();
+                        }
+                    //System.out.println(graph.nodes());
                 }
                 rs2.close();
                 st2.clearParameters();
