@@ -194,6 +194,7 @@ public class Main {
                                 }
                             }.graph(graph).createAlgo();
                             double distance = algo.calcPath(i,j).distance();
+                            //TODO: contrallare se esiste il cammino
                             double time = algo.calcPath(i,j).time();
                             if(time < min_time)
                                 min_time = time;
