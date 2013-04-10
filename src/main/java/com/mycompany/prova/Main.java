@@ -37,7 +37,7 @@ public class Main {
         for(String dbName: DBS) {
             System.out.println("Processing db " + dbName + " ...");
             try (Connection conn = DriverManager.getConnection(JDBC_URI + dbName, "postgres", "postgres")) {
-                subgraph(conn);
+                loadTiles(conn);
             }
         }
     }
@@ -117,12 +117,15 @@ public class Main {
     static void loadTiles(Connection conn) throws SQLException {
         Envelope2D bound = getBound(conn);
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
-        Statement st = conn.createStatement();
-        ResultSet rs = st.executeQuery("SELECT qkey FROM tiles");
-        
-        while(rs.next()) {
-            Tile tile = tileSystem.getTile(rs.getString("qkey"));
-            
+        tileSystem.computeTree();
+        boolean ok = true;
+        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT qkey FROM tiles")) {
+            while(rs.next()) {
+                Tile tile = tileSystem.getTile(rs.getString("qkey"));
+                
+                ok &= tile != null;
+            }
         }
+        System.out.println(ok);
     }
 }
