@@ -18,10 +18,10 @@ package com.mycompany.prova;
 import com.graphhopper.routing.AStar;
 import com.graphhopper.routing.RoutingAlgorithm;
 import com.graphhopper.routing.util.AcceptWay;
-import com.graphhopper.routing.util.AlgorithmPreparation;
 import com.graphhopper.routing.util.CarFlagEncoder;
+import com.graphhopper.routing.util.FastestCalc;
 import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
-import com.graphhopper.routing.util.ShortestCalc;
+import com.graphhopper.routing.util.VehicleEncoder;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
@@ -183,16 +183,20 @@ public class Main {
                             } // else {} // nothing to do
                         }
                     }
+                    double min_time = Double.MAX_VALUE;
                     for(Integer i: boundaryNodes) 
                         for(Integer j: boundaryNodes) {
                             if(i == j) continue;
                             RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
                                 @Override public RoutingAlgorithm createAlgo() {
-                                    return new AStar(_graph, new CarFlagEncoder()).type(new ShortestCalc());
+                                    VehicleEncoder vehicle = new CarFlagEncoder();
+                                    return new AStar(_graph, vehicle).type(new FastestCalc(vehicle));
                                 }
                             }.graph(graph).createAlgo();
                             double distance = algo.calcPath(i,j).distance();
                             double time = algo.calcPath(i,j).time();
+                            if(time < min_time)
+                                min_time = time;
                         }
                     //System.out.println(graph.nodes());
                 }
