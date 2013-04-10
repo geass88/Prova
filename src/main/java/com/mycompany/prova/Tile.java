@@ -15,8 +15,10 @@
  */
 package com.mycompany.prova;
 
+import com.vividsolutions.jts.geom.Polygon;
 import java.io.Serializable;
 import org.geotoolkit.geometry.Envelope2D;
+import org.geotoolkit.geometry.jts.JTS;
 
 /**
  *
@@ -38,4 +40,7 @@ public class Tile implements Serializable {
         this.rect = rect;
     }
     
+    public Polygon getPolygon() {
+        return JTS.toGeometry(rect);
+    }
 }
