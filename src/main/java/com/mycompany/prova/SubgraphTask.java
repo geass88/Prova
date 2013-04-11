@@ -27,112 +27,51 @@ import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.PointList;
-import com.vividsolutions.jts.geom.*;
+import static com.mycompany.prova.Main.getPillars;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.io.WKTReader;
-import java.sql.*;
-import java.util.Enumeration;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreeNode;
-import org.geotoolkit.geometry.DirectPosition2D;
-import org.geotoolkit.geometry.Envelope2D;
 
 /**
- * Preprocessing: creazione e salvataggio tiles.
+ *
  * @author Tommaso
  */
-public class Main {
-    
-    public static final String JDBC_URI = "jdbc:postgresql://192.168.128.128:5432/";
-    public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing"};
-    public static final Integer MAX_SCALE = 17;
-    private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(8);
-    
-    public static Connection getConnection(String db) {
-        try {
-            return DriverManager.getConnection(JDBC_URI + db, "postgres", "postgres");
-        } catch (SQLException ex) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
-    }
-    
-    public static void main(String[] args) throws Exception {
-        for(String dbName: DBS) {
-            System.out.println("Processing db " + dbName + " ...");
-            try (Connection conn = getConnection(dbName)) {
-                subgraph(conn);
-            }
-        }
-        pool.shutdown();
-    }
-    
-    public static Envelope2D getBound(Connection conn) throws SQLException {
-        try (Statement st = conn.createStatement(); 
-            ResultSet rs = st.executeQuery("SELECT MIN(x1), MIN(x2), MIN(y1), MIN(y2), MAX(x1), MAX(x2), MAX(y1), MAX(y2) FROM ways")) {
-            rs.next();
-            Envelope2D bound = new Envelope2D(
-                new DirectPosition2D(Math.min(rs.getDouble(1), rs.getDouble(2)), Math.min(rs.getDouble(3), rs.getDouble(4))), 
-                new DirectPosition2D(Math.max(rs.getDouble(5), rs.getDouble(6)), Math.max(rs.getDouble(7), rs.getDouble(8)))
-            );
-            return bound;
-        }
-    }
-    
-    public static void create_tiles(Connection conn) throws SQLException {        
-        try (Statement st = conn.createStatement();
-            PreparedStatement pst = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
-            Envelope2D bound = getBound(conn);
-            TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
-            tileSystem.computeTree();
-            Enumeration e = tileSystem.getTreeEnumeration();
-            st.execute("TRUNCATE TABLE tiles;");
-            while(e.hasMoreElements()) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
-                Tile tile = (Tile) node.getUserObject();
-                if(tile == null) continue;
-                TreeNode[] path = node.getPath();
-                String qkey = "";
-                for(int i = 1; i < path.length; i ++)
-                    qkey += path[i-1].getIndex(path[i]);
+public class SubgraphTask implements Runnable {
 
-                pst.setString(1, qkey);
-                pst.setDouble(2, tile.getRect().getMinX());
-                pst.setDouble(3, tile.getRect().getMinY());
-                pst.setDouble(4, tile.getRect().getMaxX());
-                pst.setDouble(5, tile.getRect().getMaxY());
-                pst.setDouble(6, tile.getRect().getMinX());
-                pst.setDouble(7, tile.getRect().getMinY());
-                pst.setDouble(8, tile.getRect().getMaxX());
-                pst.setDouble(9, tile.getRect().getMaxY());
-                pst.executeUpdate();
-                pst.clearParameters();
-            }
-            st.execute("DELETE FROM tiles WHERE qkey='';"); // removing the root node
-            st.execute("SELECT my_ways_tiles_fill();"); // call it to fill the relation between tiles and ways
-        }
-    }
+    private final WKTReader reader = new WKTReader();
+    private final TileSystem tileSystem;
+    private final int scale;
+    private Connection conn;
     
-    public static void subgraph(Connection conn) throws Exception {
-        Envelope2D bound = getBound(conn);
-        TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
-        tileSystem.computeTree();
-        WKTReader reader = new WKTReader();
-        
-        //GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
-        String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=14 ORDER BY tiles_qkey";
-        String sql2 = "SELECT ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost=1000000 AS oneway, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
+    private static String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
+    private static String sql2 = "SELECT ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost=1000000 AS oneway, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
         
-        try (Statement st1 = conn.createStatement(); ResultSet rs1 = st1.executeQuery(sql1);
+    public SubgraphTask(final TileSystem tileSystem, final Connection conn, final int scale) {
+        this.tileSystem = tileSystem;
+        this.scale = scale;
+        this.conn = conn;
+    }
+    
+    @Override
+    public void run() {
+        try (PreparedStatement st1 = conn.prepareStatement(sql1);
             PreparedStatement st2 = conn.prepareStatement(sql2)) {
+            st1.setInt(1, scale);
+            ResultSet rs1 = st1.executeQuery();
             while(rs1.next()) { // for each tiles
                 String qkey = rs1.getString(1);
                 Polygon rect = tileSystem.getTile(qkey).getPolygon();
@@ -226,55 +165,16 @@ public class Main {
                     //System.out.println("["+graph.getLongitude(i)+", "+graph.getLatitude(i)+"],");
                 }
             }
-        }
-    }
-    
-    public static void threadedSubgraph(String db) throws Exception {
-        Connection conn = getConnection(db);
-        Envelope2D bound = getBound(conn);
-        TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
-        tileSystem.computeTree();
-        
-        pool.execute(new SubgraphTask(tileSystem, conn, 1));
-        for(int i = 2; i <= MAX_SCALE; i ++)
-            pool.execute(new SubgraphTask(tileSystem, getConnection(db), i));
-    }
-    
-    static PointList getPillars(Geometry g) {
-        int pillarNumber = g.getNumPoints() - 2;
-        if(pillarNumber > 0) {
-            PointList pillarNodes = new PointList(pillarNumber);
-            for(int i = 1; i <= pillarNumber; i ++) {
-                pillarNodes.add(g.getCoordinates()[i].getOrdinate(1), g.getCoordinates()[i].getOrdinate(0));
-                //System.out.println("lat=" + g.getCoordinates()[i].getOrdinate(1) +" lon = "+ g.getCoordinates()[i].getOrdinate(0));
-            }
-            return pillarNodes;
-        }
-        return null;
-    }
-    
-    /*
-     --select distinct tiles_qkey from ways_tiles where length(tiles_qkey)>16 order by tiles_qkey
-        SELECT st_astext(st_intersection(st_setsrid(st_makeline(array[
-            st_point(lon1,lat1), st_point(lon2,lat1), st_point(lon2,lat2), st_point(lon1,lat2), st_point(lon1,lat1)
-        ]), 4326), the_geom)), *
-        FROM ways JOIN ways_tiles ON gid=ways_id JOIN tiles ON tiles_qkey=qkey 
-        WHERE tiles_qkey='120210232303' and not st_contains(shape, the_geom)
-     
-     */
-    
-    static void loadTiles(Connection conn) throws SQLException {
-        Envelope2D bound = getBound(conn);
-        TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
-        tileSystem.computeTree();
-        boolean ok = true;
-        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT qkey FROM tiles")) {
-            while(rs.next()) {
-                Tile tile = tileSystem.getTile(rs.getString("qkey"));
-                
-                ok &= tile != null;
+            rs1.close();
+        } catch(Exception e) {
+            System.err.println(e.getMessage());
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        System.out.println(ok);
     }
+    
 }
