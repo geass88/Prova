@@ -214,7 +214,7 @@ public class Main {
             }
         }
     }
-    
+
     static PointList getPillars(Geometry g) {
         int pillarNumber = g.getNumPoints() - 2;
         if(pillarNumber > 0) {
