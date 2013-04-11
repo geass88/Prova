@@ -110,13 +110,13 @@ public class Main {
         Envelope2D bound = getBound(conn);
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
         tileSystem.computeTree();
+        WKTReader reader = new WKTReader();
         
         //GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
         String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=14 ORDER BY tiles_qkey";
         String sql2 = "SELECT ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost=1000000 AS oneway, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
         
-        WKTReader reader = new WKTReader();
         try (Statement st1 = conn.createStatement(); ResultSet rs1 = st1.executeQuery(sql1);
             PreparedStatement st2 = conn.prepareStatement(sql2)) {
             while(rs1.next()) { // for each tiles
