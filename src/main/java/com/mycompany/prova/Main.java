@@ -16,6 +16,7 @@
 package com.mycompany.prova;
 
 import com.graphhopper.routing.AStar;
+import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
 import com.graphhopper.routing.util.AcceptWay;
 import com.graphhopper.routing.util.CarFlagEncoder;
@@ -46,7 +47,7 @@ import org.geotoolkit.geometry.Envelope2D;
 public class Main {
     
     public static final String JDBC_URI = "jdbc:postgresql://192.168.128.128:5432/";
-    public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing"};
+    public static final String[] DBS = { "berlin_routing"/*, "hamburg_routing", "london_routing"*/};
     public static final Integer MAX_SCALE = 17;
     
     
@@ -114,7 +115,7 @@ public class Main {
         String sql = "SELECT ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost=1000000 AS oneway, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
         try (Statement st1 = conn.createStatement(); 
-            ResultSet rs1 = st1.executeQuery("SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=16 ORDER BY tiles_qkey");
+            ResultSet rs1 = st1.executeQuery("SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=14 ORDER BY tiles_qkey");//length(tiles_qkey)=14
             PreparedStatement st2 = conn.prepareStatement(sql)) {
             while(rs1.next()) {
                 String qkey = rs1.getString(1);
@@ -184,7 +185,7 @@ public class Main {
                         }
                     }
                     double min_time = Double.MAX_VALUE;
-                    for(Integer i: boundaryNodes) 
+                    for(Integer i: boundaryNodes) {
                         for(Integer j: boundaryNodes) {
                             if(i == j) continue;
                             RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
@@ -193,12 +194,16 @@ public class Main {
                                     return new AStar(_graph, vehicle).type(new FastestCalc(vehicle));
                                 }
                             }.graph(graph).createAlgo();
-                            double distance = algo.calcPath(i,j).distance();
-                            //TODO: contrallare se esiste il cammino
-                            double time = algo.calcPath(i,j).time();
-                            if(time < min_time)
-                                min_time = time;
+                            Path path = algo.calcPath(i,j);
+                            if(path.found()) { // the path exists
+                                double distance = path.distance();
+                                double time = path.time();
+                                if(time < min_time)
+                                    min_time = time;
+                            }
                         }
+                        //System.out.println("["+graph.getLongitude(i)+", "+graph.getLatitude(i)+"],");
+                    }
                     //System.out.println(graph.nodes());
                 }
                 rs2.close();
