@@ -117,7 +117,7 @@ public class Main {
         try (Statement st1 = conn.createStatement(); 
             ResultSet rs1 = st1.executeQuery("SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=14 ORDER BY tiles_qkey");//length(tiles_qkey)=14
             PreparedStatement st2 = conn.prepareStatement(sql)) {
-            while(rs1.next()) {
+            while(rs1.next()) { // for each tiles
                 String qkey = rs1.getString(1);
                 Polygon rect = tileSystem.getTile(qkey).getPolygon();
                 LineString ring = rect.getExteriorRing();
@@ -129,7 +129,7 @@ public class Main {
                 
                 st2.setString(1, qkey);
                 ResultSet rs2 = st2.executeQuery();
-                while(rs2.next()) {
+                while(rs2.next()) { // for each way in a tile
                     Geometry geometry = reader.read(rs2.getString("geometry"));
                     Integer s = nodes.get(rs2.getInt("source"));
                     if(s == null) {
@@ -184,30 +184,31 @@ public class Main {
                             } // else {} // nothing to do
                         }
                     }
-                    double min_time = Double.MAX_VALUE;
-                    for(Integer i: boundaryNodes) {
-                        for(Integer j: boundaryNodes) {
-                            if(i == j) continue;
-                            RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
-                                @Override public RoutingAlgorithm createAlgo() {
-                                    VehicleEncoder vehicle = new CarFlagEncoder();
-                                    return new AStar(_graph, vehicle).type(new FastestCalc(vehicle));
-                                }
-                            }.graph(graph).createAlgo();
-                            Path path = algo.calcPath(i,j);
-                            if(path.found()) { // the path exists
-                                double distance = path.distance();
-                                double time = path.time();
-                                if(time < min_time)
-                                    min_time = time;
-                            }
-                        }
-                        //System.out.println("["+graph.getLongitude(i)+", "+graph.getLatitude(i)+"],");
-                    }
                     //System.out.println(graph.nodes());
                 }
                 rs2.close();
                 st2.clearParameters();
+                
+                double min_time = Double.MAX_VALUE;
+                for(Integer i: boundaryNodes) {
+                    for(Integer j: boundaryNodes) {
+                        if(i == j) continue;
+                        RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
+                            @Override public RoutingAlgorithm createAlgo() {
+                                VehicleEncoder vehicle = new CarFlagEncoder();
+                                return new AStar(_graph, vehicle).type(new FastestCalc(vehicle));
+                            }
+                        }.graph(graph).createAlgo();
+                        Path path = algo.calcPath(i,j);
+                        if(path.found()) { // the path exists
+                            double distance = path.distance();
+                            double time = path.time();
+                            if(time < min_time)
+                                min_time = time;
+                        }
+                    }
+                    //System.out.println("["+graph.getLongitude(i)+", "+graph.getLatitude(i)+"],");
+                }
             }
         }
     }
