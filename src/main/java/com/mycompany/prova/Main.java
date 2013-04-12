@@ -16,6 +16,7 @@
 package com.mycompany.prova;
 
 import com.graphhopper.routing.AStar;
+import com.graphhopper.routing.DijkstraBidirection;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
 import com.graphhopper.routing.util.AcceptWay;
@@ -51,7 +52,7 @@ import org.geotoolkit.geometry.Envelope2D;
 public class Main {
     
     public static final String JDBC_URI = "jdbc:postgresql://192.168.128.128:5432/";
-    public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing"};
+    public static final String[] DBS = { "berlin_routing", "hamburg_routing"/*, "london_routing"*/};
     public static final Integer MAX_SCALE = 17;
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(8);
     
@@ -128,7 +129,7 @@ public class Main {
         WKTReader reader = new WKTReader();
         
         //GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
-        String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=14 ORDER BY tiles_qkey";
+        String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=17 ORDER BY tiles_qkey";
         String sql2 = "SELECT ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost=1000000 AS oneway, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
         
@@ -213,7 +214,7 @@ public class Main {
                         RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
                             @Override public RoutingAlgorithm createAlgo() {
                                 VehicleEncoder vehicle = new CarFlagEncoder();
-                                return new AStar(_graph, vehicle).type(new FastestCalc(vehicle));
+                                return new DijkstraBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
                             }
                         }.graph(graph).createAlgo();
                         Path path = algo.calcPath(i,j);
@@ -236,9 +237,9 @@ public class Main {
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
         tileSystem.computeTree();
         
-        pool.execute(new SubgraphTask(tileSystem, conn, 1));
-        for(int i = 2; i <= MAX_SCALE; i ++)
-            pool.execute(new SubgraphTask(tileSystem, getConnection(db), i));
+        pool.execute(new SubgraphTask(tileSystem, conn, 14));
+        //for(int i = 2; i <= MAX_SCALE; i ++)
+          //  pool.execute(new SubgraphTask(tileSystem, getConnection(db), i));
     }
     
     static PointList getPillars(Geometry g) {

@@ -15,7 +15,7 @@
  */
 package com.mycompany.prova;
 
-import com.graphhopper.routing.AStar;
+import com.graphhopper.routing.DijkstraBidirection;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
 import com.graphhopper.routing.util.AcceptWay;
@@ -37,7 +37,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -151,7 +150,7 @@ public class SubgraphTask implements Runnable {
                         RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
                             @Override public RoutingAlgorithm createAlgo() {
                                 VehicleEncoder vehicle = new CarFlagEncoder();
-                                return new AStar(_graph, vehicle).type(new FastestCalc(vehicle));
+                                return new DijkstraBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
                             }
                         }.graph(graph).createAlgo();
                         Path path = algo.calcPath(i,j);
