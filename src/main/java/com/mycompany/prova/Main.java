@@ -69,6 +69,7 @@ public class Main {
             System.out.println("Processing db " + dbName + " ...");
             try (Connection conn = getConnection(dbName)) {
                 subgraph(conn);
+                //create_tiles(conn);
             }
         }
         pool.shutdown();
