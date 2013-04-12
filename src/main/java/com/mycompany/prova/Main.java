@@ -52,9 +52,9 @@ import org.geotoolkit.geometry.Envelope2D;
 public class Main {
     
     public static final String JDBC_URI = "jdbc:postgresql://192.168.128.128:5432/";
-    public static final String[] DBS = { "berlin_routing", "hamburg_routing"/*, "london_routing"*/};
+    public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing"};
     public static final Integer MAX_SCALE = 17;
-    private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(8);
+    private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(3);
     
     public static Connection getConnection(String db) {
         try {
@@ -68,10 +68,11 @@ public class Main {
     public static void main(String[] args) throws Exception {
         for(String dbName: DBS) {
             System.out.println("Processing db " + dbName + " ...");
-            try (Connection conn = getConnection(dbName)) {
+            /*try (Connection conn = getConnection(dbName)) {
                 subgraph(conn);
                 //create_tiles(conn);
-            }
+            }*/
+            threadedSubgraph(dbName);
         }
         pool.shutdown();
     }
