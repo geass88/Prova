@@ -15,7 +15,6 @@
  */
 package com.mycompany.prova;
 
-import com.graphhopper.routing.AStar;
 import com.graphhopper.routing.DijkstraBidirection;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
@@ -54,7 +53,8 @@ public class Main {
     public static final String JDBC_URI = "jdbc:postgresql://192.168.128.128:5432/";
     public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing"};
     public static final Integer MAX_SCALE = 17;
-    private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(3);
+    public static final Integer POOL_SIZE = 3;
+    private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
     
     public static Connection getConnection(String db) {
         try {
@@ -122,7 +122,58 @@ public class Main {
             st.execute("SELECT my_ways_tiles_fill();"); // call it to fill the relation between tiles and ways
         }
     }
+      
+    public static void threadedSubgraph(String db) throws Exception {
+        Envelope2D bound;
+        try (Connection conn = getConnection(db)) {
+            bound = getBound(conn);
+        }
+        TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
+        tileSystem.computeTree();
+        
+        //for(int i = 1; i <= MAX_SCALE; i ++)
+            pool.execute(new SubgraphTask(tileSystem, db, 14));
+    }
     
+    static PointList getPillars(Geometry g) {
+        int pillarNumber = g.getNumPoints() - 2;
+        if(pillarNumber > 0) {
+            PointList pillarNodes = new PointList(pillarNumber);
+            for(int i = 1; i <= pillarNumber; i ++) {
+                pillarNodes.add(g.getCoordinates()[i].getOrdinate(1), g.getCoordinates()[i].getOrdinate(0));
+                //System.out.println("lat=" + g.getCoordinates()[i].getOrdinate(1) +" lon = "+ g.getCoordinates()[i].getOrdinate(0));
+            }
+            return pillarNodes;
+        }
+        return null;
+    }
+    
+    static void loadTiles(Connection conn) throws SQLException {
+        Envelope2D bound = getBound(conn);
+        TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
+        tileSystem.computeTree();
+        boolean ok = true;
+        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT qkey FROM tiles")) {
+            while(rs.next()) {
+                Tile tile = tileSystem.getTile(rs.getString("qkey"));
+                
+                ok &= tile != null;
+            }
+        }
+        System.out.println(ok);
+    }
+}
+
+/*
+--select distinct tiles_qkey from ways_tiles where length(tiles_qkey)>16 order by tiles_qkey
+   SELECT st_astext(st_intersection(st_setsrid(st_makeline(array[
+       st_point(lon1,lat1), st_point(lon2,lat1), st_point(lon2,lat2), st_point(lon1,lat2), st_point(lon1,lat1)
+   ]), 4326), the_geom)), *
+   FROM ways JOIN ways_tiles ON gid=ways_id JOIN tiles ON tiles_qkey=qkey 
+   WHERE tiles_qkey='120210232303' and not st_contains(shape, the_geom)
+
+*/
+/*
     public static void subgraph(Connection conn) throws Exception {
         Envelope2D bound = getBound(conn);
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
@@ -231,53 +282,4 @@ public class Main {
             }
         }
     }
-    
-    public static void threadedSubgraph(String db) throws Exception {
-        Connection conn = getConnection(db);
-        Envelope2D bound = getBound(conn);
-        TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
-        tileSystem.computeTree();
-        
-        pool.execute(new SubgraphTask(tileSystem, conn, 14));
-        //for(int i = 2; i <= MAX_SCALE; i ++)
-          //  pool.execute(new SubgraphTask(tileSystem, getConnection(db), i));
-    }
-    
-    static PointList getPillars(Geometry g) {
-        int pillarNumber = g.getNumPoints() - 2;
-        if(pillarNumber > 0) {
-            PointList pillarNodes = new PointList(pillarNumber);
-            for(int i = 1; i <= pillarNumber; i ++) {
-                pillarNodes.add(g.getCoordinates()[i].getOrdinate(1), g.getCoordinates()[i].getOrdinate(0));
-                //System.out.println("lat=" + g.getCoordinates()[i].getOrdinate(1) +" lon = "+ g.getCoordinates()[i].getOrdinate(0));
-            }
-            return pillarNodes;
-        }
-        return null;
-    }
-    
-    /*
-     --select distinct tiles_qkey from ways_tiles where length(tiles_qkey)>16 order by tiles_qkey
-        SELECT st_astext(st_intersection(st_setsrid(st_makeline(array[
-            st_point(lon1,lat1), st_point(lon2,lat1), st_point(lon2,lat2), st_point(lon1,lat2), st_point(lon1,lat1)
-        ]), 4326), the_geom)), *
-        FROM ways JOIN ways_tiles ON gid=ways_id JOIN tiles ON tiles_qkey=qkey 
-        WHERE tiles_qkey='120210232303' and not st_contains(shape, the_geom)
-     
-     */
-    
-    static void loadTiles(Connection conn) throws SQLException {
-        Envelope2D bound = getBound(conn);
-        TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
-        tileSystem.computeTree();
-        boolean ok = true;
-        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT qkey FROM tiles")) {
-            while(rs.next()) {
-                Tile tile = tileSystem.getTile(rs.getString("qkey"));
-                
-                ok &= tile != null;
-            }
-        }
-        System.out.println(ok);
-    }
-}
+    */

@@ -53,20 +53,21 @@ public class SubgraphTask implements Runnable {
     private final WKTReader reader = new WKTReader();
     private final TileSystem tileSystem;
     private final int scale;
-    private Connection conn;
+    private String dbName;
     
     private static String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
     private static String sql2 = "SELECT ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost=1000000 AS oneway, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
         
-    public SubgraphTask(final TileSystem tileSystem, final Connection conn, final int scale) {
+    public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
         this.scale = scale;
-        this.conn = conn;
+        this.dbName = dbName;
     }
     
     @Override
     public void run() {
+        Connection conn = Main.getConnection(this.dbName);
         try (PreparedStatement st1 = conn.prepareStatement(sql1);
             PreparedStatement st2 = conn.prepareStatement(sql2)) {
             st1.setInt(1, scale);
