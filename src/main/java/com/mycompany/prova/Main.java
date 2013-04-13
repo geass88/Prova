@@ -15,26 +15,10 @@
  */
 package com.mycompany.prova;
 
-import com.graphhopper.routing.DijkstraBidirection;
-import com.graphhopper.routing.Path;
-import com.graphhopper.routing.RoutingAlgorithm;
-import com.graphhopper.routing.util.AcceptWay;
-import com.graphhopper.routing.util.CarFlagEncoder;
-import com.graphhopper.routing.util.FastestCalc;
-import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
-import com.graphhopper.routing.util.VehicleEncoder;
-import com.graphhopper.storage.GraphBuilder;
-import com.graphhopper.storage.GraphStorage;
-import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.PointList;
 import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.io.WKTReader;
 import java.sql.*;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
