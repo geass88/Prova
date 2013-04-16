@@ -15,6 +15,8 @@
  */
 package com.mycompany.prova;
 
+import com.mycompany.prova.beans.Tile;
+import com.mycompany.prova.utils.TileSystem;
 import com.graphhopper.util.PointList;
 import com.vividsolutions.jts.geom.*;
 import java.sql.*;

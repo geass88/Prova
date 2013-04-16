@@ -13,46 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mycompany.prova;
+package com.mycompany.prova.beans;
 
+import com.vividsolutions.jts.geom.Polygon;
 import java.io.Serializable;
+import org.geotoolkit.geometry.Envelope2D;
+import org.geotoolkit.geometry.jts.JTS;
 
 /**
  *
  * @author Tommaso
  */
-public class TileXY implements Serializable {
- 
-    private int x;
-    private int y;
+public class Tile implements Serializable {
     
-    public TileXY() {
-        this.x = this.y = 0;
-    }
-    
-    public TileXY(int x, int y) {
-        this.x = x;
-        this.y = y;
+    private Envelope2D rect;
+
+    public Tile(Envelope2D rect) {
+        this.rect = rect;
     }
 
-    public int getX() {
-        return x;
+    public Envelope2D getRect() {
+        return rect;
     }
 
-    public void setX(int x) {
-        this.x = x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public void setY(int y) {
-        this.y = y;
+    public void setRect(Envelope2D rect) {
+        this.rect = rect;
     }
     
-    @Override
-    public String toString() {
-        return String.format("(%d, %d)", x, y);
+    public Polygon getPolygon() {
+        return JTS.toGeometry(rect);
     }
 }

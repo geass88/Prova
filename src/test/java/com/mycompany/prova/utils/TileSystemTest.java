@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mycompany.prova;
+package com.mycompany.prova.utils;
 
+import com.mycompany.prova.beans.TileXY;
+import com.mycompany.prova.beans.Tile;
+import com.mycompany.prova.utils.TileSystem;
 import junit.framework.TestCase;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;

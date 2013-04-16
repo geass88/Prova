@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mycompany.prova;
+package com.mycompany.prova.utils;
 
+import com.mycompany.prova.beans.Tile;
+import com.mycompany.prova.beans.TileXY;
+import com.mycompany.prova.utils.QuadKeyManager;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
