@@ -66,7 +66,7 @@ public class CarFlagEncoder implements VehicleEncoder {
 
     @Override
     public boolean canBeOverwritten(int flags1, int flags2) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        throw new UnsupportedOperationException("Not supported yet."); //required for CH
     }
 
     @Override
