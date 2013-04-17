@@ -37,6 +37,11 @@ public class CarFlagEncoder implements VehicleEncoder {
             return flags;
         }
     };
+    private int maxSpeed;
+
+    public CarFlagEncoder(int maxSpeed) {
+        this.maxSpeed = maxSpeed;
+    }
     
     @Override
     public int flags(int speed, boolean bothDir) {
@@ -56,7 +61,7 @@ public class CarFlagEncoder implements VehicleEncoder {
 
     @Override
     public int getMaxSpeed() {
-        return 130;
+        return maxSpeed;
     }
 
     @Override
