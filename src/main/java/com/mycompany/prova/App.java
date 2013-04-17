@@ -158,7 +158,7 @@ public class App {
         
         
         GraphStorage graph = new GraphBuilder().create();
-        final CarFlagEncoder vehicle = new CarFlagEncoder();
+        final CarFlagEncoder vehicle = new CarFlagEncoder(130);
         graph.combinedEncoder(vehicle.COMBINED_ENCODER);
         graph.setNode(1,1,1);
         graph.setNode(2,2,2);
