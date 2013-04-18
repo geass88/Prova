@@ -45,7 +45,6 @@ public class CarFlagEncoder implements VehicleEncoder {
         this.maxSpeed = maxSpeed;
     }
     
-    
     public int flags(double speed, boolean bothDir) {
         byte dir = bothDir? BOTH: FORWARD;
         speeds.add(speed);
@@ -83,7 +82,8 @@ public class CarFlagEncoder implements VehicleEncoder {
 
     @Override
     public int flags(int speed, boolean bothDir) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        throw new UnsupportedOperationException("Not supported yet."); //
+        //return flags(speed*1., bothDir);
     }
     
 }
