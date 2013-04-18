@@ -24,9 +24,9 @@ import java.util.ArrayList;
  */
 public class CarFlagEncoder implements VehicleEncoder {
 
-    public final static byte BOTH = 3;
     public final static byte FORWARD = 1;
     public final static byte BACKWARD = 2;
+    public final static byte BOTH = 3;
     
     // km/h
     private ArrayList<Double> speeds = new ArrayList<>();
