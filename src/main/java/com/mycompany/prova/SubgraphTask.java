@@ -19,16 +19,15 @@ import com.mycompany.prova.utils.TileSystem;
 import com.graphhopper.routing.DijkstraBidirection;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
-import com.graphhopper.routing.util.AcceptWay;
-import com.graphhopper.routing.util.CarFlagEncoder;
-import com.graphhopper.routing.util.FastestCalc;
 import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
-import com.graphhopper.routing.util.VehicleEncoder;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.PointList;
 import static com.mycompany.prova.Main.getPillars;
+import com.mycompany.prova.hooks.CarFlagEncoder;
+import com.mycompany.prova.hooks.FastestCalc;
+import com.mycompany.prova.hooks.TimeCalculation;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
@@ -59,7 +58,8 @@ public class SubgraphTask implements Runnable {
     private static String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
     private static String sql2 = "SELECT ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost=1000000 AS oneway, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
-        
+    private static String sql3 = "INSERT INTO \"overlay\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
         this.scale = scale;
@@ -69,12 +69,12 @@ public class SubgraphTask implements Runnable {
     @Override
     public void run() {
         Connection conn = Main.getConnection(this.dbName);
-        try (PreparedStatement st1 = conn.prepareStatement(sql1); PreparedStatement st2 = conn.prepareStatement(sql2)) {
+        try (PreparedStatement st1 = conn.prepareStatement(sql1); PreparedStatement st2 = conn.prepareStatement(sql2); PreparedStatement st3 = conn.prepareStatement(sql3)) {
             st1.setInt(1, scale);
             ResultSet rs1 = st1.executeQuery();
             while(rs1.next()) { // for each tiles
                 String qkey = rs1.getString(1);
-                helper(qkey, st2);
+                helper(qkey, st2, st3);
                 st2.clearParameters();
             }
             rs1.close();
@@ -89,11 +89,12 @@ public class SubgraphTask implements Runnable {
         }
     }
     
-    public void helper(String qkey, PreparedStatement st2) throws Exception {
+    public void helper(String qkey, PreparedStatement st2, PreparedStatement st3) throws Exception {
         Polygon rect = tileSystem.getTile(qkey).getPolygon();
         LineString ring = rect.getExteriorRing();
         Set<Integer> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
+        final CarFlagEncoder vehicle = new CarFlagEncoder(130);
         Map<Integer, Integer> nodes = new HashMap<>();
         int count = 0;
         //System.out.println(g.getExteriorRing().toText());
@@ -113,11 +114,13 @@ public class SubgraphTask implements Runnable {
                 graph.setNode(t, rs2.getDouble("y2"), rs2.getDouble("x2"));
                 count ++;
             }
+            /*
             Map<String, Object> p = new HashMap<>();
             p.put("caroneway", rs2.getBoolean("oneway"));
             p.put("car", rs2.getInt("freeflow_speed"));
             int flags = new AcceptWay(true, true, true).toFlags(p);
-
+            */
+            int flags = vehicle.flags(rs2.getDouble("freeflow_speed"), !rs2.getBoolean("oneway"));
             if(rs2.getBoolean("contained")) {                        
                 EdgeIterator edge = graph.edge(s, t, rs2.getDouble("distance"), flags);
                 PointList pillarNodes = getPillars(geometry);
@@ -158,27 +161,33 @@ public class SubgraphTask implements Runnable {
         }
         rs2.close();
         
-        double min_time = Double.MAX_VALUE;
+        //double min_time = Double.MAX_VALUE;
         for(Integer i: boundaryNodes) {
             for(Integer j: boundaryNodes) {
                 if(i == j) continue;
                 RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
                     @Override public RoutingAlgorithm createAlgo() {
-                        VehicleEncoder vehicle = new CarFlagEncoder();
                         return new DijkstraBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
                     }
                 }.graph(graph).createAlgo();
                 Path path = algo.calcPath(i,j);
                 if(path.found()) { // the path exists
                     double distance = path.distance();
-                    double time = path.time();
-                    if(time < min_time)
-                        min_time = time;
+                    double time = new TimeCalculation(path, vehicle).calcTime();
+                    st3.setDouble(3, distance/1000.);
+                    st3.setDouble(4, 1);
+                    st3.setDouble(5, time);
+                    st3.setDouble(6, 10000);
+                    st3.executeUpdate();
+                    st3.clearParameters();
+                    /*if(time < min_time)
+                        min_time = time;*/
                 }
             }
             //System.out.println("["+graph.getLongitude(i)+", "+graph.getLatitude(i)+"],");
         }
-        //INSERT INTO "overlay"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        
+        //
     }
     
 }
