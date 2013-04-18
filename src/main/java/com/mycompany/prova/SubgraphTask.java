@@ -147,12 +147,12 @@ public class SubgraphTask implements Runnable {
                     String key = c.getOrdinate(1) + " " + c.getOrdinate(0);
                     Integer val = index.get(key);
                     if(val == null) {
-                        boundaryNodes.add(new BoundaryNode(count, rs2.getInt("gid")));
+                        boundaryNodes.add(new BoundaryNode(count, rs2.getInt("gid"), c));
                         index.put(key, count);
                         graph.setNode(count, c.getOrdinate(1), c.getOrdinate(0));
                         count ++;
                     } else // the intersection is in s or t
-                        boundaryNodes.add(new BoundaryNode(val, rs2.getInt("gid")));
+                        boundaryNodes.add(new BoundaryNode(val, rs2.getInt("gid"), c));
                 }
                 intersection = rect.intersection(geometry);
                 double factor = rs2.getDouble("distance") / geometry.getLength();
@@ -208,10 +208,10 @@ public class SubgraphTask implements Runnable {
                     st3.setDouble(3, distance/1000.);
                     st3.setDouble(4, distance*3.6/time);
                     st3.setDouble(5, time);
-                    st3.setDouble(6, graph.getLongitude(s));
-                    st3.setDouble(7, graph.getLatitude(s));
-                    st3.setDouble(8, graph.getLongitude(t));
-                    st3.setDouble(9, graph.getLatitude(t));
+                    st3.setDouble(6, i.getC().getOrdinate(0));
+                    st3.setDouble(7, i.getC().getOrdinate(1));
+                    st3.setDouble(8, j.getC().getOrdinate(0));
+                    st3.setDouble(9, j.getC().getOrdinate(1));
                     st3.executeUpdate();
                     /*if(time < min_time)
                         min_time = time;*/
@@ -229,12 +229,22 @@ class BoundaryNode implements Comparable<BoundaryNode> {
     
     private int nodeId;
     private int wayId;
+    private Coordinate c;
 
-    public BoundaryNode(int nodeId, int wayId) {
+    public BoundaryNode(int nodeId, int wayId, Coordinate c) {
         this.nodeId = nodeId;
         this.wayId = wayId;
+        this.c = c;
     }
 
+    public Coordinate getC() {
+        return c;
+    }
+
+    public void setC(Coordinate c) {
+        this.c = c;
+    }
+    
     public int getNodeId() {
         return nodeId;
     }
