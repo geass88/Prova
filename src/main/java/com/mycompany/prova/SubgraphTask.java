@@ -69,102 +69,13 @@ public class SubgraphTask implements Runnable {
     @Override
     public void run() {
         Connection conn = Main.getConnection(this.dbName);
-        try (PreparedStatement st1 = conn.prepareStatement(sql1);
-            PreparedStatement st2 = conn.prepareStatement(sql2)) {
+        try (PreparedStatement st1 = conn.prepareStatement(sql1); PreparedStatement st2 = conn.prepareStatement(sql2)) {
             st1.setInt(1, scale);
             ResultSet rs1 = st1.executeQuery();
             while(rs1.next()) { // for each tiles
                 String qkey = rs1.getString(1);
-                Polygon rect = tileSystem.getTile(qkey).getPolygon();
-                LineString ring = rect.getExteriorRing();
-                Set<Integer> boundaryNodes = new TreeSet<>();
-                GraphStorage graph = new GraphBuilder().create();
-                Map<Integer, Integer> nodes = new HashMap<>();
-                int count = 0;
-                //System.out.println(g.getExteriorRing().toText());
-                
-                st2.setString(1, qkey);
-                ResultSet rs2 = st2.executeQuery();
-                while(rs2.next()) { // for each way in a tile
-                    Geometry geometry = reader.read(rs2.getString("geometry"));
-                    Integer s = nodes.get(rs2.getInt("source"));
-                    if(s == null) {
-                        nodes.put(rs2.getInt("source"), s = count); 
-                        graph.setNode(s, rs2.getDouble("y1"), rs2.getDouble("x1"));
-                        count ++;
-                    }
-                    Integer t = nodes.get(rs2.getInt("target"));
-                    if(t == null) {
-                        nodes.put(rs2.getInt("target"), t = count); 
-                        graph.setNode(t, rs2.getDouble("y2"), rs2.getDouble("x2"));
-                        count ++;
-                    }
-                    Map<String, Object> p = new HashMap<>();
-                    p.put("caroneway", rs2.getBoolean("oneway"));
-                    p.put("car", rs2.getInt("freeflow_speed"));
-                    int flags = new AcceptWay(true, true, true).toFlags(p);
-                    
-                    if(rs2.getBoolean("contained")) {                        
-                        EdgeIterator edge = graph.edge(s, t, rs2.getDouble("distance"), flags);
-                        PointList pillarNodes = getPillars(geometry);
-                        if(pillarNodes != null) 
-                            edge.wayGeometry(pillarNodes);
-                    } else {
-                        Geometry intersection = ring.intersection(geometry);
-                        Map<String, Integer> index = new HashMap<>();
-                        index.put(rs2.getDouble("y1") + " " + rs2.getDouble("x1"), s);
-                        index.put(rs2.getDouble("y2") + " " + rs2.getDouble("x2"), t);
-                        for(Coordinate c: intersection.getCoordinates()) {
-                            String key = c.getOrdinate(1) + " " + c.getOrdinate(0);
-                            Integer val = index.get(key);
-                            if(val == null) {
-                                boundaryNodes.add(count);
-                                index.put(key, count);
-                                graph.setNode(count, c.getOrdinate(1), c.getOrdinate(0));
-                                count ++;
-                            } else // the intersection is in s or t
-                                boundaryNodes.add(val);
-                        }
-                        intersection = rect.intersection(geometry);
-                        double factor = rs2.getDouble("distance") / geometry.getLength();
-                        for(int i = 0; i < intersection.getNumGeometries(); i ++) {
-                            Geometry g = intersection.getGeometryN(i);
-                            if(g.getNumPoints() > 1) {
-                                Coordinate dot1 = g.getCoordinates()[0];
-                                Integer value1 = index.get(dot1.getOrdinate(1) + " " + dot1.getOrdinate(0));
-                                Coordinate dot2 = g.getCoordinates()[g.getNumPoints()-1];
-                                Integer value2 = index.get(dot2.getOrdinate(1) + " " + dot2.getOrdinate(0));
-                                if(value1 == null || value2 == null)
-                                    System.err.println("PROBLEM in: " + dot1 + " " +dot2);
-                                graph.edge(value1, value2, factor*g.getLength(), flags).wayGeometry(getPillars(g));
-                            } // else {} // nothing to do
-                        }
-                    }
-                    //System.out.println(graph.nodes());
-                }
-                rs2.close();
+                helper(qkey, st2);
                 st2.clearParameters();
-                
-                double min_time = Double.MAX_VALUE;
-                for(Integer i: boundaryNodes) {
-                    for(Integer j: boundaryNodes) {
-                        if(i == j) continue;
-                        RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
-                            @Override public RoutingAlgorithm createAlgo() {
-                                VehicleEncoder vehicle = new CarFlagEncoder();
-                                return new DijkstraBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
-                            }
-                        }.graph(graph).createAlgo();
-                        Path path = algo.calcPath(i,j);
-                        if(path.found()) { // the path exists
-                            double distance = path.distance();
-                            double time = path.time();
-                            if(time < min_time)
-                                min_time = time;
-                        }
-                    }
-                    //System.out.println("["+graph.getLongitude(i)+", "+graph.getLatitude(i)+"],");
-                }
             }
             rs1.close();
         } catch(Exception e) {
@@ -176,6 +87,98 @@ public class SubgraphTask implements Runnable {
                 Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+    
+    public void helper(String qkey, PreparedStatement st2) throws Exception {
+        Polygon rect = tileSystem.getTile(qkey).getPolygon();
+        LineString ring = rect.getExteriorRing();
+        Set<Integer> boundaryNodes = new TreeSet<>();
+        GraphStorage graph = new GraphBuilder().create();
+        Map<Integer, Integer> nodes = new HashMap<>();
+        int count = 0;
+        //System.out.println(g.getExteriorRing().toText());
+        st2.setString(1, qkey);
+        ResultSet rs2 = st2.executeQuery();
+        while(rs2.next()) { // for each way in a tile
+            Geometry geometry = reader.read(rs2.getString("geometry"));
+            Integer s = nodes.get(rs2.getInt("source"));
+            if(s == null) {
+                nodes.put(rs2.getInt("source"), s = count); 
+                graph.setNode(s, rs2.getDouble("y1"), rs2.getDouble("x1"));
+                count ++;
+            }
+            Integer t = nodes.get(rs2.getInt("target"));
+            if(t == null) {
+                nodes.put(rs2.getInt("target"), t = count); 
+                graph.setNode(t, rs2.getDouble("y2"), rs2.getDouble("x2"));
+                count ++;
+            }
+            Map<String, Object> p = new HashMap<>();
+            p.put("caroneway", rs2.getBoolean("oneway"));
+            p.put("car", rs2.getInt("freeflow_speed"));
+            int flags = new AcceptWay(true, true, true).toFlags(p);
+
+            if(rs2.getBoolean("contained")) {                        
+                EdgeIterator edge = graph.edge(s, t, rs2.getDouble("distance"), flags);
+                PointList pillarNodes = getPillars(geometry);
+                if(pillarNodes != null) 
+                    edge.wayGeometry(pillarNodes);
+            } else {
+                Geometry intersection = ring.intersection(geometry);
+                Map<String, Integer> index = new HashMap<>();
+                index.put(rs2.getDouble("y1") + " " + rs2.getDouble("x1"), s);
+                index.put(rs2.getDouble("y2") + " " + rs2.getDouble("x2"), t);
+                for(Coordinate c: intersection.getCoordinates()) {
+                    String key = c.getOrdinate(1) + " " + c.getOrdinate(0);
+                    Integer val = index.get(key);
+                    if(val == null) {
+                        boundaryNodes.add(count);
+                        index.put(key, count);
+                        graph.setNode(count, c.getOrdinate(1), c.getOrdinate(0));
+                        count ++;
+                    } else // the intersection is in s or t
+                        boundaryNodes.add(val);
+                }
+                intersection = rect.intersection(geometry);
+                double factor = rs2.getDouble("distance") / geometry.getLength();
+                for(int i = 0; i < intersection.getNumGeometries(); i ++) {
+                    Geometry g = intersection.getGeometryN(i);
+                    if(g.getNumPoints() > 1) {
+                        Coordinate dot1 = g.getCoordinates()[0];
+                        Integer value1 = index.get(dot1.getOrdinate(1) + " " + dot1.getOrdinate(0));
+                        Coordinate dot2 = g.getCoordinates()[g.getNumPoints()-1];
+                        Integer value2 = index.get(dot2.getOrdinate(1) + " " + dot2.getOrdinate(0));
+                        if(value1 == null || value2 == null)
+                            System.err.println("PROBLEM in: " + dot1 + " " +dot2);
+                        graph.edge(value1, value2, factor*g.getLength(), flags).wayGeometry(getPillars(g));
+                    } // else {} // nothing to do
+                }
+            }
+            //System.out.println(graph.nodes());
+        }
+        rs2.close();
+        
+        double min_time = Double.MAX_VALUE;
+        for(Integer i: boundaryNodes) {
+            for(Integer j: boundaryNodes) {
+                if(i == j) continue;
+                RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
+                    @Override public RoutingAlgorithm createAlgo() {
+                        VehicleEncoder vehicle = new CarFlagEncoder();
+                        return new DijkstraBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
+                    }
+                }.graph(graph).createAlgo();
+                Path path = algo.calcPath(i,j);
+                if(path.found()) { // the path exists
+                    double distance = path.distance();
+                    double time = path.time();
+                    if(time < min_time)
+                        min_time = time;
+                }
+            }
+            //System.out.println("["+graph.getLongitude(i)+", "+graph.getLatitude(i)+"],");
+        }
+        //INSERT INTO "overlay"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     }
     
 }
