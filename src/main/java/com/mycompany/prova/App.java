@@ -163,21 +163,12 @@ public class App {
         graph.setNode(1,1,1);
         graph.setNode(2,2,2);
         graph.setNode(3,3,3);
-        /*PointList pillar = new PointList();
+        PointList pillar = new PointList();
         pillar.add(1.5d, 1.2d);
-        Map<String, Object> p = new HashMap<>();
-        p.put("caroneway", true);
-        //p.put("foot", true);
-        //p.put("bike", 10);
-        p.put("car", 50);
-        //p.put("carpaid", true);
-        final AcceptWay acceptWay = AcceptWay.parse("CAR");
-        int flags = acceptWay.toFlags(p);*/
-        
+                
         graph.edge(2,3, 100, vehicle.flags(50, false));
-        //p.put("car", 93);
-        graph.edge(1,3, 200, vehicle.flags(44, true));
-        graph.edge(1,2, 100, vehicle.flags(50, true));//.wayGeometry(pillar);
+        graph.edge(1,3, 200, vehicle.flags(24, true));
+        graph.edge(1,2, 100, vehicle.flags(50, true)).wayGeometry(pillar);
         
         AlgorithmPreparation op= new NoOpAlgorithmPreparation() {
             @Override public RoutingAlgorithm createAlgo() {                
@@ -185,11 +176,11 @@ public class App {
             }
         }.graph(graph);
                 
-        Path path = op.createAlgo().calcPath(3,1);
+        Path path = op.createAlgo().calcPath(1,3);
         System.out.println(path.toDetailsString());
         System.out.println(path.calcPoints());
         System.out.println(path.distance());
-        PathHooked path1 = new PathHooked(path, vehicle);
+        TimeCalculation path1 = new TimeCalculation(path, vehicle);
         System.out.println("time: "+path.time() + " " + path1.calcTime());
         
         

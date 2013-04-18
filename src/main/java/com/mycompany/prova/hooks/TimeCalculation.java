@@ -22,12 +22,12 @@ import com.graphhopper.util.EdgeIterator;
  *
  * @author Tommaso
  */
-public class PathHooked {
+public class TimeCalculation {
     
     private Path path;
     private CarFlagEncoder encoder;
     
-    public PathHooked(Path path, CarFlagEncoder encoder) {
+    public TimeCalculation(Path path, CarFlagEncoder encoder) {
         this.path = path;
         this.encoder = encoder;
     }
@@ -38,8 +38,8 @@ public class PathHooked {
         this.path.forEveryEdge(new Path.EdgeVisitor() {
             @Override
             public void next(EdgeIterator iter) {
-                System.out.println(iter.adjNode() + " " + iter.baseNode()+" " + iter.flags());
-                System.out.println(iter.distance());
+                //System.out.println(iter.adjNode() + " " + iter.baseNode()+" " + iter.flags());
+                //System.out.println(iter.distance());
                 time += iter.distance()*3.6/encoder.getSpeedHooked(iter.flags());
             }
         });
