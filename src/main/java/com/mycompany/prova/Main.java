@@ -37,7 +37,7 @@ import org.geotoolkit.geometry.Envelope2D;
 public class Main {
     
     public static final String JDBC_URI = "jdbc:postgresql://192.168.128.128:5432/";
-    public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing"};
+    public static final String[] DBS = { "berlin_routing"/*, "hamburg_routing", "london_routing"*/};
     public static final Integer MAX_SCALE = 17;
     public static final Integer POOL_SIZE = 3;
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);

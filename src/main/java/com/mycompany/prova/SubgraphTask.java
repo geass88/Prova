@@ -17,9 +17,13 @@ package com.mycompany.prova;
 
 import com.mycompany.prova.utils.TileSystem;
 import com.graphhopper.routing.DijkstraBidirection;
+import com.graphhopper.routing.DijkstraSimple;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
+import com.graphhopper.routing.util.AllEdgesIterator;
+import com.graphhopper.routing.util.CombinedEncoder;
 import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
+import com.graphhopper.routing.util.VehicleEncoder;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
@@ -30,7 +34,9 @@ import com.mycompany.prova.hooks.FastestCalc;
 import com.mycompany.prova.hooks.TimeCalculation;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.io.WKTReader;
 import java.sql.Connection;
@@ -38,6 +44,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -51,6 +58,7 @@ import java.util.logging.Logger;
 public class SubgraphTask implements Runnable {
 
     private final WKTReader reader = new WKTReader();
+    private final GeometryFactory geometryFactory = new GeometryFactory();
     private final TileSystem tileSystem;
     private final int scale;
     private String dbName;
@@ -65,12 +73,9 @@ public class SubgraphTask implements Runnable {
         this.tileSystem = tileSystem;
         this.scale = scale;
         this.dbName = dbName;
-        this.overlayIndex = new java.util.TreeMap<>();
     }
     
     private PreparedStatement st1, st2, st3;
-    private Map<String, Integer> overlayIndex;
-    private Integer overlayId = 0;
     
     @Override
     public void run() {
@@ -86,7 +91,7 @@ public class SubgraphTask implements Runnable {
                 }
             }
         } catch(Exception e) {
-            System.err.println(e.getMessage());
+            e.printStackTrace();
         } finally {
             try {
                 st1.close();
@@ -104,16 +109,21 @@ public class SubgraphTask implements Runnable {
         LineString ring = rect.getExteriorRing();
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
-        final CarFlagEncoder vehicle = new CarFlagEncoder(maxSpeed);
+        graph.combinedEncoder(new CombinedEncoder() {
+            @Override
+            public int swapDirection(int flags) {
+                if((flags & 3) == 3) 
+                    return flags;
+                return flags ^ 3;
+            }
+        });
+        CarFlagEncoder vehicle = new CarFlagEncoder(maxSpeed);
         Map<Integer, Integer> nodes = new HashMap<>();// graph to subgraph nodes
-        //List<Integer> nodes = new ArrayList<>();//subgraph to graph node id
         int count = 0;
-        //System.out.println(g.getExteriorRing().toText());
         st2.clearParameters();
         st2.setString(1, qkey);
         ResultSet rs2 = st2.executeQuery();
         while(rs2.next()) { // for each way in a tile
-            Geometry geometry = reader.read(rs2.getString("geometry"));
             Integer s = nodes.get(rs2.getInt("source"));
             if(s == null) {
                 nodes.put(rs2.getInt("source"), s = count); 
@@ -128,17 +138,21 @@ public class SubgraphTask implements Runnable {
             }
             /*
             Map<String, Object> p = new HashMap<>();
-            p.put("caroneway", rs2.getBoolean("oneway"));
+            p.put("caroneway", !rs2.getBoolean("bothdir"));
             p.put("car", rs2.getInt("freeflow_speed"));
             int flags = new AcceptWay(true, true, true).toFlags(p);
             */
             int flags = vehicle.flags(rs2.getDouble("freeflow_speed"), rs2.getBoolean("bothdir"));
-            if(rs2.getBoolean("contained")) {                        
-                EdgeIterator edge = graph.edge(s, t, rs2.getDouble("distance"), flags);
-                PointList pillarNodes = getPillars(geometry);
-                if(pillarNodes != null) 
-                    edge.wayGeometry(pillarNodes);
-            } else {
+            if(rs2.getBoolean("contained")) { // inner edge
+                graph.edge(s, t, rs2.getDouble("distance"), flags);
+            } else { // cut edge
+                Point p1 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x1"), rs2.getDouble("y1")));
+                Point p2 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x2"), rs2.getDouble("y2")));
+                if(rect.contains(p1))
+                    boundaryNodes.add(new BoundaryNode(s, p1));
+                else 
+                    boundaryNodes.add(new BoundaryNode(t, p2));
+                /*
                 Geometry intersection = ring.intersection(geometry);
                 Map<String, Integer> index = new HashMap<>();
                 index.put(rs2.getDouble("y1") + " " + rs2.getDouble("x1"), s);
@@ -167,25 +181,38 @@ public class SubgraphTask implements Runnable {
                             System.err.println("PROBLEM in: " + dot1 + " " +dot2);
                         graph.edge(value1, value2, factor*g.getLength(), flags).wayGeometry(getPillars(g));
                     } // else {} // nothing to do
-                }
+                }*/
             }
             //System.out.println(graph.nodes());
         }
         rs2.close();
-        
+        /*if("12021023231120".equals(qkey)) {
+                    System.out.println("doit");
+                    EdgeIterator o = graph.getEdges(17);
+                    while(o.next())
+                        if(o.adjNode() == 43)
+                            System.out.println("flags : " +(o.flags()^3)+" "+o.flags());
+                }
+        System.out.println(qkey + " " + graph.nodes() + " " + boundaryNodes.size() + " " + nodes.size());*/
         //double min_time = Double.MAX_VALUE;
+        /*
         for(BoundaryNode i: boundaryNodes) {
             for(BoundaryNode j: boundaryNodes) {
                 int s = i.getNodeId();
                 int t = j.getNodeId();
                 if(s == t) continue;
-                RoutingAlgorithm algo = new NoOpAlgorithmPreparation() {
-                    @Override public RoutingAlgorithm createAlgo() {
-                        return new DijkstraBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
-                    }
-                }.graph(graph).createAlgo();
-                Path path = algo.calcPath(s, t);
+                RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
+                Path path = null;
+                path = algo.calcPath(s, t);
+                /*}catch(Exception e){
+                    AllEdgesIterator it = graph.getAllEdges();
+                    while(it.next())
+                        System.out.println(it.baseNode()+" " +it.adjNode()+" " +(it.flags()>>>3)+ " " + it.flags()+ " "+(it.flags()&3));
+                    
+                    System.exit(0);
+                }*//*
                 if(path.found()) { // the path exists
+                   // System.out.println("found path between " + s + " and "+ t);
                     double distance = path.distance();
                     double time = new TimeCalculation(path, vehicle).calcTime();
                     
@@ -201,48 +228,47 @@ public class SubgraphTask implements Runnable {
                         overlayIndex.put(key2, t_id=overlayId);
                         overlayId ++;
                     }
-                    
+                    /*
                     st3.clearParameters();
                     st3.setInt(1, s_id);
                     st3.setInt(2, t_id);
                     st3.setDouble(3, distance/1000.);
                     st3.setDouble(4, distance*3.6/time);
                     st3.setDouble(5, time);
-                    st3.setDouble(6, i.getC().getOrdinate(0));
-                    st3.setDouble(7, i.getC().getOrdinate(1));
-                    st3.setDouble(8, j.getC().getOrdinate(0));
-                    st3.setDouble(9, j.getC().getOrdinate(1));
-                    st3.executeUpdate();
+                    st3.setDouble(6, i.getCoordinate().getOrdinate(0));
+                    st3.setDouble(7, i.getCoordinate().getOrdinate(1));
+                    st3.setDouble(8, j.getCoordinate().getOrdinate(0));
+                    st3.setDouble(9, j.getCoordinate().getOrdinate(1));
+                    st3.executeUpdate();*/
                     /*if(time < min_time)
-                        min_time = time;*/
+                        min_time = time;*//*
                 }
             }
             //System.out.println("["+graph.getLongitude(i)+", "+graph.getLatitude(i)+"],");
-        }
+        }*/
         
         //
     }
     
 }
 
+
 class BoundaryNode implements Comparable<BoundaryNode> {
     
     private int nodeId;
-    private int wayId;
-    private Coordinate c;
+    private Point point;
 
-    public BoundaryNode(int nodeId, int wayId, Coordinate c) {
+    public BoundaryNode(int nodeId, Point point) {
         this.nodeId = nodeId;
-        this.wayId = wayId;
-        this.c = c;
+        this.point = point;
     }
 
-    public Coordinate getC() {
-        return c;
+    public Point getPoint() {
+        return point;
     }
 
-    public void setC(Coordinate c) {
-        this.c = c;
+    public void setPoint(Point point) {
+        this.point = point;
     }
     
     public int getNodeId() {
@@ -252,18 +278,25 @@ class BoundaryNode implements Comparable<BoundaryNode> {
     public void setNodeId(int nodeId) {
         this.nodeId = nodeId;
     }
-
-    public int getWayId() {
-        return wayId;
-    }
-
-    public void setWayId(int wayId) {
-        this.wayId = wayId;
-    }
     
     @Override
     public int compareTo(BoundaryNode o) {
-        return (this.wayId == o.wayId && this.nodeId == o.nodeId)? 1: 0;
+        return (this.nodeId == o.nodeId? 0: 1);
+    }
+    
+}
+
+class AlgorithmPreparation extends NoOpAlgorithmPreparation {
+
+    private CarFlagEncoder vehicle;
+    
+    public AlgorithmPreparation(CarFlagEncoder vehicle) {
+        this.vehicle = vehicle;
+    }
+    
+    @Override
+    public RoutingAlgorithm createAlgo() {
+        return new DijkstraSimple(_graph, vehicle).type(new FastestCalc(vehicle));
     }
     
 }

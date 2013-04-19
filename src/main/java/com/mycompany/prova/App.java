@@ -1,5 +1,6 @@
 package com.mycompany.prova;
 
+import com.graphhopper.routing.AStar;
 import com.mycompany.prova.utils.DefaultCRS;
 import com.mycompany.prova.beans.Tile;
 import com.mycompany.prova.beans.TileXY;
@@ -7,6 +8,7 @@ import com.mycompany.prova.beans.TileXYRectangle;
 import com.mycompany.prova.utils.TileSystem;
 import com.mycompany.prova.utils.QuadKeyManager;
 import com.graphhopper.routing.AStarBidirection;
+import com.graphhopper.routing.DijkstraBidirection;
 import com.graphhopper.routing.DijkstraSimple;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.Path.EdgeVisitor;
@@ -23,7 +25,10 @@ import com.graphhopper.routing.util.VehicleEncoder;
 import com.graphhopper.routing.util.WeightCalculation;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
+import com.graphhopper.storage.index.Location2IDIndex;
+import com.graphhopper.storage.index.Location2IDQuadtree;
 import com.graphhopper.util.EdgeIterator;
+import com.graphhopper.util.Helper;
 import com.graphhopper.util.PointList;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -159,20 +164,26 @@ public class App {
         
         GraphStorage graph = new GraphBuilder().create();
         final CarFlagEncoder vehicle = new CarFlagEncoder(130);
-        graph.combinedEncoder(vehicle.COMBINED_ENCODER);
-        graph.setNode(1,1,1);
-        graph.setNode(2,2,2);
-        graph.setNode(3,3,3);
-        PointList pillar = new PointList();
+        //graph.combinedEncoder(vehicle.COMBINED_ENCODER);
+        graph.setNode(1, 1, 3);
+        graph.setNode(2, 1, 1);
+        graph.setNode(3, 3, 3);
+        /*PointList pillar = new PointList();
         pillar.add(1.5d, 1.2d);
-                
-        graph.edge(2,3, 100, vehicle.flags(50, false));
-        graph.edge(1,3, 200, vehicle.flags(24, true));
-        graph.edge(1,2, 100, vehicle.flags(50, true)).wayGeometry(pillar);
-        
+          */      
+        graph.edge(2,3, 100, vehicle.flags(50., false));
+        graph.edge(3,1, 200, vehicle.flags(10.1, true));
+        graph.edge(1,2, 100, vehicle.flags(50., true));//.wayGeometry(pillar);
+        graph.edge(1,3, 800, vehicle.flags(50., false));//.wayGeometry(pillar);
+        for(int d=0; d<graph.nodes(); d++)
+        System.out.println(graph.getLatitude(d+1)+" " + graph.getLongitude(d+1));
+        AllEdgesIterator i = graph.getAllEdges();
+        while(i.next())
+            System.out.println(i.baseNode()+" "+i.adjNode()+" "+i.flags()+" "+i.distance()+" "+vehicle.getSpeedHooked(i.flags())+ " " + vehicle.isForward(i.flags())+ " " + vehicle.isBackward(i.flags()));
+
         AlgorithmPreparation op= new NoOpAlgorithmPreparation() {
             @Override public RoutingAlgorithm createAlgo() {                
-                return new DijkstraSimple(_graph, vehicle).type(new FastestCalc(vehicle));
+                return new AStar(_graph, vehicle).type(new FastestCalc(vehicle));
             }
         }.graph(graph);
                 
