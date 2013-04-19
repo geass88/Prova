@@ -24,18 +24,16 @@ import com.graphhopper.util.EdgeIterator;
  */
 public class TimeCalculation {
     
-    private Path path;
     private CarFlagEncoder encoder;
     
-    public TimeCalculation(Path path, CarFlagEncoder encoder) {
-        this.path = path;
+    public TimeCalculation(CarFlagEncoder encoder) {
         this.encoder = encoder;
     }
     
     double time;
-    public double calcTime() {
+    public double calcTime(Path path) {
         time = 0.;
-        this.path.forEveryEdge(new Path.EdgeVisitor() {
+        path.forEveryEdge(new Path.EdgeVisitor() {
             @Override
             public void next(EdgeIterator iter) {
                 //System.out.println(iter.adjNode() + " " + iter.baseNode()+" " + iter.flags());

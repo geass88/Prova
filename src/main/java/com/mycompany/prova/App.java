@@ -166,13 +166,13 @@ public class App {
         final CarFlagEncoder vehicle = new CarFlagEncoder(130);
         //graph.combinedEncoder(vehicle.COMBINED_ENCODER);
         graph.setNode(1, 1, 3);
-        graph.setNode(2, 1, 1);
+        graph.setNode(2, 2, 3);
         graph.setNode(3, 3, 3);
         /*PointList pillar = new PointList();
         pillar.add(1.5d, 1.2d);
           */      
-        graph.edge(2,3, 100, vehicle.flags(50., false));
-        graph.edge(3,1, 200, vehicle.flags(10.1, true));
+        graph.edge(2,3, 100, vehicle.flags(50., true));
+        graph.edge(3,1, 200, vehicle.flags(10.1, false));
         graph.edge(1,2, 100, vehicle.flags(50., true));//.wayGeometry(pillar);
         graph.edge(1,3, 800, vehicle.flags(50., false));//.wayGeometry(pillar);
         for(int d=0; d<graph.nodes(); d++)
@@ -183,7 +183,7 @@ public class App {
 
         AlgorithmPreparation op= new NoOpAlgorithmPreparation() {
             @Override public RoutingAlgorithm createAlgo() {                
-                return new AStar(_graph, vehicle).type(new FastestCalc(vehicle));
+                return new AStarBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
             }
         }.graph(graph);
                 
@@ -191,8 +191,8 @@ public class App {
         System.out.println(path.toDetailsString());
         System.out.println(path.calcPoints());
         System.out.println(path.distance());
-        TimeCalculation path1 = new TimeCalculation(path, vehicle);
-        System.out.println("time: "+path.time() + " " + path1.calcTime());
+        TimeCalculation path1 = new TimeCalculation(vehicle);
+        System.out.println("time: "+path.time() + " " + path1.calcTime(path));
         
         
         /*

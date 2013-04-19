@@ -43,6 +43,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -159,38 +160,46 @@ public class SubgraphTask implements Runnable {
         System.out.println(qkey + " " + graph.nodes() + " " + boundaryNodes.size() + " " + nodes.size());*/
         //double min_time = Double.MAX_VALUE;
         BoundaryNode[] nodesArray = boundaryNodes.toArray(new BoundaryNode[boundaryNodes.size()]);
-        double clique[][] = new double
+        //Metrics clique[][] = new Metrics[boundaryNodes.size()][boundaryNodes.size()];
         for(int i = 0; i < nodesArray.length; i ++) {
-            for(int j = i; j < nodesArray.length; j ++) {
+            for(int j = i+1; j < nodesArray.length; j ++) {
+                if(i == j) continue;
                 RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
                 Path path = algo.calcPath(nodesArray[i].getNodeId(), nodesArray[j].getNodeId());
-                
+                Path rpath = algo.calcPath(nodesArray[j].getNodeId(), nodesArray[i].getNodeId());
+                Metrics m = new Metrics();
+                Metrics rm = new Metrics();
                 if(path.found()) { // the path exists
-                   // System.out.println("found path between " + s + " and "+ t);
-                    double distance = path.distance();
-                    double time = new TimeCalculation(path, vehicle).calcTime();
-                    
+                    m.setDistance(path.distance());
+                    m.setTime(new TimeCalculation(vehicle).calcTime(path));
+                }
+                if(rpath.found()) { // the path exists
+                    rm.setDistance(rpath.distance());
+                    rm.setTime(new TimeCalculation(vehicle).calcTime(rpath));
+                }
+                if(path.found() && rpath.found()) {
                     st3.clearParameters();
                     st3.setInt(1, nodesArray[i].getRoadNodeId());
                     st3.setInt(2, nodesArray[j].getRoadNodeId());
-                    st3.setDouble(3, distance/1000.);
-                    st3.setDouble(4, distance*3.6/time);
-                    st3.setDouble(5, time);
+                    st3.setDouble(3, m.getDistance()/1000.);
+                    st3.setDouble(4, m.getDistance()*3.6/m.getTime());
+                    st3.setDouble(5, m.getTime());
                     st3.setDouble(6, nodesArray[i].getPoint().getX());
                     st3.setDouble(7, nodesArray[i].getPoint().getY());
                     st3.setDouble(8, nodesArray[j].getPoint().getX());
                     st3.setDouble(9, nodesArray[j].getPoint().getY());
                     st3.executeUpdate();
-                    /*if(time < min_time)
-                        min_time = time;*/
                 }
+                
             }
-            //System.out.println("["+graph.getLongitude(i)+", "+graph.getLatitude(i)+"],");
         }
         
         //
     }
     
+    private void save() {
+        
+    }
 }
 
 
@@ -251,4 +260,38 @@ class AlgorithmPreparation extends NoOpAlgorithmPreparation {
         return new DijkstraSimple(_graph, vehicle).type(new FastestCalc(vehicle));
     }
     
+}
+
+class Metrics implements Comparable<Metrics> {
+    
+    private double time;
+    private double distance;
+
+    public Metrics() {}
+    
+    public Metrics(double time, double distance) {
+        this.time = time;
+        this.distance = distance;
+    }
+
+    public double getTime() {
+        return time;
+    }
+
+    public void setTime(double time) {
+        this.time = time;
+    }
+
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
+    }
+
+    @Override
+    public int compareTo(Metrics o) {
+        return (o.getTime() == time && o.getDistance() == distance)? 0: 1;
+    }
 }
