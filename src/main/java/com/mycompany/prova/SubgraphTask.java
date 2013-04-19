@@ -158,14 +158,12 @@ public class SubgraphTask implements Runnable {
         /*
         System.out.println(qkey + " " + graph.nodes() + " " + boundaryNodes.size() + " " + nodes.size());*/
         //double min_time = Double.MAX_VALUE;
-        
-        for(BoundaryNode i: boundaryNodes) {
-            for(BoundaryNode j: boundaryNodes) {
-                int s = i.getNodeId();
-                int t = j.getNodeId();
-                if(s == t) continue;
+        BoundaryNode[] nodesArray = boundaryNodes.toArray(new BoundaryNode[boundaryNodes.size()]);
+        double clique[][] = new double
+        for(int i = 0; i < nodesArray.length; i ++) {
+            for(int j = i; j < nodesArray.length; j ++) {
                 RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
-                Path path = algo.calcPath(s, t);
+                Path path = algo.calcPath(nodesArray[i].getNodeId(), nodesArray[j].getNodeId());
                 
                 if(path.found()) { // the path exists
                    // System.out.println("found path between " + s + " and "+ t);
@@ -173,15 +171,15 @@ public class SubgraphTask implements Runnable {
                     double time = new TimeCalculation(path, vehicle).calcTime();
                     
                     st3.clearParameters();
-                    st3.setInt(1, i.getRoadNodeId());
-                    st3.setInt(2, j.getRoadNodeId());
+                    st3.setInt(1, nodesArray[i].getRoadNodeId());
+                    st3.setInt(2, nodesArray[j].getRoadNodeId());
                     st3.setDouble(3, distance/1000.);
                     st3.setDouble(4, distance*3.6/time);
                     st3.setDouble(5, time);
-                    st3.setDouble(6, i.getPoint().getX());
-                    st3.setDouble(7, i.getPoint().getY());
-                    st3.setDouble(8, j.getPoint().getX());
-                    st3.setDouble(9, j.getPoint().getY());
+                    st3.setDouble(6, nodesArray[i].getPoint().getX());
+                    st3.setDouble(7, nodesArray[i].getPoint().getY());
+                    st3.setDouble(8, nodesArray[j].getPoint().getX());
+                    st3.setDouble(9, nodesArray[j].getPoint().getY());
                     st3.executeUpdate();
                     /*if(time < min_time)
                         min_time = time;*/
