@@ -106,7 +106,6 @@ public class SubgraphTask implements Runnable {
     
     public void helper(String qkey) throws Exception {
         Polygon rect = tileSystem.getTile(qkey).getPolygon();
-        LineString ring = rect.getExteriorRing();
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(new CombinedEncoder() {
@@ -149,103 +148,47 @@ public class SubgraphTask implements Runnable {
                 Point p1 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x1"), rs2.getDouble("y1")));
                 Point p2 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x2"), rs2.getDouble("y2")));
                 if(rect.contains(p1))
-                    boundaryNodes.add(new BoundaryNode(s, p1));
+                    boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1));
                 else 
-                    boundaryNodes.add(new BoundaryNode(t, p2));
-                /*
-                Geometry intersection = ring.intersection(geometry);
-                Map<String, Integer> index = new HashMap<>();
-                index.put(rs2.getDouble("y1") + " " + rs2.getDouble("x1"), s);
-                index.put(rs2.getDouble("y2") + " " + rs2.getDouble("x2"), t);
-                for(Coordinate c: intersection.getCoordinates()) {
-                    String key = c.getOrdinate(1) + " " + c.getOrdinate(0);
-                    Integer val = index.get(key);
-                    if(val == null) {
-                        boundaryNodes.add(new BoundaryNode(count, rs2.getInt("gid"), c));
-                        index.put(key, count);
-                        graph.setNode(count, c.getOrdinate(1), c.getOrdinate(0));
-                        count ++;
-                    } else // the intersection is in s or t
-                        boundaryNodes.add(new BoundaryNode(val, rs2.getInt("gid"), c));
-                }
-                intersection = rect.intersection(geometry);
-                double factor = rs2.getDouble("distance") / geometry.getLength();
-                for(int i = 0; i < intersection.getNumGeometries(); i ++) {
-                    Geometry g = intersection.getGeometryN(i);
-                    if(g.getNumPoints() > 1) {
-                        Coordinate dot1 = g.getCoordinates()[0];
-                        Integer value1 = index.get(dot1.getOrdinate(1) + " " + dot1.getOrdinate(0));
-                        Coordinate dot2 = g.getCoordinates()[g.getNumPoints()-1];
-                        Integer value2 = index.get(dot2.getOrdinate(1) + " " + dot2.getOrdinate(0));
-                        if(value1 == null || value2 == null)
-                            System.err.println("PROBLEM in: " + dot1 + " " +dot2);
-                        graph.edge(value1, value2, factor*g.getLength(), flags).wayGeometry(getPillars(g));
-                    } // else {} // nothing to do
-                }*/
+                    boundaryNodes.add(new BoundaryNode(t, rs2.getInt("target"), p2));
             }
             //System.out.println(graph.nodes());
         }
         rs2.close();
-        /*if("12021023231120".equals(qkey)) {
-                    System.out.println("doit");
-                    EdgeIterator o = graph.getEdges(17);
-                    while(o.next())
-                        if(o.adjNode() == 43)
-                            System.out.println("flags : " +(o.flags()^3)+" "+o.flags());
-                }
+        /*
         System.out.println(qkey + " " + graph.nodes() + " " + boundaryNodes.size() + " " + nodes.size());*/
         //double min_time = Double.MAX_VALUE;
-        /*
+        
         for(BoundaryNode i: boundaryNodes) {
             for(BoundaryNode j: boundaryNodes) {
                 int s = i.getNodeId();
                 int t = j.getNodeId();
                 if(s == t) continue;
                 RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
-                Path path = null;
-                path = algo.calcPath(s, t);
-                /*}catch(Exception e){
-                    AllEdgesIterator it = graph.getAllEdges();
-                    while(it.next())
-                        System.out.println(it.baseNode()+" " +it.adjNode()+" " +(it.flags()>>>3)+ " " + it.flags()+ " "+(it.flags()&3));
-                    
-                    System.exit(0);
-                }*//*
+                Path path = algo.calcPath(s, t);
+                
                 if(path.found()) { // the path exists
                    // System.out.println("found path between " + s + " and "+ t);
                     double distance = path.distance();
                     double time = new TimeCalculation(path, vehicle).calcTime();
                     
-                    String key1 = i.getWayId() + " " + graph.getLatitude(s) + " "+ graph.getLongitude(s);
-                    String key2 = j.getWayId() + " " + graph.getLatitude(t) + " "+ graph.getLongitude(t);
-                    Integer s_id = overlayIndex.get(key1);
-                    Integer t_id = overlayIndex.get(key1);
-                    if(s_id == null) {
-                        overlayIndex.put(key1, s_id=overlayId);
-                        overlayId ++;
-                    }
-                    if(t_id == null) {
-                        overlayIndex.put(key2, t_id=overlayId);
-                        overlayId ++;
-                    }
-                    /*
                     st3.clearParameters();
-                    st3.setInt(1, s_id);
-                    st3.setInt(2, t_id);
+                    st3.setInt(1, i.getRoadNodeId());
+                    st3.setInt(2, j.getRoadNodeId());
                     st3.setDouble(3, distance/1000.);
                     st3.setDouble(4, distance*3.6/time);
                     st3.setDouble(5, time);
-                    st3.setDouble(6, i.getCoordinate().getOrdinate(0));
-                    st3.setDouble(7, i.getCoordinate().getOrdinate(1));
-                    st3.setDouble(8, j.getCoordinate().getOrdinate(0));
-                    st3.setDouble(9, j.getCoordinate().getOrdinate(1));
-                    st3.executeUpdate();*/
+                    st3.setDouble(6, i.getPoint().getX());
+                    st3.setDouble(7, i.getPoint().getY());
+                    st3.setDouble(8, j.getPoint().getX());
+                    st3.setDouble(9, j.getPoint().getY());
+                    st3.executeUpdate();
                     /*if(time < min_time)
-                        min_time = time;*//*
+                        min_time = time;*/
                 }
             }
             //System.out.println("["+graph.getLongitude(i)+", "+graph.getLatitude(i)+"],");
-        }*/
+        }
         
         //
     }
@@ -253,16 +196,27 @@ public class SubgraphTask implements Runnable {
 }
 
 
+
 class BoundaryNode implements Comparable<BoundaryNode> {
     
     private int nodeId;
+    private int roadNodeId;
     private Point point;
 
-    public BoundaryNode(int nodeId, Point point) {
+    public BoundaryNode(int nodeId, int roadNodeId, Point point) {
         this.nodeId = nodeId;
         this.point = point;
+        this.roadNodeId = roadNodeId;
     }
 
+    public int getRoadNodeId() {
+        return roadNodeId;
+    }
+
+    public void setRoadNodeId(int roadNodeId) {
+        this.roadNodeId = roadNodeId;
+    }
+    
     public Point getPoint() {
         return point;
     }
