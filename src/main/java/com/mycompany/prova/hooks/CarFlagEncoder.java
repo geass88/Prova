@@ -17,6 +17,7 @@ package com.mycompany.prova.hooks;
 
 import com.graphhopper.routing.util.VehicleEncoder;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -29,7 +30,7 @@ public class CarFlagEncoder implements VehicleEncoder {
     public final static byte BOTH = 3;
     
     // km/h
-    private ArrayList<Double> speeds = new ArrayList<>();
+    private List<Double> speeds = new ArrayList<>();
     /*public final CombinedEncoder COMBINED_ENCODER = new CombinedEncoder() {
         @Override
         public int swapDirection(int flags) {
@@ -48,7 +49,7 @@ public class CarFlagEncoder implements VehicleEncoder {
     public int flags(double speed, boolean bothDir) {
         byte dir = bothDir? BOTH: FORWARD;
         speeds.add(speed);
-        return (speeds.size() - 1) << 2 | dir;
+        return ((speeds.size() - 1) << 2) | dir;
     }
         
     @Override
