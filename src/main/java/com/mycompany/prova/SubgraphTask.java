@@ -162,22 +162,14 @@ public class SubgraphTask implements Runnable {
         BoundaryNode[] nodesArray = boundaryNodes.toArray(new BoundaryNode[boundaryNodes.size()]);
         //Metrics clique[][] = new Metrics[boundaryNodes.size()][boundaryNodes.size()];
         for(int i = 0; i < nodesArray.length; i ++) {
-            for(int j = i+1; j < nodesArray.length; j ++) {
+            for(int j = 0; j < nodesArray.length; j ++) {
                 if(i == j) continue;
                 RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
                 Path path = algo.calcPath(nodesArray[i].getNodeId(), nodesArray[j].getNodeId());
-                Path rpath = algo.calcPath(nodesArray[j].getNodeId(), nodesArray[i].getNodeId());
                 Metrics m = new Metrics();
-                Metrics rm = new Metrics();
                 if(path.found()) { // the path exists
                     m.setDistance(path.distance());
                     m.setTime(new TimeCalculation(vehicle).calcTime(path));
-                }
-                if(rpath.found()) { // the path exists
-                    rm.setDistance(rpath.distance());
-                    rm.setTime(new TimeCalculation(vehicle).calcTime(rpath));
-                }
-                if(path.found() && rpath.found()) {
                     st3.clearParameters();
                     st3.setInt(1, nodesArray[i].getRoadNodeId());
                     st3.setInt(2, nodesArray[j].getRoadNodeId());
@@ -190,7 +182,6 @@ public class SubgraphTask implements Runnable {
                     st3.setDouble(9, nodesArray[j].getPoint().getY());
                     st3.executeUpdate();
                 }
-                
             }
         }
         
