@@ -68,7 +68,7 @@ public class SubgraphTask implements Runnable {
     private static final String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
     private static final String sql2 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
-    private static final String sql3 = "INSERT INTO \"overlay\"(source, target, km, freeflow_speed, length, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    private static final String sql3 = "INSERT INTO \"overlay\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
     
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
@@ -109,14 +109,7 @@ public class SubgraphTask implements Runnable {
         Polygon rect = tileSystem.getTile(qkey).getPolygon();
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
-        graph.combinedEncoder(new CombinedEncoder() {
-            @Override
-            public int swapDirection(int flags) {
-                if((flags & 3) == 3) 
-                    return flags;
-                return flags ^ 3;
-            }
-        });
+        graph.combinedEncoder(COMBINED_ENCODER);
         CarFlagEncoder vehicle = new CarFlagEncoder(maxSpeed);
         Map<Integer, Integer> nodes = new HashMap<>();// graph to subgraph nodes
         int count = 0;
@@ -162,37 +155,54 @@ public class SubgraphTask implements Runnable {
         BoundaryNode[] nodesArray = boundaryNodes.toArray(new BoundaryNode[boundaryNodes.size()]);
         //Metrics clique[][] = new Metrics[boundaryNodes.size()][boundaryNodes.size()];
         for(int i = 0; i < nodesArray.length; i ++) {
-            for(int j = 0; j < nodesArray.length; j ++) {
+            for(int j = i+1; j < nodesArray.length; j ++) {
                 if(i == j) continue;
                 RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
                 Path path = algo.calcPath(nodesArray[i].getNodeId(), nodesArray[j].getNodeId());
-                Metrics m = new Metrics();
-                if(path.found()) { // the path exists
-                    m.setDistance(path.distance());
-                    m.setTime(new TimeCalculation(vehicle).calcTime(path));
-                    st3.clearParameters();
-                    st3.setInt(1, nodesArray[i].getRoadNodeId());
-                    st3.setInt(2, nodesArray[j].getRoadNodeId());
-                    st3.setDouble(3, m.getDistance()/1000.);
-                    st3.setDouble(4, m.getDistance()*3.6/m.getTime());
-                    st3.setDouble(5, m.getTime());
-                    st3.setDouble(6, nodesArray[i].getPoint().getX());
-                    st3.setDouble(7, nodesArray[i].getPoint().getY());
-                    st3.setDouble(8, nodesArray[j].getPoint().getX());
-                    st3.setDouble(9, nodesArray[j].getPoint().getY());
-                    st3.executeUpdate();
+                Metrics m = null, rm = null;
+                if(path.found())
+                    m = new Metrics(path.distance(), new TimeCalculation(vehicle).calcTime(path));
+                Path rpath = algo.calcPath(nodesArray[j].getNodeId(), nodesArray[i].getNodeId());
+                if(rpath.found())
+                    rm = new Metrics(rpath.distance(), new TimeCalculation(vehicle).calcTime(rpath));
+                
+                if(m != null && rm != null && m.compareTo(rm) == 0)
+                    save(nodesArray[i], nodesArray[j], m, true);
+                else {
+                    if(m != null)
+                        save(nodesArray[i], nodesArray[j], m, false);
+                    if(rm != null)
+                        save(nodesArray[j], nodesArray[i], m, false);
                 }
             }
         }
         
         //
     }
-    
-    private void save() {
-        
+    private void save(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
+        st3.clearParameters();
+        st3.setInt(1, source.getRoadNodeId());
+        st3.setInt(2, target.getRoadNodeId());
+        st3.setDouble(3, metrics.getDistance()/1000.);
+        st3.setDouble(4, metrics.getDistance()*3.6/metrics.getTime());
+        st3.setDouble(5, metrics.getTime());
+        st3.setDouble(6, bothDir? metrics.getTime(): 1000000);
+        st3.setDouble(7, source.getPoint().getX());
+        st3.setDouble(8, source.getPoint().getY());
+        st3.setDouble(9, target.getPoint().getX());
+        st3.setDouble(10, target.getPoint().getY());
+        st3.executeUpdate();
     }
+    
+    public final static CombinedEncoder COMBINED_ENCODER = new CombinedEncoder() {
+        @Override
+        public int swapDirection(int flags) {
+            if((flags & 3) == 3) 
+                return flags;
+            return flags ^ 3;
+        }
+    };
 }
-
 
 
 class BoundaryNode implements Comparable<BoundaryNode> {
@@ -260,7 +270,7 @@ class Metrics implements Comparable<Metrics> {
 
     public Metrics() {}
     
-    public Metrics(double time, double distance) {
+    public Metrics(double distance, double time) {
         this.time = time;
         this.distance = distance;
     }
@@ -283,6 +293,6 @@ class Metrics implements Comparable<Metrics> {
 
     @Override
     public int compareTo(Metrics o) {
-        return (o.getTime() == time && o.getDistance() == distance)? 0: 1;
+        return (o != null && o.getTime() == time && o.getDistance() == distance)? 0: 1;
     }
 }
