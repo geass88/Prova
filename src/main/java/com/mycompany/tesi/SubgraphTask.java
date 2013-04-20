@@ -89,16 +89,18 @@ public class SubgraphTask implements Runnable {
             st2 = conn.prepareStatement(sql2); 
             st3 = conn1.prepareStatement(sql3);
             st1.setInt(1, scale);
+            System.out.println("Computing cliques ...");
             try (ResultSet rs1 = st1.executeQuery()) {
                 while(rs1.next()) { // for each tiles
                     helper(rs1.getString(1));
                     conn1.commit();
                 }
             }
-            PreparedStatement st = conn.prepareStatement(sql4);
-            st.setInt(1, scale);
-            st.executeQuery();
-            st.close();
+            System.out.println("Adding cut-edges ...");
+            try (PreparedStatement st = conn.prepareStatement(sql4)) {
+                st.setInt(1, scale);
+                st.executeQuery();
+            }
         } catch(Exception e) {
             e.printStackTrace();
         } finally {
