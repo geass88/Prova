@@ -68,7 +68,8 @@ public class SubgraphTask implements Runnable {
     private static final String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
     private static final String sql2 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
-    private static final String sql3 = "INSERT INTO \"overlay_14\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    private static final String sql3 = "INSERT INTO \"overlay_17\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    private static final String sql4 = "SELECT my_add_cut_edges(?);";
     
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
@@ -94,6 +95,10 @@ public class SubgraphTask implements Runnable {
                     conn1.commit();
                 }
             }
+            PreparedStatement st = conn.prepareStatement(sql4);
+            st.setInt(1, scale);
+            st.executeQuery();
+            st.close();
         } catch(Exception e) {
             e.printStackTrace();
         } finally {
@@ -142,13 +147,14 @@ public class SubgraphTask implements Runnable {
             int flags = vehicle.flags(rs2.getDouble("freeflow_speed"), rs2.getBoolean("bothdir"));
             if(rs2.getBoolean("contained")) { // inner edge
                 graph.edge(s, t, rs2.getDouble("distance"), flags);
-            } else { // cut edge
+            } else { // possible cut edge
                 Point p1 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x1"), rs2.getDouble("y1")));
                 Point p2 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x2"), rs2.getDouble("y2")));
                 if(rect.contains(p1))
                     boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1));
-                else 
+                else if(rect.contains(p2))
                     boundaryNodes.add(new BoundaryNode(t, rs2.getInt("target"), p2));
+                // else ; // not a cut edge
             }
             //System.out.println(graph.nodes());
         }
