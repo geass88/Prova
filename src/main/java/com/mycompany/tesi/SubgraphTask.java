@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mycompany.prova;
+package com.mycompany.tesi;
 
-import com.mycompany.prova.utils.TileSystem;
+import com.mycompany.tesi.utils.TileSystem;
 import com.graphhopper.routing.DijkstraBidirection;
 import com.graphhopper.routing.DijkstraSimple;
 import com.graphhopper.routing.Path;
@@ -28,10 +28,10 @@ import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.PointList;
-import static com.mycompany.prova.Main.getPillars;
-import com.mycompany.prova.hooks.CarFlagEncoder;
-import com.mycompany.prova.hooks.FastestCalc;
-import com.mycompany.prova.hooks.TimeCalculation;
+import static com.mycompany.tesi.Main.getPillars;
+import com.mycompany.tesi.hooks.CarFlagEncoder;
+import com.mycompany.tesi.hooks.FastestCalc;
+import com.mycompany.tesi.hooks.TimeCalculation;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;

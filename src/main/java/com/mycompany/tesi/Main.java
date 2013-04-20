@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mycompany.prova;
+package com.mycompany.tesi;
 
-import com.mycompany.prova.beans.Tile;
-import com.mycompany.prova.utils.TileSystem;
+import com.mycompany.tesi.beans.Tile;
+import com.mycompany.tesi.utils.TileSystem;
 import com.graphhopper.util.PointList;
 import com.vividsolutions.jts.geom.*;
 import java.sql.*;

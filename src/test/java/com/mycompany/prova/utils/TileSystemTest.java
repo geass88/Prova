@@ -15,9 +15,10 @@
  */
 package com.mycompany.prova.utils;
 
-import com.mycompany.prova.beans.TileXY;
-import com.mycompany.prova.beans.Tile;
-import com.mycompany.prova.utils.TileSystem;
+import com.mycompany.tesi.utils.DefaultCRS;
+import com.mycompany.tesi.beans.TileXY;
+import com.mycompany.tesi.beans.Tile;
+import com.mycompany.tesi.utils.TileSystem;
 import junit.framework.TestCase;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;

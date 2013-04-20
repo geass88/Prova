@@ -15,8 +15,8 @@
  */
 package com.mycompany.prova.utils;
 
-import com.mycompany.prova.beans.TileXY;
-import com.mycompany.prova.utils.QuadKeyManager;
+import com.mycompany.tesi.beans.TileXY;
+import com.mycompany.tesi.utils.QuadKeyManager;
 import junit.framework.TestCase;
 
 /**

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mycompany.prova.beans;
+package com.mycompany.tesi.beans;
 
 import com.vividsolutions.jts.geom.Polygon;
 import java.io.Serializable;
