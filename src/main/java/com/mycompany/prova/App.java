@@ -163,6 +163,8 @@ public class App {
         
         
         GraphStorage graph = new GraphBuilder().create();
+        graph.combinedEncoder(SubgraphTask.COMBINED_ENCODER);
+        final VehicleEncoder enc = AcceptWay.parse("CAR").firstEncoder();
         final CarFlagEncoder vehicle = new CarFlagEncoder(130);
         //graph.combinedEncoder(vehicle.COMBINED_ENCODER);
         graph.setNode(1, 1, 3);
@@ -171,19 +173,24 @@ public class App {
         /*PointList pillar = new PointList();
         pillar.add(1.5d, 1.2d);
           */      
-        graph.edge(2,3, 100, vehicle.flags(50., true));
+        /*graph.edge(2,3, 100, vehicle.flags(50., true));
         graph.edge(3,1, 200, vehicle.flags(10.1, false));
         graph.edge(1,2, 100, vehicle.flags(50., true));//.wayGeometry(pillar);
-        graph.edge(1,3, 800, vehicle.flags(50., false));//.wayGeometry(pillar);
+        graph.edge(1,3, 800, vehicle.flags(50., false));//.wayGeometry(pillar);*/
+        graph.edge(2,3, 100, enc.flags(50, true));
+        graph.edge(3,1, 200, enc.flags(10, false));
+        graph.edge(1,2, 100, enc.flags(50, true));//.wayGeometry(pillar);
+        graph.edge(1,3, 800, enc.flags(50, false));//.wayGeometry(pillar);
+        /*
         for(int d=0; d<graph.nodes(); d++)
         System.out.println(graph.getLatitude(d+1)+" " + graph.getLongitude(d+1));
         AllEdgesIterator i = graph.getAllEdges();
         while(i.next())
             System.out.println(i.baseNode()+" "+i.adjNode()+" "+i.flags()+" "+i.distance()+" "+vehicle.getSpeedHooked(i.flags())+ " " + vehicle.isForward(i.flags())+ " " + vehicle.isBackward(i.flags()));
-
+*/
         AlgorithmPreparation op= new NoOpAlgorithmPreparation() {
             @Override public RoutingAlgorithm createAlgo() {                
-                return new AStarBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
+                return new AStarBidirection(_graph, enc).type(new com.graphhopper.routing.util.FastestCalc(enc));
             }
         }.graph(graph);
                 
@@ -192,7 +199,7 @@ public class App {
         System.out.println(path.calcPoints());
         System.out.println(path.distance());
         TimeCalculation path1 = new TimeCalculation(vehicle);
-        System.out.println("time: "+path.time() + " " + path1.calcTime(path));
+        //System.out.println("time: "+path.time() + " " + path1.calcTime(path));
         
         
         /*

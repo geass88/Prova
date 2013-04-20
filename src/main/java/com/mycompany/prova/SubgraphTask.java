@@ -68,7 +68,7 @@ public class SubgraphTask implements Runnable {
     private static final String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
     private static final String sql2 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
-    private static final String sql3 = "INSERT INTO \"overlay\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    private static final String sql3 = "INSERT INTO \"overlay_14\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
     
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
@@ -81,14 +81,17 @@ public class SubgraphTask implements Runnable {
     @Override
     public void run() {
         Connection conn = Main.getConnection(this.dbName);
+        Connection conn1 = Main.getConnection(this.dbName);
         try {
+            conn1.setAutoCommit(false);
             st1 = conn.prepareStatement(sql1); 
             st2 = conn.prepareStatement(sql2); 
-            st3 = conn.prepareStatement(sql3);
+            st3 = conn1.prepareStatement(sql3);
             st1.setInt(1, scale);
             try (ResultSet rs1 = st1.executeQuery()) {
                 while(rs1.next()) { // for each tiles
                     helper(rs1.getString(1));
+                    conn1.commit();
                 }
             }
         } catch(Exception e) {
@@ -99,12 +102,13 @@ public class SubgraphTask implements Runnable {
                 st2.close();
                 st3.close();
                 conn.close();
+                conn1.close();
             } catch (SQLException ex) {
                 Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
-    
+        
     public void helper(String qkey) throws Exception {
         Polygon rect = tileSystem.getTile(qkey).getPolygon();
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
@@ -156,27 +160,28 @@ public class SubgraphTask implements Runnable {
         //Metrics clique[][] = new Metrics[boundaryNodes.size()][boundaryNodes.size()];
         for(int i = 0; i < nodesArray.length; i ++) {
             for(int j = i+1; j < nodesArray.length; j ++) {
-                if(i == j) continue;
+                //if(i == j) continue;
                 RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
                 Path path = algo.calcPath(nodesArray[i].getNodeId(), nodesArray[j].getNodeId());
                 Metrics m = null, rm = null;
                 if(path.found())
-                    m = new Metrics(path.distance(), new TimeCalculation(vehicle).calcTime(path));
-                Path rpath = algo.calcPath(nodesArray[j].getNodeId(), nodesArray[i].getNodeId());
+                   m = new Metrics(path.distance(), new TimeCalculation(vehicle).calcTime(path));
+                RoutingAlgorithm ralgo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
+                Path rpath = ralgo.calcPath(nodesArray[j].getNodeId(), nodesArray[i].getNodeId());
                 if(rpath.found())
                     rm = new Metrics(rpath.distance(), new TimeCalculation(vehicle).calcTime(rpath));
                 
-                if(m != null && rm != null && m.compareTo(rm) == 0)
+                if(m != null && rm != null && m.compareTo(rm) == 0){
                     save(nodesArray[i], nodesArray[j], m, true);
+                }
                 else {
                     if(m != null)
                         save(nodesArray[i], nodesArray[j], m, false);
                     if(rm != null)
-                        save(nodesArray[j], nodesArray[i], m, false);
+                        save(nodesArray[j], nodesArray[i], rm, false);
                 }
             }
         }
-        
         //
     }
     private void save(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
@@ -186,7 +191,7 @@ public class SubgraphTask implements Runnable {
         st3.setDouble(3, metrics.getDistance()/1000.);
         st3.setDouble(4, metrics.getDistance()*3.6/metrics.getTime());
         st3.setDouble(5, metrics.getTime());
-        st3.setDouble(6, bothDir? metrics.getTime(): 1000000);
+        st3.setDouble(6, (bothDir? metrics.getTime(): 1000000));
         st3.setDouble(7, source.getPoint().getX());
         st3.setDouble(8, source.getPoint().getY());
         st3.setDouble(9, target.getPoint().getX());
@@ -258,7 +263,7 @@ class AlgorithmPreparation extends NoOpAlgorithmPreparation {
     
     @Override
     public RoutingAlgorithm createAlgo() {
-        return new DijkstraSimple(_graph, vehicle).type(new FastestCalc(vehicle));
+        return new DijkstraBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
     }
     
 }
@@ -293,6 +298,6 @@ class Metrics implements Comparable<Metrics> {
 
     @Override
     public int compareTo(Metrics o) {
-        return (o != null && o.getTime() == time && o.getDistance() == distance)? 0: 1;
+        return ((o != null && o.getTime() == time && o.getDistance() == distance)? 0: 1);
     }
 }
