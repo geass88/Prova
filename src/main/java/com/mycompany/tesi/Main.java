@@ -118,7 +118,7 @@ public class Main {
         tileSystem.computeTree();
         
         //for(int i = 1; i <= MAX_SCALE; i ++)
-            pool.execute(new SubgraphTask(tileSystem, db, 14));
+            pool.execute(new SubgraphTask(tileSystem, db, 17));
     }
     
     static PointList getPillars(Geometry g) {
