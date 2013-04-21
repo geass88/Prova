@@ -162,10 +162,10 @@ public class SubgraphTask implements Runnable {
             //System.out.println(graph.nodes());
         }
         rs2.close();
-        return new Subgraph(graph, boundaryNodes, vehicle);
+        return new Subgraph(graph, boundaryNodes, vehicle, nodes);
     }
     
-    public void computeClique(String qkey) throws Exception {
+    private void computeClique(String qkey) throws Exception {
         Subgraph subgraph = buildSubgraph(qkey);
         Graph graph = subgraph.graph;
         MyCarFlagEncoder vehicle = subgraph.encoder;
@@ -217,11 +217,13 @@ public class SubgraphTask implements Runnable {
         public final Graph graph;
         public final Set<BoundaryNode> boundaryNodes;
         public final MyCarFlagEncoder encoder;
+        public final Map<Integer, Integer> graph2subgraph;
 
-        public Subgraph(Graph graph, Set<BoundaryNode> boundaryNodes, MyCarFlagEncoder encoder) {
+        public Subgraph(Graph graph, Set<BoundaryNode> boundaryNodes, MyCarFlagEncoder encoder, Map<Integer, Integer> graph2subgraph) {
             this.graph = graph;
             this.boundaryNodes = boundaryNodes;
             this.encoder = encoder;
+            this.graph2subgraph = graph2subgraph;
         }
     }
 }
