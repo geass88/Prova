@@ -29,7 +29,7 @@ import com.graphhopper.storage.index.Location2IDQuadtree;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.Helper;
 import com.graphhopper.util.PointList;
-import com.mycompany.tesi.hooks.CarFlagEncoder;
+import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -164,9 +164,9 @@ public class App {
         
         
         GraphStorage graph = new GraphBuilder().create();
-        graph.combinedEncoder(CarFlagEncoder.COMBINED_ENCODER);
+        graph.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
         final VehicleEncoder enc = AcceptWay.parse("CAR").firstEncoder();
-        final CarFlagEncoder vehicle = new CarFlagEncoder(130);
+        final MyCarFlagEncoder vehicle = new MyCarFlagEncoder(130);
         //graph.combinedEncoder(vehicle.COMBINED_ENCODER);
         graph.setNode(1, 1, 300.111926811);
         graph.setNode(2, 2, 3);

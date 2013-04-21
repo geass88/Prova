@@ -117,8 +117,8 @@ public class Main {
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
         tileSystem.computeTree();
         
-        //for(int i = 1; i <= MAX_SCALE; i ++)
-            pool.execute(new SubgraphTask(tileSystem, db, 17));
+        for(int i = 14; i <= MAX_SCALE; i ++)
+            pool.execute(new SubgraphTask(tileSystem, db, i));
     }
     
     static PointList getPillars(Geometry g) {

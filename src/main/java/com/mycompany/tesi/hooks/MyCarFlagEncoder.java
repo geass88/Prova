@@ -24,7 +24,7 @@ import java.util.List;
  *
  * @author Tommaso
  */
-public class CarFlagEncoder implements VehicleEncoder {
+public class MyCarFlagEncoder implements VehicleEncoder {
 
     public final static byte FORWARD = 1;
     public final static byte BACKWARD = 2;
@@ -43,7 +43,7 @@ public class CarFlagEncoder implements VehicleEncoder {
     };*/
     private int maxSpeed;
 
-    public CarFlagEncoder(int maxSpeed) {
+    public MyCarFlagEncoder(int maxSpeed) {
         this.maxSpeed = maxSpeed;
     }
     

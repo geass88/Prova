@@ -24,9 +24,9 @@ import com.graphhopper.util.EdgeIterator;
  */
 public class TimeCalculation {
     
-    private CarFlagEncoder encoder;
+    private MyCarFlagEncoder encoder;
     
-    public TimeCalculation(CarFlagEncoder encoder) {
+    public TimeCalculation(MyCarFlagEncoder encoder) {
         this.encoder = encoder;
     }
     

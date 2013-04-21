@@ -24,6 +24,7 @@ import com.graphhopper.routing.util.AllEdgesIterator;
 import com.graphhopper.routing.util.CombinedEncoder;
 import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
 import com.graphhopper.routing.util.VehicleEncoder;
+import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
@@ -31,7 +32,7 @@ import com.graphhopper.util.PointList;
 import static com.mycompany.tesi.Main.getPillars;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.beans.Metrics;
-import com.mycompany.tesi.hooks.CarFlagEncoder;
+import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.TimeCalculation;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -70,7 +71,7 @@ public class SubgraphTask implements Runnable {
     private static final String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
     private static final String sql2 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
-    private static final String sql3 = "INSERT INTO \"overlay_?\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    private static final String sql3 = "INSERT INTO \"overlay_%d\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
     private static final String sql4 = "SELECT my_add_cut_edges(?);";
     
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
@@ -89,16 +90,16 @@ public class SubgraphTask implements Runnable {
             conn1.setAutoCommit(false);
             st1 = conn.prepareStatement(sql1); 
             st2 = conn.prepareStatement(sql2); 
-            st3 = conn1.prepareStatement(sql3);
+            st3 = conn1.prepareStatement(String.format(sql3, this.scale));
             st1.setInt(1, scale);
-            System.out.println("Computing cliques ...");
+            System.out.println(String.format("Computing cliques for %s and scale=%d", dbName, scale));
             try (ResultSet rs1 = st1.executeQuery()) {
                 while(rs1.next()) { // for each tiles
-                    helper(rs1.getString(1));
+                    computeClique(rs1.getString(1));
                     conn1.commit();
                 }
             }
-            System.out.println("Adding cut-edges ...");
+            System.out.println(String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
             try (PreparedStatement st = conn.prepareStatement(sql4)) {
                 st.setInt(1, scale);
                 st.executeQuery();
@@ -117,13 +118,13 @@ public class SubgraphTask implements Runnable {
             }
         }
     }
-        
-    public void helper(String qkey) throws Exception {
+    
+    public Subgraph buildSubgraph(String qkey) throws Exception {
         Polygon rect = tileSystem.getTile(qkey).getPolygon();
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
-        graph.combinedEncoder(CarFlagEncoder.COMBINED_ENCODER);
-        CarFlagEncoder vehicle = new CarFlagEncoder(maxSpeed);
+        graph.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
+        MyCarFlagEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
         Map<Integer, Integer> nodes = new HashMap<>();// graph to subgraph nodes
         int count = 0;
         st2.clearParameters();
@@ -161,9 +162,16 @@ public class SubgraphTask implements Runnable {
             //System.out.println(graph.nodes());
         }
         rs2.close();
+        return new Subgraph(graph, boundaryNodes, vehicle);
+    }
+    
+    public void computeClique(String qkey) throws Exception {
+        Subgraph subgraph = buildSubgraph(qkey);
+        Graph graph = subgraph.graph;
+        MyCarFlagEncoder vehicle = subgraph.encoder;
         
         //double min_time = Double.MAX_VALUE;
-        BoundaryNode[] nodesArray = boundaryNodes.toArray(new BoundaryNode[boundaryNodes.size()]);
+        BoundaryNode[] nodesArray = subgraph.boundaryNodes.toArray(new BoundaryNode[subgraph.boundaryNodes.size()]);
         //Metrics clique[][] = new Metrics[boundaryNodes.size()][boundaryNodes.size()];
         for(int i = 0; i < nodesArray.length; i ++) {
             for(int j = i+1; j < nodesArray.length; j ++) {
@@ -179,39 +187,50 @@ public class SubgraphTask implements Runnable {
                     rm = new Metrics(rpath.distance(), new TimeCalculation(vehicle).calcTime(rpath));
                 
                 if(m != null && rm != null && m.compareTo(rm) == 0)
-                    save(nodesArray[i], nodesArray[j], m, true);
+                    storeOverlayEdge(nodesArray[i], nodesArray[j], m, true);
                 else {
                     if(m != null)
-                        save(nodesArray[i], nodesArray[j], m, false);
+                        storeOverlayEdge(nodesArray[i], nodesArray[j], m, false);
                     if(rm != null)
-                        save(nodesArray[j], nodesArray[i], rm, false);
+                        storeOverlayEdge(nodesArray[j], nodesArray[i], rm, false);
                 }
             }
         }
     }
     
-    private void save(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
+    private void storeOverlayEdge(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
         st3.clearParameters();
-        st3.setInt(1, this.scale);
-        st3.setInt(2, source.getRoadNodeId());
-        st3.setInt(3, target.getRoadNodeId());
-        st3.setDouble(4, metrics.getDistance()/1000.);
-        st3.setDouble(5, metrics.getDistance()*3.6/metrics.getTime());
-        st3.setDouble(6, metrics.getTime());
-        st3.setDouble(7, (bothDir? metrics.getTime(): 1000000));
-        st3.setDouble(8, source.getPoint().getX());
-        st3.setDouble(9, source.getPoint().getY());
-        st3.setDouble(10, target.getPoint().getX());
-        st3.setDouble(11, target.getPoint().getY());
+        st3.setInt(1, source.getRoadNodeId());
+        st3.setInt(2, target.getRoadNodeId());
+        st3.setDouble(3, metrics.getDistance()/1000.);
+        st3.setDouble(4, metrics.getDistance()*3.6/metrics.getTime());
+        st3.setDouble(5, metrics.getTime());
+        st3.setDouble(6, (bothDir? metrics.getTime(): 1000000));
+        st3.setDouble(7, source.getPoint().getX());
+        st3.setDouble(8, source.getPoint().getY());
+        st3.setDouble(9, target.getPoint().getX());
+        st3.setDouble(10, target.getPoint().getY());
         st3.executeUpdate();
+    }
+    
+    public class Subgraph {
+        public final Graph graph;
+        public final Set<BoundaryNode> boundaryNodes;
+        public final MyCarFlagEncoder encoder;
+
+        public Subgraph(Graph graph, Set<BoundaryNode> boundaryNodes, MyCarFlagEncoder encoder) {
+            this.graph = graph;
+            this.boundaryNodes = boundaryNodes;
+            this.encoder = encoder;
+        }
     }
 }
 
 class AlgorithmPreparation extends NoOpAlgorithmPreparation {
 
-    private final CarFlagEncoder vehicle;
+    private final MyCarFlagEncoder vehicle;
     
-    public AlgorithmPreparation(CarFlagEncoder vehicle) {
+    public AlgorithmPreparation(MyCarFlagEncoder vehicle) {
         this.vehicle = vehicle;
     }
     
@@ -221,3 +240,4 @@ class AlgorithmPreparation extends NoOpAlgorithmPreparation {
     }
     
 }
+
