@@ -72,7 +72,8 @@ public class SubgraphTask implements Runnable {
     private static final String sql2 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
     private static final String sql3 = "INSERT INTO \"overlay_%d\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
-    private static final String sql4 = "SELECT my_add_cut_edges(?);";
+    private static final String sql4 = "UPDATE tiles SET max_speed = ? WHERE qkey = ?";
+    private static final String sql5 = "SELECT my_add_cut_edges(?);";
     
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
@@ -80,7 +81,7 @@ public class SubgraphTask implements Runnable {
         this.dbName = dbName;
     }
     
-    private PreparedStatement st1, st2, st3;
+    private PreparedStatement st1, st2, st3, st4;
     
     @Override
     public void run() {
@@ -91,6 +92,7 @@ public class SubgraphTask implements Runnable {
             st1 = conn.prepareStatement(sql1); 
             st2 = conn.prepareStatement(sql2); 
             st3 = conn1.prepareStatement(String.format(sql3, this.scale));
+            st4 = conn1.prepareStatement(sql4);
             st1.setInt(1, scale);
             System.out.println(String.format("Computing cliques for %s and scale=%d", dbName, scale));
             try (ResultSet rs1 = st1.executeQuery()) {
@@ -100,9 +102,9 @@ public class SubgraphTask implements Runnable {
                 }
             }
             System.out.println(String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
-            try (PreparedStatement st = conn.prepareStatement(sql4)) {
-                st.setInt(1, scale);
-                st.executeQuery();
+            try (PreparedStatement st5 = conn.prepareStatement(sql5)) {
+                st5.setInt(1, scale);
+                st5.executeQuery();
             }
         } catch(Exception e) {
             e.printStackTrace();
@@ -170,7 +172,7 @@ public class SubgraphTask implements Runnable {
         Graph graph = subgraph.graph;
         MyCarFlagEncoder vehicle = subgraph.encoder;
         
-        //double min_time = Double.MAX_VALUE;
+        double max_speed = 0.;
         BoundaryNode[] nodesArray = subgraph.boundaryNodes.toArray(new BoundaryNode[subgraph.boundaryNodes.size()]);
         //Metrics clique[][] = new Metrics[boundaryNodes.size()][boundaryNodes.size()];
         for(int i = 0; i < nodesArray.length; i ++) {
@@ -179,8 +181,11 @@ public class SubgraphTask implements Runnable {
                 RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
                 Path path = algo.calcPath(nodesArray[i].getNodeId(), nodesArray[j].getNodeId());
                 Metrics m = null, rm = null;
-                if(path.found())
+                if(path.found()) {
                    m = new Metrics(path.distance(), new TimeCalculation(vehicle).calcTime(path));
+                   double speed = m.getDistance()*3.6/m.getTime();
+                   if(speed > max_speed) max_speed = speed;
+                }
                 RoutingAlgorithm ralgo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
                 Path rpath = ralgo.calcPath(nodesArray[j].getNodeId(), nodesArray[i].getNodeId());
                 if(rpath.found())
@@ -196,6 +201,10 @@ public class SubgraphTask implements Runnable {
                 }
             }
         }
+        st4.clearParameters();
+        st4.setDouble(1, max_speed);
+        st4.setString(2, qkey);
+        st4.executeUpdate();
     }
     
     private void storeOverlayEdge(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
