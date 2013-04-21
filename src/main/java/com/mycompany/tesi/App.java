@@ -164,13 +164,14 @@ public class App {
         
         
         GraphStorage graph = new GraphBuilder().create();
-        graph.combinedEncoder(SubgraphTask.COMBINED_ENCODER);
+        graph.combinedEncoder(CarFlagEncoder.COMBINED_ENCODER);
         final VehicleEncoder enc = AcceptWay.parse("CAR").firstEncoder();
         final CarFlagEncoder vehicle = new CarFlagEncoder(130);
         //graph.combinedEncoder(vehicle.COMBINED_ENCODER);
-        graph.setNode(1, 1, 3);
+        graph.setNode(1, 1, 300.111926811);
         graph.setNode(2, 2, 3);
         graph.setNode(3, 3, 3);
+        System.out.println("lon "+graph.getLongitude(1));
         /*PointList pillar = new PointList();
         pillar.add(1.5d, 1.2d);
           */      

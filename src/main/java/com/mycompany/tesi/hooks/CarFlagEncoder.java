@@ -15,6 +15,7 @@
  */
 package com.mycompany.tesi.hooks;
 
+import com.graphhopper.routing.util.CombinedEncoder;
 import com.graphhopper.routing.util.VehicleEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,4 +88,12 @@ public class CarFlagEncoder implements VehicleEncoder {
         //return flags(speed*1., bothDir);
     }
     
+    public final static CombinedEncoder COMBINED_ENCODER = new CombinedEncoder() {
+        @Override
+        public int swapDirection(int flags) {
+            if((flags & 3) == 3) 
+                return flags;
+            return flags ^ 3;
+        }
+    };
 }
