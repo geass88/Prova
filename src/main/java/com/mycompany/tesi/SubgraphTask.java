@@ -339,14 +339,13 @@ class AlgorithmPreparation extends NoOpAlgorithmPreparation {
     
 }
 
-class Helper implements Runnable {
-
+class TasksHelper implements Runnable {
         private final TileSystem tileSystem;
         private final int scale;
         private String dbName;
         private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(8);
         
-        public Helper(final TileSystem tileSystem, final String dbName, final int scale) {
+        public TasksHelper(final TileSystem tileSystem, final String dbName, final int scale) {
             this.tileSystem = tileSystem;
             this.scale = scale;
             this.dbName = dbName;
@@ -355,10 +354,9 @@ class Helper implements Runnable {
         @Override
         public void run() {
             Connection conn = Main.getConnection(this.dbName);
-            PreparedStatement st1;
             try {
+                PreparedStatement st1;
                 st1 = conn.prepareStatement(SubgraphTask.sql1);
-            
                 st1.setInt(1, scale);
                 System.out.println(String.format("Computing cliques for %s and scale=%d", dbName, scale));
                 List<String> list = new LinkedList<>();
@@ -384,7 +382,7 @@ class Helper implements Runnable {
                 pool.awaitTermination(1l, TimeUnit.DAYS);
                 System.out.println(String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
                 Set<Integer> cutEdges = new TreeSet<>();
-                for(SubgraphTask t: tasks){
+                for(SubgraphTask t: tasks) {
                     cutEdges.addAll(t.getCutEdges());
                 }
                 try (PreparedStatement st5 = conn.prepareStatement(SubgraphTask.sql5)) {
@@ -394,6 +392,12 @@ class Helper implements Runnable {
                 }
             } catch (Exception ex) {
                 Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
+            } finally {
+                try {
+                    conn.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(TasksHelper.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
         
