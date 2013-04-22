@@ -32,6 +32,7 @@ import com.graphhopper.util.PointList;
 import static com.mycompany.tesi.Main.getPillars;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.beans.Metrics;
+import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.TimeCalculation;
@@ -54,6 +55,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.geotoolkit.geometry.Envelope2D;
 
 /**
  *
@@ -121,8 +123,33 @@ public class SubgraphTask implements Runnable {
         }
     }
     
+    public void pathUnpacking(Path path) {
+        Connection conn = Main.getConnection(this.dbName);
+        try {
+            st2 = conn.prepareStatement(sql2); 
+            String qkey = "";
+            Subgraph subgraph = buildSubgraph(qkey);
+        } catch(Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                st2.close();
+                conn.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
     public Subgraph buildSubgraph(String qkey) throws Exception {
-        Polygon rect = tileSystem.getTile(qkey).getPolygon();
+        Tile tile = tileSystem.getTile(qkey);
+        Polygon rect = tile.getPolygon();
+        Coordinate[] coordinates = { 
+            new Coordinate(tile.getRect().getMinX(), tile.getRect().getMinY()),
+            new Coordinate(tile.getRect().getMaxX(), tile.getRect().getMinY()),
+            new Coordinate(tile.getRect().getMaxX(), tile.getRect().getMaxY())
+        };
+        LineString line = geometryFactory.createLineString(coordinates);
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
@@ -150,14 +177,27 @@ public class SubgraphTask implements Runnable {
             p.put("car", rs2.getInt("freeflow_speed"));
             int flags = new AcceptWay(true, true, true).toFlags(p); */
             int flags = vehicle.flags(rs2.getDouble("freeflow_speed"), rs2.getBoolean("bothdir"));
-            if(rs2.getBoolean("contained")) { // inner edge
-                graph.edge(s, t, rs2.getDouble("distance"), flags);
-            } else { // possible cut edge
-                Point p1 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x1"), rs2.getDouble("y1")));
-                Point p2 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x2"), rs2.getDouble("y2")));
-                if(rect.contains(p1))
+            Point p1 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x1"), rs2.getDouble("y1")));
+            Point p2 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x2"), rs2.getDouble("y2")));
+            if(rs2.getBoolean("contained")) { 
+                boolean cond1 = line.contains(p1);
+                if(cond1 != line.contains(p2)) // cut edge!
+                    if(cond1)
+                        boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1));
+                    else
+                        boundaryNodes.add(new BoundaryNode(t, rs2.getInt("target"), p2));
+                else { // inner edge
+                    if(!cond1) 
+                        graph.edge(s, t, rs2.getDouble("distance"), flags);
+                }
+            } else { 
+                boolean cond1 = rect.contains(p1);
+                boolean cond2 = rect.contains(p2);
+                if(cond1 && cond2)// inner edge
+                    graph.edge(s, t, rs2.getDouble("distance"), flags);
+                else if(cond1) // cut edge
                     boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1));
-                else if(rect.contains(p2))
+                else if(cond2)
                     boundaryNodes.add(new BoundaryNode(t, rs2.getInt("target"), p2));
                 // else ; // not a cut edge
             }
