@@ -40,9 +40,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -58,13 +63,13 @@ public class SubgraphTask implements Runnable {
     private final int scale;
     private String dbName;
     
-    private static final int maxSpeed = 130;
-    private static final String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
-    private static final String sql2 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry " + //st_contains(shape, the_geom) AS contained
+    public static final int maxSpeed = 130;
+    public static final String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
+    public static final String sql2 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry " + //st_contains(shape, the_geom) AS contained
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
-    private static final String sql3 = "INSERT INTO \"overlay_%d\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
-    private static final String sql4 = "UPDATE tiles SET max_speed = ? WHERE qkey = ?";
-    private static final String sql5 = "SELECT my_add_cut_edges(?, ?);";
+    public static final String sql3 = "INSERT INTO \"overlay_%d\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    public static final String sql4 = "UPDATE tiles SET max_speed = ? WHERE qkey = ?";
+    public static final String sql5 = "SELECT my_add_cut_edges(?, ?);";
     
     private Set<Integer> cutEdges = new TreeSet<>();
     
@@ -72,6 +77,13 @@ public class SubgraphTask implements Runnable {
         this.tileSystem = tileSystem;
         this.scale = scale;
         this.dbName = dbName;
+    }
+    private List<String> qkeys;
+    public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale, List<String> qkeys) {
+        this.tileSystem = tileSystem;
+        this.scale = scale;
+        this.dbName = dbName;
+        this.qkeys = qkeys;
     }
     
     private PreparedStatement st1, st2, st3, st4;
@@ -82,18 +94,20 @@ public class SubgraphTask implements Runnable {
         //Connection conn1 = Main.getConnection(this.dbName);
         try {
             //conn1.setAutoCommit(false);
-            st1 = conn.prepareStatement(sql1); 
+            //st1 = conn.prepareStatement(sql1); 
             st2 = conn.prepareStatement(sql2); 
             st3 = conn.prepareStatement(String.format(sql3, this.scale));
             st4 = conn.prepareStatement(sql4);
-            st1.setInt(1, scale);
-            System.out.println(String.format("Computing cliques for %s and scale=%d", dbName, scale));
+            //st1.setInt(1, scale);
+            System.out.println("Thread run ...");
+            /*
             int count = 0;
             try (ResultSet rs1 = st1.executeQuery()) {
                 while(rs1.next()) { // for each tiles
                     computeClique(rs1.getString(1));
                     //conn1.commit();
                     if(++ count % 500 == 0) {
+                        System.exit(0);
                         st3.executeBatch();
                         st4.executeBatch();
                         count = 0;
@@ -101,19 +115,17 @@ public class SubgraphTask implements Runnable {
                 }
             }
             st3.executeBatch();
+            st4.executeBatch();*/
+            for(String q: qkeys)
+                computeClique(q);
+            st3.executeBatch();
             st4.executeBatch();
             //conn1.commit();
-            System.out.println(String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
-            try (PreparedStatement st5 = conn.prepareStatement(sql5)) {
-                st5.setInt(1, scale);
-                st5.setArray(2, conn.createArrayOf("integer", cutEdges.toArray()));
-                st5.executeQuery();
-            }
         } catch(Exception e) {
             e.printStackTrace();
         } finally {
             try {
-                st1.close();
+                //st1.close();
                 st2.close();
                 st3.close();
                 st4.close();
@@ -123,6 +135,10 @@ public class SubgraphTask implements Runnable {
                 Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+
+    public Set<Integer> getCutEdges() {
+        return cutEdges;
     }
     
     public void pathUnpacking(Path path) {
@@ -308,7 +324,6 @@ public class SubgraphTask implements Runnable {
         }
     }
 }
-
 class AlgorithmPreparation extends NoOpAlgorithmPreparation {
 
     private final MyCarFlagEncoder vehicle;
@@ -324,3 +339,62 @@ class AlgorithmPreparation extends NoOpAlgorithmPreparation {
     
 }
 
+class Helper implements Runnable {
+
+        private final TileSystem tileSystem;
+        private final int scale;
+        private String dbName;
+        private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(8);
+        
+        public Helper(final TileSystem tileSystem, final String dbName, final int scale) {
+            this.tileSystem = tileSystem;
+            this.scale = scale;
+            this.dbName = dbName;
+        }
+        
+        @Override
+        public void run() {
+            Connection conn = Main.getConnection(this.dbName);
+            PreparedStatement st1;
+            try {
+                st1 = conn.prepareStatement(SubgraphTask.sql1);
+            
+                st1.setInt(1, scale);
+                System.out.println(String.format("Computing cliques for %s and scale=%d", dbName, scale));
+                List<String> list = new LinkedList<>();
+                try (ResultSet rs1 = st1.executeQuery()) {
+                    while(rs1.next()) { // for each tiles
+                        list.add(rs1.getString(1));
+                    }
+                }
+                st1.close();
+                
+                int amount = 1000;
+                int start;
+                List<SubgraphTask> tasks = new LinkedList<>();
+                for(start = 0; start+amount < list.size(); start += amount) {
+                    SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale, list.subList(start, start+amount));
+                    tasks.add(task);
+                    pool.execute(task);
+                }
+                SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale, list.subList(start, list.size()));
+                pool.execute(task);
+                tasks.add(task);
+                pool.shutdown();
+                pool.awaitTermination(1l, TimeUnit.DAYS);
+                System.out.println(String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
+                Set<Integer> cutEdges = new TreeSet<>();
+                for(SubgraphTask t: tasks){
+                    cutEdges.addAll(t.getCutEdges());
+                }
+                try (PreparedStatement st5 = conn.prepareStatement(SubgraphTask.sql5)) {
+                    st5.setInt(1, scale);
+                    st5.setArray(2, conn.createArrayOf("integer", cutEdges.toArray()));
+                    st5.executeQuery();
+                }
+            } catch (Exception ex) {
+                Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
+    }
