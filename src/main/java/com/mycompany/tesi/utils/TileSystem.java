@@ -17,7 +17,6 @@ package com.mycompany.tesi.utils;
 
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.beans.TileXY;
-import com.mycompany.tesi.utils.QuadKeyManager;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
