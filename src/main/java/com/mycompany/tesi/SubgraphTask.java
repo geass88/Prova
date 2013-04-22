@@ -79,21 +79,30 @@ public class SubgraphTask implements Runnable {
     @Override
     public void run() {
         Connection conn = Main.getConnection(this.dbName);
-        Connection conn1 = Main.getConnection(this.dbName);
+        //Connection conn1 = Main.getConnection(this.dbName);
         try {
-            conn1.setAutoCommit(false);
+            //conn1.setAutoCommit(false);
             st1 = conn.prepareStatement(sql1); 
             st2 = conn.prepareStatement(sql2); 
-            st3 = conn1.prepareStatement(String.format(sql3, this.scale));
-            st4 = conn1.prepareStatement(sql4);
+            st3 = conn.prepareStatement(String.format(sql3, this.scale));
+            st4 = conn.prepareStatement(sql4);
             st1.setInt(1, scale);
             System.out.println(String.format("Computing cliques for %s and scale=%d", dbName, scale));
+            int count = 0;
             try (ResultSet rs1 = st1.executeQuery()) {
                 while(rs1.next()) { // for each tiles
                     computeClique(rs1.getString(1));
-                    conn1.commit();
+                    //conn1.commit();
+                    if(++ count % 1000 == 0) {
+                        st3.executeBatch();
+                        st4.executeBatch();
+                        count = 0;
+                    }
                 }
             }
+            st3.executeBatch();
+            st4.executeBatch();
+            //conn1.commit();
             System.out.println(String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
             try (PreparedStatement st5 = conn.prepareStatement(sql5)) {
                 st5.setInt(1, scale);
@@ -108,7 +117,7 @@ public class SubgraphTask implements Runnable {
                 st2.close();
                 st3.close();
                 conn.close();
-                conn1.close();
+                //conn1.close();
             } catch (SQLException ex) {
                 Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -264,7 +273,8 @@ public class SubgraphTask implements Runnable {
         st4.clearParameters();
         st4.setDouble(1, max_speed);
         st4.setString(2, qkey);
-        st4.executeUpdate();
+        //st4.executeUpdate();
+        st4.addBatch();
     }
     
     private void storeOverlayEdge(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
@@ -279,7 +289,8 @@ public class SubgraphTask implements Runnable {
         st3.setDouble(8, source.getPoint().getY());
         st3.setDouble(9, target.getPoint().getX());
         st3.setDouble(10, target.getPoint().getY());
-        st3.executeUpdate();
+        st3.addBatch();
+        //st3.executeUpdate();
     }
     
     public class Subgraph {
