@@ -168,7 +168,7 @@ public class App {
         final VehicleEncoder enc = AcceptWay.parse("CAR").firstEncoder();
         final MyCarFlagEncoder vehicle = new MyCarFlagEncoder(130);
         //graph.combinedEncoder(vehicle.COMBINED_ENCODER);
-        graph.setNode(1, 1, 300.111926811);
+        graph.setNode(1, 1, 2);
         graph.setNode(2, 2, 3);
         graph.setNode(3, 3, 3);
         System.out.println("lon "+graph.getLongitude(1));
@@ -192,7 +192,7 @@ public class App {
 */
         AlgorithmPreparation op= new NoOpAlgorithmPreparation() {
             @Override public RoutingAlgorithm createAlgo() {                
-                return new AStarBidirection(_graph, enc).type(new com.graphhopper.routing.util.FastestCalc(enc));
+                return new AStar(_graph, enc).type(new com.graphhopper.routing.util.FastestCalc(enc));
             }
         }.graph(graph);
                 
