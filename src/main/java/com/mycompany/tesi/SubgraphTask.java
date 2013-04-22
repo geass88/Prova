@@ -66,7 +66,7 @@ public class SubgraphTask implements Runnable {
     private static final String sql4 = "UPDATE tiles SET max_speed = ? WHERE qkey = ?";
     private static final String sql5 = "SELECT my_add_cut_edges(?, ?);";
     
-    private Set<Integer> cutEdges;
+    private Set<Integer> cutEdges = new TreeSet<>();
     
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
@@ -80,7 +80,6 @@ public class SubgraphTask implements Runnable {
     public void run() {
         Connection conn = Main.getConnection(this.dbName);
         Connection conn1 = Main.getConnection(this.dbName);
-        cutEdges = new TreeSet<>();
         try {
             conn1.setAutoCommit(false);
             st1 = conn.prepareStatement(sql1); 
@@ -98,6 +97,7 @@ public class SubgraphTask implements Runnable {
             System.out.println(String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
             try (PreparedStatement st5 = conn.prepareStatement(sql5)) {
                 st5.setInt(1, scale);
+                st5.setArray(2, conn.createArrayOf("integer", cutEdges.toArray()));
                 st5.executeQuery();
             }
         } catch(Exception e) {
