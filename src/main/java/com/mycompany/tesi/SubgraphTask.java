@@ -17,19 +17,12 @@ package com.mycompany.tesi;
 
 import com.mycompany.tesi.utils.TileSystem;
 import com.graphhopper.routing.DijkstraBidirection;
-import com.graphhopper.routing.DijkstraSimple;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
-import com.graphhopper.routing.util.AllEdgesIterator;
-import com.graphhopper.routing.util.CombinedEncoder;
 import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
-import com.graphhopper.routing.util.VehicleEncoder;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
-import com.graphhopper.util.EdgeIterator;
-import com.graphhopper.util.PointList;
-import static com.mycompany.tesi.Main.getPillars;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.beans.Metrics;
 import com.mycompany.tesi.beans.Tile;
@@ -37,7 +30,6 @@ import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.TimeCalculation;
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
@@ -47,15 +39,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.geotoolkit.geometry.Envelope2D;
 
 /**
  *
@@ -71,11 +60,13 @@ public class SubgraphTask implements Runnable {
     
     private static final int maxSpeed = 130;
     private static final String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
-    private static final String sql2 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry, st_contains(shape, the_geom) AS contained " +
+    private static final String sql2 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry " + //st_contains(shape, the_geom) AS contained
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
     private static final String sql3 = "INSERT INTO \"overlay_%d\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
     private static final String sql4 = "UPDATE tiles SET max_speed = ? WHERE qkey = ?";
-    private static final String sql5 = "SELECT my_add_cut_edges(?);";
+    private static final String sql5 = "SELECT my_add_cut_edges(?, ?);";
+    
+    private Set<Integer> cutEdges;
     
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
@@ -89,6 +80,7 @@ public class SubgraphTask implements Runnable {
     public void run() {
         Connection conn = Main.getConnection(this.dbName);
         Connection conn1 = Main.getConnection(this.dbName);
+        cutEdges = new TreeSet<>();
         try {
             conn1.setAutoCommit(false);
             st1 = conn.prepareStatement(sql1); 
@@ -154,7 +146,7 @@ public class SubgraphTask implements Runnable {
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
         MyCarFlagEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
-        Map<Integer, Integer> nodes = new HashMap<>();// graph to subgraph nodes
+        Map<Integer, Integer> nodes = new HashMap<>(); // graph to subgraph nodes
         int count = 0;
         st2.clearParameters();
         st2.setString(1, qkey);
@@ -179,13 +171,13 @@ public class SubgraphTask implements Runnable {
             int flags = vehicle.flags(rs2.getDouble("freeflow_speed"), rs2.getBoolean("bothdir"));
             Point p1 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x1"), rs2.getDouble("y1")));
             Point p2 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x2"), rs2.getDouble("y2")));
-            if(rs2.getBoolean("contained")) { 
+            /*if(rs2.getBoolean("contained")) { 
                 boolean cond1 = line.contains(p1);
                 if(cond1 != line.contains(p2)) // cut edge!
-                    if(cond1)
-                        boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1));
-                    else
+                    if(cond1) // p2 is the boundary node
                         boundaryNodes.add(new BoundaryNode(t, rs2.getInt("target"), p2));
+                    else // p1 is the boundary node
+                        boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1));
                 else { // inner edge
                     if(!cond1) 
                         graph.edge(s, t, rs2.getDouble("distance"), flags);
@@ -195,12 +187,40 @@ public class SubgraphTask implements Runnable {
                 boolean cond2 = rect.contains(p2);
                 if(cond1 && cond2)// inner edge
                     graph.edge(s, t, rs2.getDouble("distance"), flags);
-                else if(cond1) // cut edge
+                else if(cond1 && !line.contains(p1)) // cut edge
                     boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1));
-                else if(cond2)
+                else if(cond2 && !line.contains(p2))
                     boundaryNodes.add(new BoundaryNode(t, rs2.getInt("target"), p2));
                 // else ; // not a cut edge
+            }*/
+            
+            // without contained
+            boolean lcp1 = line.contains(p1);
+            boolean lcp2 = line.contains(p2);
+            boolean rcp1 = rect.contains(p1);
+            boolean rcp2 = rect.contains(p2);
+            if(rcp1 && rcp2) {
+                if(lcp1 != lcp2) {
+                    cutEdges.add(rs2.getInt("gid"));
+                    if(lcp1) 
+                        boundaryNodes.add(new BoundaryNode(t, rs2.getInt("target"), p2)); // cut
+                    else 
+                        boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1)); // cut 
+                } else {
+                    if(! lcp1) // == and not on line
+                        graph.edge(s, t, rs2.getDouble("distance"), flags);//inner
+                }
+            } else {
+                if(rcp1 && !lcp1) {
+                    boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1)); // cut
+                    cutEdges.add(rs2.getInt("gid"));
+                }
+                if(rcp2 && !lcp2) {
+                    boundaryNodes.add(new BoundaryNode(t, rs2.getInt("target"), p2)); // cut 
+                    cutEdges.add(rs2.getInt("gid"));
+                }
             }
+            //
             //System.out.println(graph.nodes());
         }
         rs2.close();
