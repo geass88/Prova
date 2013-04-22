@@ -37,7 +37,7 @@ import org.geotoolkit.geometry.Envelope2D;
 public class Main {
     
     public static final String JDBC_URI = "jdbc:postgresql://192.168.128.128:5432/";//192.168.128.128
-    public static final String[] DBS = { /*"berlin_routing", "hamburg_routing",*/ "london_routing"};
+    public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing"};
     public static final Integer MAX_SCALE = 17;
     public static final Integer POOL_SIZE = 3;
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
@@ -117,8 +117,8 @@ public class Main {
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
         tileSystem.computeTree();
         
-        for(int i = 17; i <= MAX_SCALE; i ++)
-            pool.execute(new SubgraphTask(tileSystem, db, i));
+        for(int i = 14; i <= MAX_SCALE; i ++)
+            pool.execute(new TasksHelper(tileSystem, db, i));//new SubgraphTask(tileSystem, db, i));
     }
     
     static PointList getPillars(Geometry g) {
