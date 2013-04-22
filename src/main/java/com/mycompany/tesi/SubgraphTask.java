@@ -93,7 +93,7 @@ public class SubgraphTask implements Runnable {
                 while(rs1.next()) { // for each tiles
                     computeClique(rs1.getString(1));
                     //conn1.commit();
-                    if(++ count % 1000 == 0) {
+                    if(++ count % 500 == 0) {
                         st3.executeBatch();
                         st4.executeBatch();
                         count = 0;
@@ -116,6 +116,7 @@ public class SubgraphTask implements Runnable {
                 st1.close();
                 st2.close();
                 st3.close();
+                st4.close();
                 conn.close();
                 //conn1.close();
             } catch (SQLException ex) {
