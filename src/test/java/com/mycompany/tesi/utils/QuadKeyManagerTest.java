@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.mycompany.prova.utils;
+package com.mycompany.tesi.utils;
 
 import com.mycompany.tesi.beans.TileXY;
-import com.mycompany.tesi.utils.QuadKeyManager;
 import junit.framework.TestCase;
 
 /**
