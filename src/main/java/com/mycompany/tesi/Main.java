@@ -48,7 +48,7 @@ public class Main {
     
     static {
         for(String db: DBS)
-            datasources.put(db, new ConnectionPool(db));
+            datasources.put(db, new ConnectionPool(db, 10));
     }
     
     public static Connection getConnection(String db) {
