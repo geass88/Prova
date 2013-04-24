@@ -18,9 +18,12 @@ package com.mycompany.tesi;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.utils.TileSystem;
 import com.graphhopper.util.PointList;
+import com.mycompany.tesi.utils.ConnectionPool;
 import com.vividsolutions.jts.geom.*;
 import java.sql.*;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
@@ -40,11 +43,17 @@ public class Main {
     public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing"};
     public static final Integer MAX_SCALE = 17;
     public static final Integer POOL_SIZE = 3;
+    private final static Map<String, ConnectionPool> datasources = new HashMap<>();
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
+    
+    static {
+        for(String db: DBS)
+            datasources.put(db, new ConnectionPool(db));
+    }
     
     public static Connection getConnection(String db) {
         try {
-            return DriverManager.getConnection(JDBC_URI + db, "postgres", "postgres");
+            return datasources.get(db).dataSource.getConnection();
         } catch (SQLException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
