@@ -111,6 +111,10 @@ public class TileSystem {
         return new TileXY(tileX, tileY);
     }
     
+    public TileXY pointToTileXY(double lon, double lat, int scale) throws Exception {
+        return pointToTileXY(new DirectPosition2D(lon, lat), scale);
+    }
+    
     public Tile pointToTile(final DirectPosition2D geographicPoint, final int scale) throws Exception {
         return getTile(pointToTileXY(geographicPoint, scale), scale);
     }
