@@ -23,18 +23,21 @@ import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
+import com.graphhopper.util.PointList;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.beans.Metrics;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.TimeCalculation;
+import com.mycompany.tesi.utils.QuadKeyManager;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.io.WKTReader;
+import gnu.trove.list.TIntList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -139,8 +142,18 @@ public class SubgraphTask implements Runnable {
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
-            String qkey = "";
-            Subgraph subgraph = buildSubgraph(qkey);
+            PointList points = path.calcPoints();
+            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(0), points.latitude(0), 15), 15));
+            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(1), points.latitude(1), 15), 15));
+            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(2), points.latitude(2), 15), 15));
+            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(3), points.latitude(3), 15), 15));
+            Subgraph subgraph = buildSubgraph(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(2), points.latitude(2), 15), 15));
+            RoutingAlgorithm algo = new AlgorithmPreparation(subgraph.encoder).graph(subgraph.graph).createAlgo();
+            TIntList list = path.calcNodes();
+            Path path1 = algo.calcPath(subgraph.graph2subgraph.get(list.get(2)), subgraph.graph2subgraph.get(list.get(3)));
+            if(path1.found()) {
+                System.out.println(path1.calcNodes());
+            }
         } catch(Exception e) {
             e.printStackTrace();
         } finally {
@@ -151,6 +164,24 @@ public class SubgraphTask implements Runnable {
                 Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+    
+    public Subgraph getSubgraph(String qkey) throws Exception {
+        Connection conn = Main.getConnection(this.dbName);
+        try {
+            st1 = conn.prepareStatement(sql1); 
+            return buildSubgraph(qkey);
+        } catch(Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                st1.close();
+                conn.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return null;
     }
     
     public Subgraph buildSubgraph(String qkey) throws Exception {
@@ -363,7 +394,7 @@ class TasksHelper implements Runnable {
             }
             st1.close();
 
-            int amount = 500;
+            int amount = scale>6? 1<<(scale-7): 1;
             int start;
             List<SubgraphTask> tasks = new LinkedList<>();
             for(start = 0; start+amount < list.size(); start += amount) {
