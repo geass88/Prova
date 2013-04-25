@@ -126,6 +126,18 @@
         <artifactId>graphhopper</artifactId>
         <version>0.1-SNAPSHOT</version>            
     </dependency>
-</dependencies>
+    <dependency>
+      <groupId>commons-pool</groupId>
+      <artifactId>commons-pool</artifactId>
+      <version>1.6</version>
+      <type>jar</type>
+    </dependency>
+    <dependency>
+      <groupId>commons-dbcp</groupId>
+      <artifactId>commons-dbcp</artifactId>
+      <version>1.4</version>
+      <type>jar</type>
+    </dependency>
+  </dependencies>
 
 </project>
