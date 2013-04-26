@@ -51,9 +51,9 @@ public class Main {
             datasources.put(db, new ConnectionPool(db, 10));
     }
     
-    public static Connection getConnection(String db) {
+    public static Connection getConnection(final String db) {
         try {
-            return datasources.get(db).dataSource.getConnection();
+            return datasources.get(db).getDataSource().getConnection();
         } catch (SQLException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
