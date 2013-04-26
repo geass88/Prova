@@ -29,6 +29,7 @@ import com.mycompany.tesi.beans.Metrics;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.FastestCalc;
+import com.mycompany.tesi.hooks.MyEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
 import com.mycompany.tesi.utils.QuadKeyManager;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -287,7 +288,7 @@ public class SubgraphTask implements Runnable {
     private void computeClique(String qkey) throws Exception {
         Subgraph subgraph = buildSubgraph(qkey);
         Graph graph = subgraph.graph;
-        MyCarFlagEncoder vehicle = subgraph.encoder;
+        MyEncoder vehicle = subgraph.encoder;
         
         double max_speed = 0.;
         BoundaryNode[] nodesArray = subgraph.boundaryNodes.toArray(new BoundaryNode[subgraph.boundaryNodes.size()]);
@@ -344,10 +345,10 @@ public class SubgraphTask implements Runnable {
     public class Subgraph {
         public final Graph graph;
         public final Set<BoundaryNode> boundaryNodes;
-        public final MyCarFlagEncoder encoder;
+        public final MyEncoder encoder;
         public final Map<Integer, Integer> graph2subgraph;
 
-        public Subgraph(Graph graph, Set<BoundaryNode> boundaryNodes, MyCarFlagEncoder encoder, Map<Integer, Integer> graph2subgraph) {
+        public Subgraph(Graph graph, Set<BoundaryNode> boundaryNodes, MyEncoder encoder, Map<Integer, Integer> graph2subgraph) {
             this.graph = graph;
             this.boundaryNodes = boundaryNodes;
             this.encoder = encoder;
@@ -358,9 +359,9 @@ public class SubgraphTask implements Runnable {
 
 class AlgorithmPreparation extends NoOpAlgorithmPreparation {
 
-    private final MyCarFlagEncoder vehicle;
+    private final MyEncoder vehicle;
     
-    public AlgorithmPreparation(MyCarFlagEncoder vehicle) {
+    public AlgorithmPreparation(MyEncoder vehicle) {
         this.vehicle = vehicle;
     }
     
