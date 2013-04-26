@@ -60,7 +60,7 @@ import java.util.logging.Logger;
  */
 public class SubgraphTask implements Runnable {
 
-    private final WKTReader reader = new WKTReader();
+    //private final WKTReader reader = new WKTReader();
     private final GeometryFactory geometryFactory = new GeometryFactory();
     private final TileSystem tileSystem;
     private final int scale;
@@ -367,10 +367,11 @@ class AlgorithmPreparation extends NoOpAlgorithmPreparation {
 class TasksHelper implements Runnable {
     public static final String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
     public static final String sql2 = "SELECT my_add_cut_edges(?, ?);";
+    public static final Integer POOL_SIZE = 8;
     private final TileSystem tileSystem;
     private final int scale;
     private String dbName;
-    private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(8);
+    private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
 
     public TasksHelper(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
@@ -417,7 +418,7 @@ class TasksHelper implements Runnable {
                 st2.setArray(2, conn.createArrayOf("integer", cutEdges.toArray()));
                 st2.executeQuery();
             }
-        } catch (Exception ex) {
+        } catch (SQLException | InterruptedException ex) {
             Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             try {
