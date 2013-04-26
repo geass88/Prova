@@ -36,7 +36,6 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.io.WKTReader;
 import gnu.trove.list.TIntList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -62,6 +61,7 @@ public class SubgraphTask implements Runnable {
 
     //private final WKTReader reader = new WKTReader();
     private final GeometryFactory geometryFactory = new GeometryFactory();
+    private final static Logger logger = Logger.getLogger(SubgraphTask.class.getName());
     private final TileSystem tileSystem;
     private final int scale;
     private String dbName;
@@ -119,7 +119,7 @@ public class SubgraphTask implements Runnable {
             st2.executeBatch();
             st3.executeBatch();
         } catch(Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, null, e);
         } finally {
             try {
                 //st1.close();
@@ -129,7 +129,7 @@ public class SubgraphTask implements Runnable {
                 conn.close();
                 //conn1.close();
             } catch (SQLException ex) {
-                Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
+                logger.log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -155,36 +155,56 @@ public class SubgraphTask implements Runnable {
                 System.out.println(path1.calcNodes());
             }
         } catch(Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, null, e);
         } finally {
             try {
                 st1.close();
                 conn.close();
             } catch (SQLException ex) {
-                Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
+                logger.log(Level.SEVERE, null, ex);
             }
         }
     }
     
-    public Subgraph getSubgraph(String qkey) throws Exception {
+    public Subgraph getSubgraph(String qkey) {
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
             return buildSubgraph(qkey);
         } catch(Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, null, e);
         } finally {
             try {
                 st1.close();
                 conn.close();
             } catch (SQLException ex) {
-                Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
+                logger.log(Level.SEVERE, null, ex);
             }
         }
         return null;
     }
     
-    public Subgraph buildSubgraph(String qkey) throws Exception {
+    public Map<String, Subgraph> getSubgraphs() {
+        Map<String, Subgraph> map = new HashMap<>();
+        Connection conn = Main.getConnection(this.dbName);
+        try {
+            st1 = conn.prepareStatement(sql1); 
+            for(String qkey: qkeys) 
+                map.put(qkey, buildSubgraph(qkey));
+        } catch(Exception e) {
+            logger.log(Level.SEVERE, null, e);
+        } finally {
+            try {
+                st1.close();
+                conn.close();
+            } catch (SQLException ex) {
+                logger.log(Level.SEVERE, null, ex);
+            }
+        }
+        return map;
+    }
+    
+    private Subgraph buildSubgraph(String qkey) throws Exception {
         Tile tile = tileSystem.getTile(qkey);
         Polygon rect = tile.getPolygon();
         Coordinate[] coordinates = { 
@@ -419,7 +439,7 @@ class TasksHelper implements Runnable {
                 st2.executeQuery();
             }
         } catch (SQLException | InterruptedException ex) {
-            Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TasksHelper.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             try {
                 conn.close();
