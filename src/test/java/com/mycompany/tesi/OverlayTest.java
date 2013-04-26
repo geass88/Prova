@@ -105,15 +105,9 @@ public class OverlayTest extends TestCase {
             while(rs.next()) {
                 EdgeIterator edge = graph.edge(rs.getInt(1), rs.getInt(2), rs.getDouble(3), vehicle.flags(rs.getDouble(5), rs.getBoolean(4)));
                 Geometry geometry = reader.read(rs.getString(6));
-                int pillarNumber = geometry.getNumPoints() - 2;
-                if(pillarNumber > 0) {
-                    PointList pillarNodes = new PointList(pillarNumber);
-                    for(int i = 1; i <= pillarNumber; i ++) {
-                        pillarNodes.add(geometry.getCoordinates()[i].getOrdinate(1), geometry.getCoordinates()[i].getOrdinate(0));
-                        //System.out.println("lat=" + g.getCoordinates()[i].getOrdinate(1) +" lon = "+ g.getCoordinates()[i].getOrdinate(0));
-                    }
+                PointList pillarNodes = Main.getPillars(geometry);
+                if(pillarNodes != null)
                     edge.wayGeometry(pillarNodes);
-                }
             }
             rs.close();
         }
@@ -125,7 +119,7 @@ public class OverlayTest extends TestCase {
         assertTrue(ph.found());
         System.out.println("road graph: "+time/1e9);
         System.out.println(ph.distance());
-        //System.out.println(ph.path.calcPoints());
+        System.out.println(ph.path.calcPoints());
         System.out.println(ph.path.calcNodes());
         System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
     }
@@ -148,7 +142,7 @@ public class OverlayTest extends TestCase {
     }
     
     @Test
-    public void tetPath1() throws Exception {
+    public void testPath1() throws Exception {
         int scale = 15;
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
@@ -196,8 +190,10 @@ public class OverlayTest extends TestCase {
             System.out.print(graph.getLongitude(n) + " "+graph.getLatitude(n)+ " ");
         System.out.println();
         //System.out.println(ph.path.calcPoints());*/
-        
-        task.pathUnpacking(ph.path);
+        System.out.println(ph.path.calcNodes());
+        PointList roadPoints = task.pathUnpacking(ph.path, start_qkey, end_qkey);
+        System.out.println(roadPoints.size());
+        System.out.println(roadPoints);
         System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
     }
 }
