@@ -24,12 +24,8 @@ import java.util.List;
  *
  * @author Tommaso
  */
-public class MyCarFlagEncoder implements VehicleEncoder {
+public class MyCarFlagEncoder extends MyEncoder implements VehicleEncoder {
 
-    public final static byte FORWARD = 1;
-    public final static byte BACKWARD = 2;
-    public final static byte BOTH = 3;
-    
     // km/h
     private List<Double> speeds = new ArrayList<>();
     /*public final CombinedEncoder COMBINED_ENCODER = new CombinedEncoder() {
@@ -41,10 +37,9 @@ public class MyCarFlagEncoder implements VehicleEncoder {
             return flags;
         }
     };*/
-    private int maxSpeed;
 
     public MyCarFlagEncoder(int maxSpeed) {
-        this.maxSpeed = maxSpeed;
+        super(maxSpeed);
     }
     
     public int flags(double speed, boolean bothDir) {
@@ -52,31 +47,11 @@ public class MyCarFlagEncoder implements VehicleEncoder {
         speeds.add(speed);
         return ((speeds.size() - 1) << 2) | dir;
     }
-        
-    @Override
-    public boolean isForward(int flags) {
-        return (flags & FORWARD) != 0;
-    }
-
-    @Override
-    public boolean isBackward(int flags) {
-        return (flags & BACKWARD) != 0;
-    }
-
-    @Override
-    public int getMaxSpeed() {
-        return maxSpeed;
-    }
-
-    @Override
-    public boolean canBeOverwritten(int flags1, int flags2) {
-        throw new UnsupportedOperationException("Not supported yet."); //required for CH
-    }
-
+    /*    
     @Override
     public int getSpeed(int flags) {
         return (int) Math.round(speeds.get(flags >>> 2));
-    }
+    }*/
     
     public double getSpeedHooked(int flags) {
         return speeds.get(flags >>> 2);
@@ -88,12 +63,4 @@ public class MyCarFlagEncoder implements VehicleEncoder {
         //return flags(speed*1., bothDir);
     }
     
-    public final static CombinedEncoder COMBINED_ENCODER = new CombinedEncoder() {
-        @Override
-        public int swapDirection(int flags) {
-            if((flags & 3) == 3) 
-                return flags;
-            return flags ^ 3;
-        }
-    };
 }
