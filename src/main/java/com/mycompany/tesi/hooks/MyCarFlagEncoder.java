@@ -24,7 +24,7 @@ import java.util.List;
  *
  * @author Tommaso
  */
-public class MyCarFlagEncoder extends MyEncoder implements VehicleEncoder {
+public class MyCarFlagEncoder extends RawEncoder implements VehicleEncoder {
 
     // km/h
     private List<Double> speeds = new ArrayList<>();
