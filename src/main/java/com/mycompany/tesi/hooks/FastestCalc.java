@@ -26,7 +26,7 @@ public class FastestCalc implements WeightCalculation {
     private final RawEncoder encoder;
     private final double maxSpeed;
 
-    public FastestCalc(RawEncoder encoder) {
+    public FastestCalc(final RawEncoder encoder) {
         this.encoder = encoder;
         maxSpeed = encoder.getMaxSpeed();
     }

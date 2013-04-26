@@ -33,6 +33,7 @@ import com.mycompany.tesi.SubgraphTask.Subgraph;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.RawEncoder;
+import com.mycompany.tesi.hooks.TimeCalculation;
 import com.mycompany.tesi.utils.QuadKeyManager;
 import com.mycompany.tesi.utils.TileSystem;
 import com.vividsolutions.jts.geom.Geometry;
@@ -122,7 +123,7 @@ public class OverlayTest extends TestCase {
         System.out.println(ph.distance());
         //System.out.println(ph.path.calcPoints());
         System.out.println(ph.path.calcNodes());
-        
+        System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
     }
     
     @Test
@@ -197,5 +198,6 @@ public class OverlayTest extends TestCase {
         //System.out.println(ph.path.calcPoints());*/
         
         task.pathUnpacking(ph.path);
+        System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
     }
 }
