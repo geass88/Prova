@@ -53,14 +53,8 @@ public class MyCarFlagEncoder extends MyEncoder implements VehicleEncoder {
         return (int) Math.round(speeds.get(flags >>> 2));
     }*/
     
+    @Override
     public double getSpeedHooked(int flags) {
         return speeds.get(flags >>> 2);
     }
-
-    @Override
-    public int flags(int speed, boolean bothDir) {
-        throw new UnsupportedOperationException("Not supported yet."); //
-        //return flags(speed*1., bothDir);
-    }
-    
 }
