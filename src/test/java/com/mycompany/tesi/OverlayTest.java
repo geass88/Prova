@@ -29,7 +29,8 @@ import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.GHUtility;
 import com.graphhopper.util.PointList;
-import com.mycompany.tesi.SubgraphTask.Subgraph;
+import com.graphhopper.util.shapes.GHPlace;
+import com.mycompany.tesi.SubgraphTask.Cell;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.RawEncoder;
@@ -57,6 +58,9 @@ import org.junit.Test;
  * @author Tommaso
  */
 public class OverlayTest extends TestCase {
+    
+    private int[] fromNodes = { 26736 };
+    private int[] toNodes = { 9595 };
     
     public OverlayTest(String testName) {
         super(testName);
@@ -100,7 +104,7 @@ public class OverlayTest extends TestCase {
             rs = st.executeQuery("select source, target, km*1000, reverse_cost<>1000000, freeflow_speed, st_astext(the_geom) from " + table);//st_astext(the_geom)
             while(rs.next()) {
                 EdgeIterator edge = graph.edge(rs.getInt(1), rs.getInt(2), rs.getDouble(3), vehicle.flags(rs.getDouble(5), rs.getBoolean(4)));
-                /*Geometry geometry = reader.read(rs.getString(6));
+                Geometry geometry = reader.read(rs.getString(6));
                 int pillarNumber = geometry.getNumPoints() - 2;
                 if(pillarNumber > 0) {
                     PointList pillarNodes = new PointList(pillarNumber);
@@ -109,14 +113,14 @@ public class OverlayTest extends TestCase {
                         //System.out.println("lat=" + g.getCoordinates()[i].getOrdinate(1) +" lon = "+ g.getCoordinates()[i].getOrdinate(0));
                     }
                     edge.wayGeometry(pillarNodes);
-                }*/
+                }
             }
             rs.close();
         }
         
         GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
-        GHResponse ph = instance.route(new GHRequest(52.4059488,13.2831624, 52.5663245,13.5318755).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.406608,13.286591&point=52.568004,13.53241
+        GHResponse ph = instance.route(new GHRequest(graph.getLatitude(fromNodes[0]), graph.getLongitude(fromNodes[0]), graph.getLatitude(toNodes[0]), graph.getLongitude(toNodes[0])).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.406608,13.286591&point=52.568004,13.53241
         time = System.nanoTime() - time;
         assertTrue(ph.found());
         System.out.println("road graph: "+time/1e9);
@@ -126,8 +130,26 @@ public class OverlayTest extends TestCase {
         System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
     }
     
+    private void union(final Graph graph, final Cell cell, final RawEncoder vehicle) {
+        Map<Integer, Integer> inverse = new HashMap<>();
+        for(Integer key: cell.graph2subgraph.keySet()) {
+            int value = cell.graph2subgraph.get(key);
+            graph.setNode(key, cell.graph.getLatitude(value), cell.graph.getLongitude(value));
+            inverse.put(value, key);
+        }
+        
+        AllEdgesIterator iterator = cell.graph.getAllEdges();
+        while(iterator.next())
+            if(cell.encoder.isForward(iterator.flags()))
+                graph.edge(inverse.get(iterator.baseNode()), inverse.get(iterator.adjNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isBackward(iterator.flags())));
+            else
+                graph.edge(inverse.get(iterator.adjNode()), inverse.get(iterator.baseNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isForward(iterator.flags())));
+        
+    }
+    
     @Test
-    public void testPath1() throws Exception {
+    public void tetPath1() throws Exception {
+        int scale = 15;
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
         RawEncoder vehicle = new RawEncoder(130);
@@ -136,7 +158,7 @@ public class OverlayTest extends TestCase {
         try(Connection conn = Main.getConnection(dbName); 
             Statement st = conn.createStatement()) {
             ResultSet rs;
-            String table = "overlay_15";
+            String table = "overlay_" + scale;
             rs = st.executeQuery("select * from ((select distinct source, y1, x1 from " + table + ") union (select distinct target, y2, x2 from " + table + ")) nodes order by source");
             while(rs.next())
                 graph.setNode(rs.getInt(1), rs.getDouble(2), rs.getDouble(3));
@@ -149,44 +171,22 @@ public class OverlayTest extends TestCase {
         }
         TileSystem tileSystem = new TileSystem(Main.getBound(Main.getConnection(dbName)), Main.MAX_SCALE);
         tileSystem.computeTree();
-        SubgraphTask task = new SubgraphTask(tileSystem, dbName, 15);
-        String qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(13.2831624, 52.4059488, 15), 15);
-        Subgraph start = task.getSubgraph(qkey);
-        qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(13.5318755, 52.5663245, 15), 15);
-        Subgraph end = task.getSubgraph(qkey);
-        
-        for(Integer node: start.graph2subgraph.keySet())
-            graph.setNode(node, start.graph.getLatitude(start.graph2subgraph.get(node)), start.graph.getLongitude(start.graph2subgraph.get(node)));
-        
-        for(Integer node: end.graph2subgraph.keySet())
-            graph.setNode(node, end.graph.getLatitude(end.graph2subgraph.get(node)), end.graph.getLongitude(end.graph2subgraph.get(node)));
-        
-        Map<Integer, Integer> sinverse = new HashMap<>();
-        for(Integer node: start.graph2subgraph.keySet())
-            sinverse.put(start.graph2subgraph.get(node), node);
-        
-        Map<Integer, Integer> einverse = new HashMap<>();
-        for(Integer node: end.graph2subgraph.keySet())
-            einverse.put(end.graph2subgraph.get(node), node);
-        
-        AllEdgesIterator i = start.graph.getAllEdges();
-        while(i.next())
-            if(start.encoder.isForward(i.flags()))
-                graph.edge(sinverse.get(i.baseNode()), sinverse.get(i.adjNode()), i.distance(), vehicle.flags(start.encoder.getSpeedHooked(i.flags()), start.encoder.isBackward(i.flags())));
-            else
-                graph.edge(sinverse.get(i.adjNode()), sinverse.get(i.baseNode()), i.distance(), vehicle.flags(start.encoder.getSpeedHooked(i.flags()), start.encoder.isForward(i.flags())));
-        i = end.graph.getAllEdges();
-        while(i.next())
-            if(end.encoder.isForward(i.flags()))
-                graph.edge(einverse.get(i.baseNode()), einverse.get(i.adjNode()), i.distance(), vehicle.flags(end.encoder.getSpeedHooked(i.flags()), end.encoder.isBackward(i.flags())));
-            else
-                graph.edge(einverse.get(i.adjNode()), einverse.get(i.baseNode()), i.distance(), vehicle.flags(end.encoder.getSpeedHooked(i.flags()), end.encoder.isForward(i.flags())));
-       /* GraphStorage s = new GraphBuilder().create();
+        SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
+        /*
+        GraphStorage s = new GraphBuilder().create();
         s.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
-        Graph g = graph.copyTo(s);*/
+        Graph g = graph.copyTo(s);
+        */
+        String start_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(fromNodes[0]), graph.getLatitude(fromNodes[0]), scale), scale);
+        Cell startCell = task.getSubgraph(start_qkey);
+        String end_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(toNodes[0]), graph.getLatitude(toNodes[0]), scale), scale);
+        Cell endCell = task.getSubgraph(end_qkey);
+        union(graph, startCell, vehicle);
+        union(graph, endCell, vehicle);
+        
         GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
-        GHResponse ph = instance.route(new GHRequest(52.4059488,13.2831624, 52.5663245,13.5318755).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.406608,13.286591&point=52.568004,13.53241
+        GHResponse ph = instance.route(new GHRequest(graph.getLatitude(fromNodes[0]), graph.getLongitude(fromNodes[0]), graph.getLatitude(toNodes[0]), graph.getLongitude(toNodes[0])).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.406608,13.286591&point=52.568004,13.53241
         time = System.nanoTime() - time;
         assertTrue(ph.found());
         System.out.println("overlay: "+time/1e9);
@@ -198,6 +198,6 @@ public class OverlayTest extends TestCase {
         //System.out.println(ph.path.calcPoints());*/
         
         task.pathUnpacking(ph.path);
-        System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
+        System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
     }
 }
