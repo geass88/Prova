@@ -40,7 +40,7 @@ public class RawEncoder implements VehicleEncoder {
     
     public int flags(double speed, boolean bothDir) {
         byte dir = bothDir? BOTH: FORWARD;
-        int flags = (((int)(speed*1e7)) << 2) | dir;
+        int flags = (((int)(speed*1e6)) << 2) | dir;
         return flags;
     }
 
@@ -51,7 +51,7 @@ public class RawEncoder implements VehicleEncoder {
     }
 
     public double getSpeedHooked(int flags) {
-        return (flags >>> 2) / 1e7;
+        return (flags >>> 2) / 1e6;
     }
     
     @Override
