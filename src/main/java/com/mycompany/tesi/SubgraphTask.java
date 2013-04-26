@@ -201,8 +201,8 @@ public class SubgraphTask implements Runnable {
         LineString line = geometryFactory.createLineString(coordinates);
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
-        graph.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
-        MyCarFlagEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
+        graph.combinedEncoder(MyEncoder.COMBINED_ENCODER);
+        MyEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
         Map<Integer, Integer> nodes = new HashMap<>(); // graph to subgraph nodes
         int count = 0;
         st1.clearParameters();
