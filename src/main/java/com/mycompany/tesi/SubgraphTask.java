@@ -221,27 +221,28 @@ public class SubgraphTask implements Runnable {
         int count = 0;
         st1.clearParameters();
         st1.setString(1, qkey);
-        ResultSet rs2 = st1.executeQuery();
-        while(rs2.next()) { // for each way in a tile
-            Integer s = nodes.get(rs2.getInt("source"));
+        ResultSet rs;
+        rs = st1.executeQuery();
+        while(rs.next()) { // for each way in a tile
+            Integer s = nodes.get(rs.getInt("source"));
             if(s == null) {
-                nodes.put(rs2.getInt("source"), s = count); 
-                graph.setNode(s, rs2.getDouble("y1"), rs2.getDouble("x1"));
+                nodes.put(rs.getInt("source"), s = count); 
+                graph.setNode(s, rs.getDouble("y1"), rs.getDouble("x1"));
                 count ++;
             }
-            Integer t = nodes.get(rs2.getInt("target"));
+            Integer t = nodes.get(rs.getInt("target"));
             if(t == null) {
-                nodes.put(rs2.getInt("target"), t = count); 
-                graph.setNode(t, rs2.getDouble("y2"), rs2.getDouble("x2"));
+                nodes.put(rs.getInt("target"), t = count); 
+                graph.setNode(t, rs.getDouble("y2"), rs.getDouble("x2"));
                 count ++;
             }
             /* Map<String, Object> p = new HashMap<>();
             p.put("caroneway", !rs2.getBoolean("bothdir"));
             p.put("car", rs2.getInt("freeflow_speed"));
             int flags = new AcceptWay(true, true, true).toFlags(p); */
-            int flags = vehicle.flags(rs2.getDouble("freeflow_speed"), rs2.getBoolean("bothdir"));
-            Point p1 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x1"), rs2.getDouble("y1")));
-            Point p2 = geometryFactory.createPoint(new Coordinate(rs2.getDouble("x2"), rs2.getDouble("y2")));
+            int flags = vehicle.flags(rs.getDouble("freeflow_speed"), rs.getBoolean("bothdir"));
+            Point p1 = geometryFactory.createPoint(new Coordinate(rs.getDouble("x1"), rs.getDouble("y1")));
+            Point p2 = geometryFactory.createPoint(new Coordinate(rs.getDouble("x2"), rs.getDouble("y2")));
             /*if(rs2.getBoolean("contained")) { 
                 boolean cond1 = line.contains(p1);
                 if(cond1 != line.contains(p2)) // cut edge!
@@ -272,29 +273,29 @@ public class SubgraphTask implements Runnable {
             boolean rcp2 = rect.contains(p2);
             if(rcp1 && rcp2) {
                 if(lcp1 != lcp2) {
-                    cutEdges.add(rs2.getInt("gid"));
+                    cutEdges.add(rs.getInt("gid"));
                     if(lcp1) 
-                        boundaryNodes.add(new BoundaryNode(t, rs2.getInt("target"), p2)); // cut
+                        boundaryNodes.add(new BoundaryNode(t, rs.getInt("target"), p2)); // cut
                     else 
-                        boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1)); // cut 
+                        boundaryNodes.add(new BoundaryNode(s, rs.getInt("source"), p1)); // cut 
                 } else {
                     if(! lcp1) // == and not on line
-                        graph.edge(s, t, rs2.getDouble("distance"), flags);//inner
+                        graph.edge(s, t, rs.getDouble("distance"), flags);//inner
                 }
             } else {
                 if(rcp1 && !lcp1) {
-                    boundaryNodes.add(new BoundaryNode(s, rs2.getInt("source"), p1)); // cut
-                    cutEdges.add(rs2.getInt("gid"));
+                    boundaryNodes.add(new BoundaryNode(s, rs.getInt("source"), p1)); // cut
+                    cutEdges.add(rs.getInt("gid"));
                 }
                 if(rcp2 && !lcp2) {
-                    boundaryNodes.add(new BoundaryNode(t, rs2.getInt("target"), p2)); // cut 
-                    cutEdges.add(rs2.getInt("gid"));
+                    boundaryNodes.add(new BoundaryNode(t, rs.getInt("target"), p2)); // cut 
+                    cutEdges.add(rs.getInt("gid"));
                 }
             }
             //
             //System.out.println(graph.nodes());
         }
-        rs2.close();
+        rs.close();
         return new Subgraph(graph, boundaryNodes, vehicle, nodes);
     }
     
