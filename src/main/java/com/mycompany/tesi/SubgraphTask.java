@@ -23,6 +23,7 @@ import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
+import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.PointList;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.beans.Metrics;
@@ -33,10 +34,12 @@ import com.mycompany.tesi.hooks.RawEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
 import com.mycompany.tesi.utils.QuadKeyManager;
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.io.WKTReader;
 import gnu.trove.list.TIntList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -60,7 +63,7 @@ import java.util.logging.Logger;
  */
 public class SubgraphTask implements Runnable {
 
-    //private final WKTReader reader = new WKTReader();
+    private final WKTReader reader = new WKTReader();
     private final GeometryFactory geometryFactory = new GeometryFactory();
     private final static Logger logger = Logger.getLogger(SubgraphTask.class.getName());
     private final TileSystem tileSystem;
@@ -69,7 +72,7 @@ public class SubgraphTask implements Runnable {
     
     public static final int maxSpeed = 130;
     public static final String sql1 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry " + //st_contains(shape, the_geom) AS contained
-            "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ?";
+            "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ? ORDER BY gid";
     public static final String sql2 = "INSERT INTO \"overlay_%d\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
     public static final String sql3 = "UPDATE tiles SET max_speed = ? WHERE qkey = ?";
     
@@ -123,22 +126,44 @@ public class SubgraphTask implements Runnable {
     }
     
     // TODO
-    public PointList pathUnpacking(final Path path) {
+    public PointList pathUnpacking(final Path path, String sqkey, String eqkey) {
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
             PointList points = path.calcPoints();
-            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(0), points.latitude(0), scale), scale));
-            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(1), points.latitude(1), scale), scale));
-            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(2), points.latitude(2), scale), scale));
-            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(3), points.latitude(3), scale), scale));
-            Cell cell = buildSubgraph(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(2), points.latitude(2), scale), scale));
-            RoutingAlgorithm algo = new AlgorithmPreparation(cell.encoder).graph(cell.graph).createAlgo();
-            TIntList list = path.calcNodes();
-            Path path1 = algo.calcPath(cell.graph2subgraph.get(list.get(2)), cell.graph2subgraph.get(list.get(3)));
-            if(path1.found()) {
-                System.out.println(path1.calcPoints());
+            PointList roadPoints = new PointList();
+            TIntList nodes = path.calcNodes();
+            String prev = null;
+            for(int i = 0; i < points.size(); i ++) {
+                String qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(i), points.latitude(i), scale), scale);
+                if(qkey.equals(sqkey) || qkey.equals(eqkey)) {
+                    roadPoints.add(points.latitude(i), points.longitude(i));
+                    System.out.print(nodes.get(i)+", ");
+                } else if(qkey.equals(prev)) {
+                    Cell cell = buildSubgraph(qkey, true);
+                    RoutingAlgorithm algo = new AlgorithmPreparation(cell.encoder).graph(cell.graph).createAlgo();
+                    Path path1 = algo.calcPath(cell.graph2subgraph.get(nodes.get(i-1)), cell.graph2subgraph.get(nodes.get(i)));
+                    if(path1.found()) {
+                        PointList list = path1.calcPoints();
+                        for(int j = 1; j < list.size(); j ++)
+                            roadPoints.add(points.latitude(j), points.longitude(j));
+                        Map<Integer, Integer> inverse = new HashMap<>();
+                        for(Integer key: cell.graph2subgraph.keySet()) {
+                            int value = cell.graph2subgraph.get(key);
+                            inverse.put(value, key);
+                        }
+                        TIntList nodes1 = path1.calcNodes();
+                        for(int h = 1; h<nodes1.size(); h++)
+                            System.out.print(inverse.get(h)+", ");
+                    }
+                } else {
+                    prev = qkey;
+                    System.out.print(nodes.get(i)+", ");
+                    roadPoints.add(points.latitude(i), points.longitude(i));
+                }
             }
+            System.out.println("}\n\nfin qui");
+            return roadPoints;
         } catch(Exception e) {
             logger.log(Level.SEVERE, null, e);
         } finally {
@@ -156,7 +181,7 @@ public class SubgraphTask implements Runnable {
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
-            return buildSubgraph(qkey);
+            return buildSubgraph(qkey, true);
         } catch(Exception e) {
             logger.log(Level.SEVERE, null, e);
         } finally {
@@ -177,7 +202,7 @@ public class SubgraphTask implements Runnable {
         try {
             st1 = conn.prepareStatement(sql1); 
             for(String qkey: qkeys) 
-                map.put(qkey, buildSubgraph(qkey));
+                map.put(qkey, buildSubgraph(qkey, true));
         } catch(Exception e) {
             logger.log(Level.SEVERE, null, e);
         } finally {
@@ -191,7 +216,7 @@ public class SubgraphTask implements Runnable {
         return map;
     }
     
-    private Cell buildSubgraph(String qkey) throws Exception {
+    private Cell buildSubgraph(String qkey, boolean withGeometry) throws Exception {
         Tile tile = tileSystem.getTile(qkey);
         Polygon rect = tile.getPolygon();
         Coordinate[] coordinates = { 
@@ -266,8 +291,13 @@ public class SubgraphTask implements Runnable {
                     else 
                         boundaryNodes.add(new BoundaryNode(s, rs.getInt("source"), p1)); // cut 
                 } else {
-                    if(! lcp1) // == and not on line
-                        graph.edge(s, t, rs.getDouble("distance"), flags);//inner
+                    if(! lcp1) {// == and not on line
+                        EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags); //inner 
+                        if(withGeometry) {
+                            Geometry geometry = reader.read(rs.getString("geometry"));
+                            edge.wayGeometry(Main.getPillars(geometry));
+                        }
+                    }
                 }
             } else {
                 if(rcp1 && !lcp1) {
@@ -287,7 +317,7 @@ public class SubgraphTask implements Runnable {
     }
     
     private void computeClique(String qkey) throws Exception {
-        Cell cell = buildSubgraph(qkey);
+        Cell cell = buildSubgraph(qkey, false);
         Graph graph = cell.graph;
         RawEncoder vehicle = cell.encoder;
         
