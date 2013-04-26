@@ -83,7 +83,8 @@ import org.apache.commons.pool.impl.GenericObjectPool.Config;
 public class ConnectionPool {
 
     private final DataSource dataSource;
-
+    public static final String JDBC_URI = "jdbc:postgresql://127.0.0.1:5432/";//192.168.128.128
+    
     static {
         //
         // First we load the underlying JDBC driver.
@@ -100,7 +101,7 @@ public class ConnectionPool {
     }
     
     public ConnectionPool(final String dbName, int poolSize) {
-        this.dataSource = setupDataSource("jdbc:postgresql://192.168.128.128:5432/" + dbName, "postgres", "postgres", poolSize);
+        this.dataSource = setupDataSource(JDBC_URI + dbName, "postgres", "postgres", poolSize);
     }
     
     public DataSource getDataSource() {
