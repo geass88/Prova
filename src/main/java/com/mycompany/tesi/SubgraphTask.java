@@ -83,9 +83,7 @@ public class SubgraphTask implements Runnable {
     }
 
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale, List<String> qkeys) {
-        this.tileSystem = tileSystem;
-        this.scale = scale;
-        this.dbName = dbName;
+        this(tileSystem, dbName, scale);
         this.qkeys = qkeys;
     }
     
@@ -124,21 +122,22 @@ public class SubgraphTask implements Runnable {
         return cutEdges;
     }
     
-    public void pathUnpacking(Path path) {
+    // TODO
+    public PointList pathUnpacking(final Path path) {
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
             PointList points = path.calcPoints();
-            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(0), points.latitude(0), 15), 15));
-            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(1), points.latitude(1), 15), 15));
-            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(2), points.latitude(2), 15), 15));
-            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(3), points.latitude(3), 15), 15));
-            Subgraph subgraph = buildSubgraph(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(2), points.latitude(2), 15), 15));
-            RoutingAlgorithm algo = new AlgorithmPreparation(subgraph.encoder).graph(subgraph.graph).createAlgo();
+            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(0), points.latitude(0), scale), scale));
+            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(1), points.latitude(1), scale), scale));
+            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(2), points.latitude(2), scale), scale));
+            System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(3), points.latitude(3), scale), scale));
+            Cell cell = buildSubgraph(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(2), points.latitude(2), scale), scale));
+            RoutingAlgorithm algo = new AlgorithmPreparation(cell.encoder).graph(cell.graph).createAlgo();
             TIntList list = path.calcNodes();
-            Path path1 = algo.calcPath(subgraph.graph2subgraph.get(list.get(2)), subgraph.graph2subgraph.get(list.get(3)));
+            Path path1 = algo.calcPath(cell.graph2subgraph.get(list.get(2)), cell.graph2subgraph.get(list.get(3)));
             if(path1.found()) {
-                System.out.println(path1.calcNodes());
+                System.out.println(path1.calcPoints());
             }
         } catch(Exception e) {
             logger.log(Level.SEVERE, null, e);
@@ -150,9 +149,10 @@ public class SubgraphTask implements Runnable {
                 logger.log(Level.SEVERE, null, ex);
             }
         }
+        return null;
     }
     
-    public Subgraph getSubgraph(String qkey) {
+    public Cell getSubgraph(String qkey) {
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
@@ -170,8 +170,9 @@ public class SubgraphTask implements Runnable {
         return null;
     }
     
-    public Map<String, Subgraph> getSubgraphs() {
-        Map<String, Subgraph> map = new HashMap<>();
+    public Map<String, Cell> getSubgraphs() {
+        if(qkeys == null || qkeys.isEmpty()) return null;
+        Map<String, Cell> map = new HashMap<>();
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
@@ -190,7 +191,7 @@ public class SubgraphTask implements Runnable {
         return map;
     }
     
-    private Subgraph buildSubgraph(String qkey) throws Exception {
+    private Cell buildSubgraph(String qkey) throws Exception {
         Tile tile = tileSystem.getTile(qkey);
         Polygon rect = tile.getPolygon();
         Coordinate[] coordinates = { 
@@ -282,16 +283,16 @@ public class SubgraphTask implements Runnable {
             //System.out.println(graph.nodes());
         }
         rs.close();
-        return new Subgraph(graph, boundaryNodes, vehicle, nodes);
+        return new Cell(graph, boundaryNodes, vehicle, nodes);
     }
     
     private void computeClique(String qkey) throws Exception {
-        Subgraph subgraph = buildSubgraph(qkey);
-        Graph graph = subgraph.graph;
-        RawEncoder vehicle = subgraph.encoder;
+        Cell cell = buildSubgraph(qkey);
+        Graph graph = cell.graph;
+        RawEncoder vehicle = cell.encoder;
         
         double max_speed = 0.;
-        BoundaryNode[] nodesArray = subgraph.boundaryNodes.toArray(new BoundaryNode[subgraph.boundaryNodes.size()]);
+        BoundaryNode[] nodesArray = cell.boundaryNodes.toArray(new BoundaryNode[cell.boundaryNodes.size()]);
         //Metrics clique[][] = new Metrics[boundaryNodes.size()][boundaryNodes.size()];
         for(int i = 0; i < nodesArray.length; i ++) {
             for(int j = i+1; j < nodesArray.length; j ++) {
@@ -342,13 +343,13 @@ public class SubgraphTask implements Runnable {
         //st2.executeUpdate();
     }
     
-    public class Subgraph {
+    public class Cell {
         public final Graph graph;
         public final Set<BoundaryNode> boundaryNodes;
         public final RawEncoder encoder;
         public final Map<Integer, Integer> graph2subgraph;
 
-        public Subgraph(Graph graph, Set<BoundaryNode> boundaryNodes, RawEncoder encoder, Map<Integer, Integer> graph2subgraph) {
+        public Cell(final Graph graph, final Set<BoundaryNode> boundaryNodes, final RawEncoder encoder, final Map<Integer, Integer> graph2subgraph) {
             this.graph = graph;
             this.boundaryNodes = boundaryNodes;
             this.encoder = encoder;
