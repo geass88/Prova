@@ -98,22 +98,7 @@ public class SubgraphTask implements Runnable {
             st2 = conn.prepareStatement(String.format(sql2, this.scale));
             st3 = conn.prepareStatement(sql3);
             System.out.println("Thread run ...");
-            /*
-            int count = 0;
-            try (ResultSet rs1 = st1.executeQuery()) {
-                while(rs1.next()) { // for each tiles
-                    computeClique(rs1.getString(1));
-                    //conn1.commit();
-                    if(++ count % 500 == 0) {
-                        System.exit(0);
-                        st3.executeBatch();
-                        st4.executeBatch();
-                        count = 0;
-                    }
-                }
-            }
-            st3.executeBatch();
-            st4.executeBatch();*/
+            
             for(String q: qkeys)
                 computeClique(q);
             st2.executeBatch();
@@ -370,6 +355,7 @@ public class SubgraphTask implements Runnable {
         }
     }
 }
+
 class AlgorithmPreparation extends NoOpAlgorithmPreparation {
 
     private final MyCarFlagEncoder vehicle;
