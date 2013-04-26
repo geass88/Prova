@@ -21,8 +21,6 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -84,8 +82,8 @@ import org.apache.commons.pool.impl.GenericObjectPool.Config;
 //
 public class ConnectionPool {
 
-    public final DataSource dataSource;
-    
+    private final DataSource dataSource;
+
     static {
         //
         // First we load the underlying JDBC driver.
@@ -94,9 +92,10 @@ public class ConnectionPool {
         //
         
         try {
-            Class.forName("org.postgresql.Driver");    
+            Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(ConnectionPool.class.getName()).log(Level.SEVERE, null, ex);
+            System.exit(0);
         }
     }
     
@@ -104,6 +103,9 @@ public class ConnectionPool {
         this.dataSource = setupDataSource("jdbc:postgresql://192.168.128.128:5432/" + dbName, "postgres", "postgres", poolSize);
     }
     
+    public DataSource getDataSource() {
+        return dataSource;
+    }
     
     public static void main(String[] args) {
         //
