@@ -29,7 +29,7 @@ import com.mycompany.tesi.beans.Metrics;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.FastestCalc;
-import com.mycompany.tesi.hooks.MyEncoder;
+import com.mycompany.tesi.hooks.RawEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
 import com.mycompany.tesi.utils.QuadKeyManager;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -201,8 +201,8 @@ public class SubgraphTask implements Runnable {
         LineString line = geometryFactory.createLineString(coordinates);
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
-        graph.combinedEncoder(MyEncoder.COMBINED_ENCODER);
-        MyEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
+        graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
+        RawEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
         Map<Integer, Integer> nodes = new HashMap<>(); // graph to subgraph nodes
         int count = 0;
         st1.clearParameters();
@@ -288,7 +288,7 @@ public class SubgraphTask implements Runnable {
     private void computeClique(String qkey) throws Exception {
         Subgraph subgraph = buildSubgraph(qkey);
         Graph graph = subgraph.graph;
-        MyEncoder vehicle = subgraph.encoder;
+        RawEncoder vehicle = subgraph.encoder;
         
         double max_speed = 0.;
         BoundaryNode[] nodesArray = subgraph.boundaryNodes.toArray(new BoundaryNode[subgraph.boundaryNodes.size()]);
@@ -345,10 +345,10 @@ public class SubgraphTask implements Runnable {
     public class Subgraph {
         public final Graph graph;
         public final Set<BoundaryNode> boundaryNodes;
-        public final MyEncoder encoder;
+        public final RawEncoder encoder;
         public final Map<Integer, Integer> graph2subgraph;
 
-        public Subgraph(Graph graph, Set<BoundaryNode> boundaryNodes, MyEncoder encoder, Map<Integer, Integer> graph2subgraph) {
+        public Subgraph(Graph graph, Set<BoundaryNode> boundaryNodes, RawEncoder encoder, Map<Integer, Integer> graph2subgraph) {
             this.graph = graph;
             this.boundaryNodes = boundaryNodes;
             this.encoder = encoder;
@@ -359,9 +359,9 @@ public class SubgraphTask implements Runnable {
 
 class AlgorithmPreparation extends NoOpAlgorithmPreparation {
 
-    private final MyEncoder vehicle;
+    private final RawEncoder vehicle;
     
-    public AlgorithmPreparation(MyEncoder vehicle) {
+    public AlgorithmPreparation(RawEncoder vehicle) {
         this.vehicle = vehicle;
     }
     

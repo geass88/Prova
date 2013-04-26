@@ -24,9 +24,9 @@ import com.graphhopper.util.EdgeIterator;
  */
 public class TimeCalculation {
     
-    private MyEncoder encoder;
+    private RawEncoder encoder;
     
-    public TimeCalculation(MyEncoder encoder) {
+    public TimeCalculation(RawEncoder encoder) {
         this.encoder = encoder;
     }
     

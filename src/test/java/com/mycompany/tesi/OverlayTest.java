@@ -32,6 +32,7 @@ import com.graphhopper.util.PointList;
 import com.mycompany.tesi.SubgraphTask.Subgraph;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
+import com.mycompany.tesi.hooks.RawEncoder;
 import com.mycompany.tesi.utils.QuadKeyManager;
 import com.mycompany.tesi.utils.TileSystem;
 import com.vividsolutions.jts.geom.Geometry;
@@ -83,8 +84,8 @@ public class OverlayTest extends TestCase {
     @Test
     public void testPath() throws Exception {
         GraphStorage graph = new GraphBuilder().create();
-        graph.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
-        MyCarFlagEncoder vehicle = new MyCarFlagEncoder(130);
+        graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
+        RawEncoder vehicle = new RawEncoder(130);
         WKTReader reader = new WKTReader();
         String dbName = "berlin_routing";
         try(Connection conn = Main.getConnection(dbName); 
@@ -112,7 +113,7 @@ public class OverlayTest extends TestCase {
             rs.close();
         }
         
-        GraphHopperAPI instance = new GraphHopper(graph);
+        GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
         GHResponse ph = instance.route(new GHRequest(52.4059488,13.2831624, 52.5663245,13.5318755).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.406608,13.286591&point=52.568004,13.53241
         time = System.nanoTime() - time;
@@ -121,18 +122,14 @@ public class OverlayTest extends TestCase {
         System.out.println(ph.distance());
         //System.out.println(ph.path.calcPoints());
         System.out.println(ph.path.calcNodes());
-        System.out.println("wrong "+graph.getLatitude(26727) +" "+ graph.getLongitude(26727));
-        System.out.println(ph.path.calcPoints());
-        for(Integer n :ph.path.calcNodes().toArray())
-            System.out.print(graph.getLatitude(n) + " "+graph.getLongitude(n)+ " ");
-        System.out.println();
+        
     }
     
     @Test
     public void testPath1() throws Exception {
         GraphStorage graph = new GraphBuilder().create();
-        graph.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
-        MyCarFlagEncoder vehicle = new MyCarFlagEncoder(130);
+        graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
+        RawEncoder vehicle = new RawEncoder(130);
         
         String dbName = "berlin_routing";
         try(Connection conn = Main.getConnection(dbName); 
@@ -186,20 +183,19 @@ public class OverlayTest extends TestCase {
        /* GraphStorage s = new GraphBuilder().create();
         s.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
         Graph g = graph.copyTo(s);*/
-        GraphHopperAPI instance = new GraphHopper(graph);
+        GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
         GHResponse ph = instance.route(new GHRequest(52.4059488,13.2831624, 52.5663245,13.5318755).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.406608,13.286591&point=52.568004,13.53241
         time = System.nanoTime() - time;
         assertTrue(ph.found());
         System.out.println("overlay: "+time/1e9);
         System.out.println(ph.distance());
-        System.out.println(ph.path.calcNodes());
         /*
         for(Integer n :ph.path.calcNodes().toArray())
             System.out.print(graph.getLongitude(n) + " "+graph.getLatitude(n)+ " ");
         System.out.println();
         //System.out.println(ph.path.calcPoints());*/
-        System.out.println(ph.path.calcPoints());
+        
         task.pathUnpacking(ph.path);
     }
 }
