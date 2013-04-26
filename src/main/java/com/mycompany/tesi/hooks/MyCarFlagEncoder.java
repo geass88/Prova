@@ -47,10 +47,10 @@ public class MyCarFlagEncoder extends MyEncoder implements VehicleEncoder {
         speeds.add(speed);
         return ((speeds.size() - 1) << 2) | dir;
     }
-    /*    
+    /*
     @Override
     public int getSpeed(int flags) {
-        return (int) Math.round(speeds.get(flags >>> 2));
+        return (int) Math.round(getSpeedHooked(flags));
     }*/
     
     @Override
