@@ -44,9 +44,10 @@ public class MyEncoder implements VehicleEncoder {
         return flags;
     }
 
+    // required for time calculation
     @Override
     public int getSpeed(int flags) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return (int) Math.round(getSpeedHooked(flags));//throw new UnsupportedOperationException("Not supported yet."); 
     }
 
     public double getSpeedHooked(int flags) {
