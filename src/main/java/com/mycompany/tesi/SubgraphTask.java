@@ -18,6 +18,7 @@ package com.mycompany.tesi;
 import com.mycompany.tesi.utils.TileSystem;
 import com.graphhopper.routing.DijkstraBidirection;
 import com.graphhopper.routing.Path;
+import com.graphhopper.routing.Path.EdgeVisitor;
 import com.graphhopper.routing.RoutingAlgorithm;
 import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
 import com.graphhopper.storage.Graph;
@@ -41,6 +42,7 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.io.WKTReader;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -126,14 +128,67 @@ public class SubgraphTask implements Runnable {
     }
     
     // TODO
-    public PointList pathUnpacking(final Path path, String sqkey, String eqkey) {
+    public PointList pathUnpacking(final Graph graph, final Path path, final String sqkey, final String eqkey) {
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
+            final PointList roadPoints = new PointList();
+            // final TIntList nodes = new TIntArrayList();
+            // String prev = null;
+            
+            path.forEveryEdge(new EdgeVisitor() {
+
+                @Override
+                public void next(EdgeIterator iter) {
+                    double baseLat = graph.getLatitude(iter.baseNode());
+                    double baseLon = graph.getLongitude(iter.baseNode());
+                    double adjLat = graph.getLatitude(iter.adjNode());
+                    double adjLon = graph.getLongitude(iter.adjNode());
+                    //System.out.println(baseLon + " " + baseLat +" "+adjLon + " " + adjLat);
+                    
+                    try {
+                        String baseQkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(baseLon, baseLat, scale), scale);
+                        String adjQkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(adjLon, adjLat, scale), scale);
+                        if(baseQkey.equals(adjQkey)) {
+                            if(baseQkey.equals(sqkey) || baseQkey.equals(eqkey)) {
+                                roadPoints.add(adjLat, adjLon);
+                                PointList pillarNodes = iter.wayGeometry();
+                                pillarNodes.reverse();
+                                for(int i = 0; i < pillarNodes.size(); i ++)
+                                    roadPoints.add(pillarNodes.latitude(i), pillarNodes.longitude(i));
+                                // nodes.add(iter.adjNode());
+                            } else {
+                                Cell cell = buildSubgraph(baseQkey, true);
+                                RoutingAlgorithm algo = new AlgorithmPreparation(cell.encoder).graph(cell.graph).createAlgo();
+                                Path path1 = algo.calcPath(cell.graph2subgraph.get(iter.adjNode()), cell.graph2subgraph.get(iter.baseNode()));
+                                if(path1.found()) {
+                                    PointList list = path1.calcPoints();
+                                    for(int j = 0; j < list.size()-1; j ++)
+                                        roadPoints.add(list.latitude(j), list.longitude(j));
+                                    /* Map<Integer, Integer> inverse = new HashMap<>();
+                                    for(Integer key: cell.graph2subgraph.keySet()) {
+                                        int value = cell.graph2subgraph.get(key);
+                                        inverse.put(value, key);
+                                    }
+                                    TIntList nodes1 = path1.calcNodes();
+                                    for(int h = 0; h< nodes1.size()-1; h++)
+                                        nodes.add(inverse.get(nodes1.get(h))); */
+                                }
+                            }
+                        } else {
+                            roadPoints.add(adjLat, adjLon); //FIXME: aggiungere la geometria del cut-edge
+                            // nodes.add(iter.adjNode());
+                        }
+                    } catch (Exception ex) {
+                        Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            });
             PointList points = path.calcPoints();
-            PointList roadPoints = new PointList();
-            TIntList nodes = path.calcNodes();
-            String prev = null;
+            roadPoints.add(points.latitude(points.size()-1), points.longitude(points.size()-1));
+            // nodes.add(<last_node>);
+            // System.out.println(nodes);
+            /*
             for(int i = 0; i < points.size(); i ++) {
                 String qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(i), points.latitude(i), scale), scale);
                 if(qkey.equals(sqkey) || qkey.equals(eqkey)) {
@@ -162,8 +217,7 @@ public class SubgraphTask implements Runnable {
                     System.out.print(nodes.get(i)+", ");
                     roadPoints.add(points.latitude(i), points.longitude(i));
                 }
-            }
-            System.out.println("}\n\nfin qui");
+            }*/
             return roadPoints;
         } catch(Exception e) {
             logger.log(Level.SEVERE, null, e);
