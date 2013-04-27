@@ -17,6 +17,7 @@
 package com.mycompany.tesi.utils;
 
 import java.io.File;
+import java.io.IOException;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.Statement;
@@ -118,7 +119,7 @@ public class ConnectionPool {
         return dataSource;
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         //
         // Then, we set up the PoolingDataSource.
         // Normally this would be handled auto-magically by
@@ -126,8 +127,8 @@ public class ConnectionPool {
         // do it manually.
         //
         System.out.println("Setting up data source.");
-        
-        DataSource dataSource = new ConnectionPool("berlin_routing", 10).getDataSource();
+        ConnectionPool pool = new ConnectionPool("berlin_routing", 10);
+        DataSource dataSource = pool.getDataSource();
         System.out.println("Done.");
 
         //
@@ -159,6 +160,7 @@ public class ConnectionPool {
             try { if (stmt != null) stmt.close(); } catch(Exception e) { }
             try { if (conn != null) conn.close(); } catch(Exception e) { }
         }
+        pool.close();
     }
 
     private DataSource setupDataSource(String connectURI, String uname, String passwd, int poolSize) {
