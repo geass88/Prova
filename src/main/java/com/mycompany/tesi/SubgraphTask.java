@@ -139,14 +139,15 @@ public class SubgraphTask implements Runnable {
                 if(qkey.equals(sqkey) || qkey.equals(eqkey)) {
                     roadPoints.add(points.latitude(i), points.longitude(i));
                     System.out.print(nodes.get(i)+", ");
-                } else if(qkey.equals(prev)) {
+                } 
+                else if(qkey.equals(prev)) {
                     Cell cell = buildSubgraph(qkey, true);
                     RoutingAlgorithm algo = new AlgorithmPreparation(cell.encoder).graph(cell.graph).createAlgo();
                     Path path1 = algo.calcPath(cell.graph2subgraph.get(nodes.get(i-1)), cell.graph2subgraph.get(nodes.get(i)));
                     if(path1.found()) {
                         PointList list = path1.calcPoints();
                         for(int j = 1; j < list.size(); j ++)
-                            roadPoints.add(points.latitude(j), points.longitude(j));
+                            roadPoints.add(list.latitude(j), list.longitude(j));
                         Map<Integer, Integer> inverse = new HashMap<>();
                         for(Integer key: cell.graph2subgraph.keySet()) {
                             int value = cell.graph2subgraph.get(key);
@@ -154,7 +155,7 @@ public class SubgraphTask implements Runnable {
                         }
                         TIntList nodes1 = path1.calcNodes();
                         for(int h = 1; h<nodes1.size(); h++)
-                            System.out.print(inverse.get(h)+", ");
+                            System.out.print(inverse.get(nodes1.get(h))+", ");
                     }
                 } else {
                     prev = qkey;
@@ -228,7 +229,7 @@ public class SubgraphTask implements Runnable {
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
-        RawEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
+        RawEncoder vehicle = new RawEncoder(maxSpeed);
         Map<Integer, Integer> nodes = new HashMap<>(); // graph to subgraph nodes
         int count = 0;
         st1.clearParameters();
