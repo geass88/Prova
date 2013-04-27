@@ -81,10 +81,6 @@ public class SubgraphTask implements Runnable {
     private Set<Integer> cutEdges = new TreeSet<>();
     private List<String> qkeys;
     
-    static {
-    logger.log(Level.INFO, "FUNZIONA");
-    }
-    
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
         this.scale = scale;
