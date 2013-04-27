@@ -51,13 +51,14 @@ public class Main {
     static {
         for(String db: DBS)
             DATASOURCES.put(db, new ConnectionPool(db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
-    }
-    
-    @Override
-    protected void finalize() throws Throwable {
-        for(ConnectionPool ds: DATASOURCES.values())
-            ds.close();
-        super.finalize();
+        
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for(ConnectionPool ds: DATASOURCES.values())
+                    ds.close();
+            }
+        }));
     }
     
     public static Connection getConnection(final String db) {
@@ -80,10 +81,10 @@ public class Main {
             threadedSubgraph(dbName);
         }
         pool.shutdown();
-        pool.awaitTermination(1l, TimeUnit.DAYS);
+        /*pool.awaitTermination(1l, TimeUnit.DAYS);
         System.out.println("Exiting ...");
         for(ConnectionPool ds: DATASOURCES.values())
-            ds.close();
+            ds.close();*/
     }
     
     public static Envelope2D getBound(Connection conn) throws SQLException {

@@ -115,6 +115,14 @@ public class ConnectionPool {
         }
     }
     
+    @Override
+    public void finalize() throws Throwable {
+       close();
+       /* File f = new File("prova.txt");
+        f.createNewFile();*/
+        super.finalize();
+    }
+    
     public DataSource getDataSource() {
         return dataSource;
     }
@@ -127,7 +135,7 @@ public class ConnectionPool {
         // do it manually.
         //
         System.out.println("Setting up data source.");
-        ConnectionPool pool = new ConnectionPool("berlin_routing", 10);
+        final ConnectionPool pool = new ConnectionPool("berlin_routing", 10);
         DataSource dataSource = pool.getDataSource();
         System.out.println("Done.");
 
@@ -160,7 +168,15 @@ public class ConnectionPool {
             try { if (stmt != null) stmt.close(); } catch(Exception e) { }
             try { if (conn != null) conn.close(); } catch(Exception e) { }
         }
-        pool.close();
+        //pool.close();
+        
+        //System.in.read();
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable(){
+            @Override
+            public void run() {
+                pool.close();
+            }
+        }));
     }
 
     private DataSource setupDataSource(String connectURI, String uname, String passwd, int poolSize) {
