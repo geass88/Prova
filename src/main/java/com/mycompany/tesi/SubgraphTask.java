@@ -172,6 +172,10 @@ public class SubgraphTask implements Runnable {
                             }
                         } else {
                             roadPoints.add(adjLat, adjLon); //FIXME: aggiungere la geometria del cut-edge
+                            PointList pillarNodes = iter.wayGeometry();
+                            pillarNodes.reverse();
+                            for(int i = 0; i < pillarNodes.size(); i ++)
+                                roadPoints.add(pillarNodes.latitude(i), pillarNodes.longitude(i));
                             // nodes.add(iter.adjNode());
                         }
                     } catch (Exception ex) {

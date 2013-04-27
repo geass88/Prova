@@ -45,17 +45,24 @@ public class Main {
     public static final Integer MAX_SCALE = 17;
     public static final Integer POOL_SIZE = 3;
     public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS = 10;
-    private final static Map<String, ConnectionPool> datasources = new HashMap<>();
+    private final static Map<String, ConnectionPool> DATASOURCES = new HashMap<>();
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
     
     static {
         for(String db: DBS)
-            datasources.put(db, new ConnectionPool(db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
+            DATASOURCES.put(db, new ConnectionPool(db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        for(ConnectionPool ds: DATASOURCES.values())
+            ds.close();
+        super.finalize();
     }
     
     public static Connection getConnection(final String db) {
         try {
-            return datasources.get(db).getDataSource().getConnection();
+            return DATASOURCES.get(db).getDataSource().getConnection();
         } catch (SQLException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -75,7 +82,7 @@ public class Main {
         pool.shutdown();
         pool.awaitTermination(1l, TimeUnit.DAYS);
         System.out.println("Exiting ...");
-        for(ConnectionPool ds: datasources.values())
+        for(ConnectionPool ds: DATASOURCES.values())
             ds.close();
     }
     
