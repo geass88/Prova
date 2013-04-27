@@ -125,7 +125,6 @@ public class SubgraphTask implements Runnable {
         return cutEdges;
     }
     
-    // TODO
     public PointList pathUnpacking(final Graph graph, final Path path, final String sqkey, final String eqkey) {
         Connection conn = Main.getConnection(this.dbName);
         try {
@@ -174,7 +173,7 @@ public class SubgraphTask implements Runnable {
                                 }
                             }
                         } else {
-                            roadPoints.add(adjLat, adjLon); //FIXME: aggiungere la geometria del cut-edge
+                            roadPoints.add(adjLat, adjLon); 
                             PointList pillarNodes = iter.wayGeometry();
                             pillarNodes.reverse();
                             for(int i = 0; i < pillarNodes.size(); i ++)
