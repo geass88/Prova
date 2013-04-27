@@ -31,6 +31,7 @@ import com.graphhopper.util.GHUtility;
 import com.graphhopper.util.PointList;
 import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.SubgraphTask.Cell;
+import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.RawEncoder;
@@ -46,6 +47,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -121,7 +124,7 @@ public class OverlayTest extends TestCase {
         assertTrue(ph.found());
         System.out.println("road graph: "+time/1e9);
         System.out.println(ph.distance());
-        System.out.println(ph.path.calcPoints());
+        System.out.println(ph.path.calcPoints().size());
         System.out.println(ph.path.calcNodes());
         System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
     }
@@ -143,9 +146,28 @@ public class OverlayTest extends TestCase {
         
     }
     
+    private GraphStorage cloneGraph(final Graph g, BoundaryNode[] nodes) {
+        GraphStorage g1 = new GraphBuilder().create();
+        g1.combinedEncoder(RawEncoder.COMBINED_ENCODER);
+        
+        for(int i = 0; i < g.nodes(); i++)
+            g1.setNode(i, g.getLatitude(i), g.getLongitude(i));
+        
+        Set<Integer> marked = new TreeSet<>();
+        for(int i = 0; i < nodes.length; i++)
+            marked.add(nodes[i].getRoadNodeId());
+        AllEdgesIterator i = g.getAllEdges();
+        while(i.next()) {
+            if(marked.contains(i.baseNode()) && marked.contains(i.adjNode()))
+                continue;
+            g1.edge(i.baseNode(), i.adjNode(), i.distance(), i.flags());
+        }
+        return g1;
+    }
+    
     @Test
     public void testPath1() throws Exception {
-        int scale = 15;
+        int scale = 13;
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
         RawEncoder vehicle = new RawEncoder(130);
@@ -178,12 +200,23 @@ public class OverlayTest extends TestCase {
         s.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
         Graph g = graph.copyTo(s);
         */
+        
         String start_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(fromNodes[0].lon, fromNodes[0].lat, scale), scale);
         Cell startCell = task.getSubgraph(start_qkey);
         String end_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(toNodes[0].lon, toNodes[0].lat, scale), scale);
         Cell endCell = task.getSubgraph(end_qkey);
+        Set<BoundaryNode> set = new TreeSet<>();
+        set.addAll(startCell.boundaryNodes);
+        set.addAll(endCell.boundaryNodes);
+        graph = cloneGraph(graph, set.toArray(new BoundaryNode[set.size()]));
         union(graph, startCell, vehicle);
-        union(graph, endCell, vehicle);
+        if(!end_qkey.equals(start_qkey))
+            union(graph, endCell, vehicle);
+        
+        System.out.println(start_qkey + " " + end_qkey);
+        System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(13465), graph.getLatitude(13465), scale), scale));
+        
+        System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(14483), graph.getLatitude(14483), scale), scale));
         
         GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
@@ -197,12 +230,12 @@ public class OverlayTest extends TestCase {
             System.out.print(graph.getLongitude(n) + " "+graph.getLatitude(n)+ " ");
         System.out.println();
         //System.out.println(ph.path.calcPoints());*/
-        //System.out.println(ph.path.calcNodes());
         //time = System.nanoTime();
         PointList roadPoints = task.pathUnpacking(graph, ph.path, start_qkey, end_qkey);
         time = System.nanoTime() - time;
+        System.out.println(ph.path.calcNodes());
         System.out.println("overlay: "+time/1e9);
-        System.out.println(roadPoints);
+        System.out.println(roadPoints.size());
         System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
     }
 }

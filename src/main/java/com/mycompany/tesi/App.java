@@ -22,6 +22,7 @@ import com.graphhopper.routing.util.NoOpAlgorithmPreparation;
 import com.graphhopper.routing.util.ShortestCalc;
 import com.graphhopper.routing.util.VehicleEncoder;
 import com.graphhopper.routing.util.WeightCalculation;
+import com.graphhopper.storage.DataAccess;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.storage.index.Location2IDIndex;
@@ -118,7 +119,7 @@ public class App {
     private final static Envelope2D bound = new Envelope2D(new DirectPosition2D(12, 41.5), new DirectPosition2D(13, 42.5));
     static ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(2);
     public static void main(String[] args) throws Exception {
-        pool.execute(new Tasks1());
+        /*pool.execute(new Tasks1());
         pool.execute(new Tasks1());
         pool.execute(new Tasks1());
         pool.shutdown();
@@ -132,7 +133,7 @@ public class App {
         double lon = SphericalMercator.x2lon(x);
        */
        // CoordinateReferenceSystem targetCRS = DefaultGeocentricCRS.CARTESIAN;
-        
+        pool.shutdown();
         DirectPosition2D p1 = new DirectPosition2D(DefaultCRS.geographicCRS, 12.42, 41.8445);
         int scale = 11;
         TileSystem calc = new TileSystem(bound, 17);
@@ -236,7 +237,7 @@ public class App {
 */
         AlgorithmPreparation op= new NoOpAlgorithmPreparation() {
             @Override public RoutingAlgorithm createAlgo() {                
-                return new AStar(_graph, enc).type(new com.graphhopper.routing.util.FastestCalc(enc));
+                return new AStarBidirection(_graph, enc).type(new com.graphhopper.routing.util.FastestCalc(enc));
             }
         }.graph(graph);
                 
