@@ -42,6 +42,7 @@ import com.vividsolutions.jts.io.WKTReader;
 import gnu.trove.list.TIntList;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
@@ -105,9 +106,7 @@ public class OverlayTest extends TestCase {
             while(rs.next()) {
                 EdgeIterator edge = graph.edge(rs.getInt(1), rs.getInt(2), rs.getDouble(3), vehicle.flags(rs.getDouble(5), rs.getBoolean(4)));
                 Geometry geometry = reader.read(rs.getString(6));
-                PointList pillarNodes = Main.getPillars(geometry);
-                if(pillarNodes != null)
-                    edge.wayGeometry(pillarNodes);
+                edge.wayGeometry(Main.getPillars(geometry));
             }
             rs.close();
         }
@@ -180,7 +179,7 @@ public class OverlayTest extends TestCase {
         
         GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
-        GHResponse ph = instance.route(new GHRequest(graph.getLatitude(fromNodes[0]), graph.getLongitude(fromNodes[0]), graph.getLatitude(toNodes[0]), graph.getLongitude(toNodes[0])).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.406608,13.286591&point=52.568004,13.53241
+        GHResponse ph = instance.route(new GHRequest(graph.getLatitude(fromNodes[0]), graph.getLongitude(fromNodes[0]), graph.getLatitude(toNodes[0]), graph.getLongitude(toNodes[0])).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.4059488, 13.2831624
         time = System.nanoTime() - time;
         assertTrue(ph.found());
         System.out.println("overlay: "+time/1e9);
@@ -191,8 +190,7 @@ public class OverlayTest extends TestCase {
         System.out.println();
         //System.out.println(ph.path.calcPoints());*/
         System.out.println(ph.path.calcNodes());
-        PointList roadPoints = task.pathUnpacking(ph.path, start_qkey, end_qkey);
-        System.out.println(roadPoints.size());
+        PointList roadPoints = task.pathUnpacking(graph, ph.path, start_qkey, end_qkey);
         System.out.println(roadPoints);
         System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
     }
