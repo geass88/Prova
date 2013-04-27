@@ -29,6 +29,7 @@ import com.graphhopper.storage.index.Location2IDQuadtree;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.Helper;
 import com.graphhopper.util.PointList;
+import static com.mycompany.tesi.TasksHelper.POOL_SIZE;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -43,6 +44,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -54,6 +58,7 @@ import org.geotoolkit.geometry.Envelope2D;
 import org.geotoolkit.referencing.crs.DefaultImageCRS;
 import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.operation.TransformException;
+
 
 /*
 class SphericalMercator {
@@ -76,11 +81,50 @@ class SphericalMercator {
     }
 }
 */
+class Tasks2 implements Runnable {
+
+    @Override
+    public void run() {
+        System.out.println("task2");
+    }
+    
+}
+
+
+class Tasks1 implements Runnable {
+    ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(5);
+    
+    @Override
+    public void run() {
+        System.out.println("task1");
+        pool.execute(new Tasks2());
+        pool.execute(new Tasks2());
+        pool.execute(new Tasks2());
+        pool.execute(new Tasks2());
+        pool.execute(new Tasks2());
+        pool.execute(new Tasks2());
+        pool.shutdown();
+        try {
+            pool.awaitTermination(1, TimeUnit.DAYS);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Tasks1.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+}
 
 public class App {
-    private final static Envelope2D bound = new Envelope2D(new DirectPosition2D(12, 41.5), new DirectPosition2D(13, 42.5));
     
+    private final static Envelope2D bound = new Envelope2D(new DirectPosition2D(12, 41.5), new DirectPosition2D(13, 42.5));
+    static ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(2);
     public static void main(String[] args) throws Exception {
+        pool.execute(new Tasks1());
+        pool.execute(new Tasks1());
+        pool.execute(new Tasks1());
+        pool.shutdown();
+        pool.awaitTermination(1, TimeUnit.DAYS);
+        System.out.println("exit main");
+        if(1==1)return ;
         /*
         double y = SphericalMercator.lat2y(10);
         double x = SphericalMercator.lon2x(-10);

@@ -73,9 +73,10 @@ public class Main {
             threadedSubgraph(dbName);
         }
         pool.shutdown();
+        pool.awaitTermination(1l, TimeUnit.DAYS);
         System.out.println("Exiting ...");
-        /*for(ConnectionPool ds: datasources.values())
-            ds.close();*/
+        for(ConnectionPool ds: datasources.values())
+            ds.close();
     }
     
     public static Envelope2D getBound(Connection conn) throws SQLException {
