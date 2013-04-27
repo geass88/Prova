@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -40,14 +41,16 @@ import org.geotoolkit.geometry.Envelope2D;
 public class Main {
     
     public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing"};
+    public static final Integer MIN_SCALE = 13;
     public static final Integer MAX_SCALE = 17;
     public static final Integer POOL_SIZE = 3;
+    public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS = 10;
     private final static Map<String, ConnectionPool> datasources = new HashMap<>();
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
     
     static {
         for(String db: DBS)
-            datasources.put(db, new ConnectionPool(db, 10));
+            datasources.put(db, new ConnectionPool(db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
     }
     
     public static Connection getConnection(final String db) {
@@ -60,6 +63,7 @@ public class Main {
     }
     
     public static void main(String[] args) throws Exception {
+        System.in.read();
         for(String dbName: DBS) {
             System.out.println("Processing db " + dbName + " ...");
             /*try (Connection conn = getConnection(dbName)) {
@@ -69,6 +73,9 @@ public class Main {
             threadedSubgraph(dbName);
         }
         pool.shutdown();
+        System.out.println("Exiting ...");
+        /*for(ConnectionPool ds: datasources.values())
+            ds.close();*/
     }
     
     public static Envelope2D getBound(Connection conn) throws SQLException {
@@ -125,7 +132,7 @@ public class Main {
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
         tileSystem.computeTree();
         
-        for(int i = 14; i <= MAX_SCALE; i ++)
+        for(int i = MIN_SCALE; i <= MAX_SCALE; i ++)
             pool.execute(new TasksHelper(tileSystem, db, i));//new SubgraphTask(tileSystem, db, i));
     }
     

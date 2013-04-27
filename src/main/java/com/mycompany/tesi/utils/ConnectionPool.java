@@ -16,6 +16,7 @@
  */
 package com.mycompany.tesi.utils;
 
+import java.io.File;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.Statement;
@@ -83,6 +84,7 @@ import org.apache.commons.pool.impl.GenericObjectPool.Config;
 public class ConnectionPool {
 
     private final DataSource dataSource;
+    private ObjectPool pool;
     public static final String JDBC_URI = "jdbc:postgresql://127.0.0.1:5432/";//192.168.128.128
     
     static {
@@ -104,6 +106,14 @@ public class ConnectionPool {
         this.dataSource = setupDataSource(JDBC_URI + dbName, "postgres", "postgres", poolSize);
     }
     
+    public void close() {
+        try {
+            pool.close();
+        } catch (Exception ex) {
+            Logger.getLogger(ConnectionPool.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     public DataSource getDataSource() {
         return dataSource;
     }
@@ -116,7 +126,8 @@ public class ConnectionPool {
         // do it manually.
         //
         System.out.println("Setting up data source.");
-        DataSource dataSource = setupDataSource("jdbc:postgresql://192.168.128.128:5432/berlin_routing", "postgres", "postgres", 10);
+        
+        DataSource dataSource = new ConnectionPool("berlin_routing", 10).getDataSource();
         System.out.println("Done.");
 
         //
@@ -150,7 +161,7 @@ public class ConnectionPool {
         }
     }
 
-    public static DataSource setupDataSource(String connectURI, String uname, String passwd, int poolSize) {
+    private DataSource setupDataSource(String connectURI, String uname, String passwd, int poolSize) {
         //
         // First, we'll need a ObjectPool that serves as the
         // actual pool of connections.
@@ -160,7 +171,7 @@ public class ConnectionPool {
         //
         Config config = new Config();
         config.maxActive = poolSize;
-        ObjectPool connectionPool = new GenericObjectPool(null, config);
+        pool = new GenericObjectPool(null, config);
 
         //
         // Next, we'll create a ConnectionFactory that the
@@ -176,13 +187,13 @@ public class ConnectionPool {
         // the "real" Connections created by the ConnectionFactory with
         // the classes that implement the pooling functionality.
         //
-        PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(connectionFactory,connectionPool,null,null,false,true);
+        PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(connectionFactory,pool,null,null,false,true);
 
         //
         // Finally, we create the PoolingDriver itself,
         // passing in the object pool we created.
         //
-        PoolingDataSource dataSource = new PoolingDataSource(connectionPool);
+        PoolingDataSource dataSource = new PoolingDataSource(pool);
 
         return dataSource;
     }

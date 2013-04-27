@@ -81,6 +81,10 @@ public class SubgraphTask implements Runnable {
     private Set<Integer> cutEdges = new TreeSet<>();
     private List<String> qkeys;
     
+    static {
+    logger.log(Level.INFO, "FUNZIONA");
+    }
+    
     public SubgraphTask(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
         this.scale = scale;
@@ -283,7 +287,7 @@ public class SubgraphTask implements Runnable {
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
-        RawEncoder vehicle = new RawEncoder(maxSpeed);
+        RawEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
         Map<Integer, Integer> nodes = new HashMap<>(); // graph to subgraph nodes
         int count = 0;
         st1.clearParameters();
@@ -465,7 +469,7 @@ class TasksHelper implements Runnable {
     private final TileSystem tileSystem;
     private final int scale;
     private String dbName;
-    private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
+    private final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
 
     public TasksHelper(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
