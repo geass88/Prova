@@ -109,12 +109,10 @@ public class SubgraphTask implements Runnable {
             logger.log(Level.SEVERE, null, e);
         } finally {
             try {
-                //st1.close();
                 st1.close();
                 st2.close();
                 st3.close();
                 conn.close();
-                //conn1.close();
             } catch (SQLException ex) {
                 logger.log(Level.SEVERE, null, ex);
             }
@@ -135,7 +133,6 @@ public class SubgraphTask implements Runnable {
             // String prev = null;
             
             path.forEveryEdge(new EdgeVisitor() {
-
                 @Override
                 public void next(EdgeIterator iter) {
                     double baseLat = graph.getLatitude(iter.baseNode());
