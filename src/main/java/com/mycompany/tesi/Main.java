@@ -63,7 +63,7 @@ public class Main {
     }
     
     public static void main(String[] args) throws Exception {
-        System.in.read();
+        //System.in.read();
         for(String dbName: DBS) {
             System.out.println("Processing db " + dbName + " ...");
             /*try (Connection conn = getConnection(dbName)) {
