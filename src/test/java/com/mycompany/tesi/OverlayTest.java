@@ -138,11 +138,14 @@ public class OverlayTest extends TestCase {
         }
         
         AllEdgesIterator iterator = cell.graph.getAllEdges();
-        while(iterator.next())
+        while(iterator.next()) {
+            EdgeIterator edge;
             if(cell.encoder.isForward(iterator.flags()))
-                graph.edge(inverse.get(iterator.baseNode()), inverse.get(iterator.adjNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isBackward(iterator.flags())));
+                edge = graph.edge(inverse.get(iterator.baseNode()), inverse.get(iterator.adjNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isBackward(iterator.flags())));
             else
-                graph.edge(inverse.get(iterator.adjNode()), inverse.get(iterator.baseNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isForward(iterator.flags())));
+                edge = graph.edge(inverse.get(iterator.adjNode()), inverse.get(iterator.baseNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isForward(iterator.flags())));
+            edge.wayGeometry(iterator.wayGeometry());
+        }
         
     }
     
@@ -160,7 +163,7 @@ public class OverlayTest extends TestCase {
         while(i.next()) {
             if(marked.contains(i.baseNode()) && marked.contains(i.adjNode()))
                 continue;
-            g1.edge(i.baseNode(), i.adjNode(), i.distance(), i.flags());
+            g1.edge(i.baseNode(), i.adjNode(), i.distance(), i.flags()).wayGeometry(i.wayGeometry());
         }
         return g1;
     }
@@ -220,7 +223,7 @@ public class OverlayTest extends TestCase {
         
         GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
-        GHResponse ph = instance.route(new GHRequest(fromNodes[0], toNodes[0]).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.4059488, 13.2831624
+        GHResponse ph = instance.route(new GHRequest(fromNodes[0], toNodes[0]).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));
         /*time = System.nanoTime() - time;
         assertTrue(ph.found());
         System.out.println("overlay: "+time/1e9);*/
