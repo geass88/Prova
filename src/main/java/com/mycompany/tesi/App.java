@@ -217,24 +217,24 @@ public class App {
         graph.setNode(2, 2, 3);
         graph.setNode(3, 3, 3);
         System.out.println("lon "+graph.getLongitude(1));
-        /*PointList pillar = new PointList();
+        PointList pillar = new PointList();
         pillar.add(1.5d, 1.2d);
-          */      
+                pillar.add(1.7d, 1.5d);
         /*graph.edge(2,3, 100, vehicle.flags(50., true));
         graph.edge(3,1, 200, vehicle.flags(10.1, false));
         graph.edge(1,2, 100, vehicle.flags(50., true));//.wayGeometry(pillar);
         graph.edge(1,3, 800, vehicle.flags(50., false));//.wayGeometry(pillar);*/
         graph.edge(2,3, 100, enc.flags(50, true));
         graph.edge(3,1, 200, enc.flags(10, false));
-        graph.edge(1,2, 100, enc.flags(50, true));//.wayGeometry(pillar);
-        graph.edge(1,3, 800, enc.flags(50, false));//.wayGeometry(pillar);
+        graph.edge(1,2, 100, enc.flags(50, true)).wayGeometry(pillar);
+        //graph.edge(1,3, 800, enc.flags(50, false));//.wayGeometry(pillar);
         /*
         for(int d=0; d<graph.nodes(); d++)
-        System.out.println(graph.getLatitude(d+1)+" " + graph.getLongitude(d+1));
+        System.out.println(graph.getLatitude(d+1)+" " + graph.getLongitude(d+1));*/
         AllEdgesIterator i = graph.getAllEdges();
         while(i.next())
-            System.out.println(i.baseNode()+" "+i.adjNode()+" "+i.flags()+" "+i.distance()+" "+vehicle.getSpeedHooked(i.flags())+ " " + vehicle.isForward(i.flags())+ " " + vehicle.isBackward(i.flags()));
-*/
+            System.out.println(i.baseNode()+" "+i.adjNode() + " " +i.wayGeometry());//+" "+i.flags()+" "+i.distance()+" "+vehicle.getSpeedHooked(i.flags())+ " " + vehicle.isForward(i.flags())+ " " + vehicle.isBackward(i.flags()));
+
         AlgorithmPreparation op= new NoOpAlgorithmPreparation() {
             @Override public RoutingAlgorithm createAlgo() {                
                 return new AStarBidirection(_graph, enc).type(new com.graphhopper.routing.util.FastestCalc(enc));
@@ -242,6 +242,15 @@ public class App {
         }.graph(graph);
                 
         Path path = op.createAlgo().calcPath(1,3);
+        
+        path.forEveryEdge(new EdgeVisitor() {
+
+            @Override
+            public void next(EdgeIterator iter) {
+                System.out.println(iter.adjNode() + " " +iter.baseNode() +" " +iter.wayGeometry());
+            }
+        });
+        
         System.out.println(path.toDetailsString());
         System.out.println(path.calcPoints());
         System.out.println(path.distance());

@@ -94,8 +94,7 @@ public class OverlayTest extends TestCase {
         super.tearDown();
     }
     
-    @Test
-    public void testPath() throws Exception {
+    private PointList getPath2() throws Exception {
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
         RawEncoder vehicle = new RawEncoder(130);
@@ -125,13 +124,13 @@ public class OverlayTest extends TestCase {
         assertTrue(ph.found());
         System.out.println("road graph: "+time/1e9);
         System.out.println(ph.distance());
-        System.out.println(ph.path.calcPoints().size());
-        System.out.println(ph.path.calcNodes());
+        System.out.println(ph.points().size());
+        System.out.println(ph.points());
         System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
+        return ph.points();
     }
     
-    @Test
-    public void testPath1() throws Exception {
+    private PointList getPath1() throws Exception {
         int scale = 13;
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
@@ -200,7 +199,13 @@ public class OverlayTest extends TestCase {
         time = System.nanoTime() - time;
         System.out.println(ph.path.calcNodes());
         System.out.println("overlay: "+time/1e9);
-        System.out.println(roadPoints.size());
+        System.out.println(roadPoints);
         System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
+        return roadPoints;
+    }
+    
+    @Test
+    public void testPath() throws Exception {
+        assertEquals(getPath1(), getPath2());
     }
 }

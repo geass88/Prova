@@ -20,6 +20,7 @@ import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
+import com.graphhopper.util.PointList;
 import com.mycompany.tesi.SubgraphTask.Cell;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.hooks.RawEncoder;
@@ -45,11 +46,16 @@ public class GraphHelper {
         AllEdgesIterator iterator = cell.graph.getAllEdges();
         while(iterator.next()) {
             EdgeIterator edge;
-            if(cell.encoder.isForward(iterator.flags()))
+            if(cell.encoder.isForward(iterator.flags())) {
                 edge = graph.edge(inverse.get(iterator.baseNode()), inverse.get(iterator.adjNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isBackward(iterator.flags())));
-            else
+                edge.wayGeometry(iterator.wayGeometry());
+            }
+            else {
                 edge = graph.edge(inverse.get(iterator.adjNode()), inverse.get(iterator.baseNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isForward(iterator.flags())));
-            edge.wayGeometry(iterator.wayGeometry());
+                PointList pillars = iterator.wayGeometry();
+                pillars.reverse();
+                edge.wayGeometry(pillars);
+            }
         }
         
     }

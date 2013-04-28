@@ -130,8 +130,7 @@ public class SubgraphTask implements Runnable {
         try {
             st1 = conn.prepareStatement(sql1); 
             final PointList roadPoints = new PointList();
-            final TIntList nodes = new TIntArrayList();
-            // String prev = null;
+            //final TIntList nodes = new TIntArrayList();
             
             path.forEveryEdge(new EdgeVisitor() {
                 @Override
@@ -140,8 +139,7 @@ public class SubgraphTask implements Runnable {
                     double baseLon = graph.getLongitude(iter.baseNode());
                     double adjLat = graph.getLatitude(iter.adjNode());
                     double adjLon = graph.getLongitude(iter.adjNode());
-                    //System.out.println(baseLon + " " + baseLat +" "+adjLon + " " + adjLat);
-                    
+
                     try {
                         String baseQkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(baseLon, baseLat, scale), scale);
                         String adjQkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(adjLon, adjLat, scale), scale);
@@ -152,7 +150,7 @@ public class SubgraphTask implements Runnable {
                                 pillarNodes.reverse();
                                 for(int i = 0; i < pillarNodes.size(); i ++)
                                     roadPoints.add(pillarNodes.latitude(i), pillarNodes.longitude(i));
-                                nodes.add(iter.adjNode());
+                                //nodes.add(iter.adjNode());
                             } else {
                                 Cell cell = buildSubgraph(baseQkey, true);
                                 RoutingAlgorithm algo = new AlgorithmPreparation(cell.encoder).graph(cell.graph).createAlgo();
@@ -161,24 +159,24 @@ public class SubgraphTask implements Runnable {
                                     PointList list = path1.calcPoints();
                                     for(int j = 0; j < list.size()-1; j ++)
                                         roadPoints.add(list.latitude(j), list.longitude(j));
-                                    
+                                    /*
                                     Map<Integer, Integer> inverse = new HashMap<>();
                                     for(Integer key: cell.graph2subgraph.keySet()) {
                                         int value = cell.graph2subgraph.get(key);
                                         inverse.put(value, key);
                                     }
                                     TIntList nodes1 = path1.calcNodes();
-                                    for(int h = 0; h< nodes1.size()-1; h++)
-                                        nodes.add(inverse.get(nodes1.get(h)));
+                                    for(int h = 0; h < nodes1.size()-1; h++)
+                                        nodes.add(inverse.get(nodes1.get(h)));*/
                                 }
                             }
                         } else {
-                            roadPoints.add(adjLat, adjLon); 
+                            roadPoints.add(adjLat, adjLon);
                             PointList pillarNodes = iter.wayGeometry();
                             pillarNodes.reverse();
                             for(int i = 0; i < pillarNodes.size(); i ++)
                                 roadPoints.add(pillarNodes.latitude(i), pillarNodes.longitude(i));
-                            nodes.add(iter.adjNode());
+                            //nodes.add(iter.adjNode());
                         }
                     } catch (Exception ex) {
                         Logger.getLogger(SubgraphTask.class.getName()).log(Level.SEVERE, null, ex);
@@ -188,7 +186,7 @@ public class SubgraphTask implements Runnable {
             PointList points = path.calcPoints();
             roadPoints.add(points.latitude(points.size()-1), points.longitude(points.size()-1));
             // nodes.add(<last_node>);
-            System.out.println(nodes);
+            //System.out.println(nodes);
             /*
             for(int i = 0; i < points.size(); i ++) {
                 String qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(points.longitude(i), points.latitude(i), scale), scale);
