@@ -69,21 +69,12 @@ public class OverlayTest extends TestCase {
     
     private GHPlace[] fromNodes = { new GHPlace(52.4059488, 13.2831624) };
     private GHPlace[] toNodes = { new GHPlace(52.5663245, 13.5318755) };
-    private String dbName = "berlin_routing";
-    private int POINTS_COUNT = 1;
-    private WKTReader reader = new WKTReader();
+    private final static String dbName = "berlin_routing";
+    private final static int POINTS_COUNT = 2;
+    private final WKTReader reader = new WKTReader();
     
     public OverlayTest(String testName) {
         super(testName);
-    }
-    
-    @BeforeClass
-    public static void setUpClass() {
-        System.out.println("SETUP");
-    }
-    
-    @AfterClass
-    public static void tearDownClass() {
     }
     
     @Before
@@ -107,8 +98,8 @@ public class OverlayTest extends TestCase {
                 ids.add(value);
         }
         st.close();
-        ids.set(0, 22098);
-        ids.set(1, 1165);
+        //ids.set(0, 22098);
+        //ids.set(1, 1165);
         fromNodes = new GHPlace[POINTS_COUNT];
         toNodes = new GHPlace[POINTS_COUNT];
         PreparedStatement pst = conn.prepareStatement("select y1, x1 from (select y1, x1, source from ways union select y2, x2, target from ways) t where source=?");
