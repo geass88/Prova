@@ -43,10 +43,13 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.WKTReader;
 import gnu.trove.list.TIntList;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -66,8 +69,8 @@ public class OverlayTest extends TestCase {
     
     private GHPlace[] fromNodes = { new GHPlace(52.4059488, 13.2831624) };
     private GHPlace[] toNodes = { new GHPlace(52.5663245, 13.5318755) };
-    //private int[] fromNodes = { 26736 };
-    //private int[] toNodes = { 9595 };
+    private String dbName = "berlin_routing";
+    private int POINTS_COUNT = 4;
     private WKTReader reader = new WKTReader();
     
     public OverlayTest(String testName) {
@@ -86,6 +89,39 @@ public class OverlayTest extends TestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
+        Main.TEST = true;
+        Connection conn = Main.getConnection(dbName);
+        Statement st = conn.createStatement();
+        
+        ResultSet rs = st.executeQuery("SELECT max(source), max(target) from ways");
+        rs.next();
+        int maxId = Math.max(rs.getInt(1), rs.getInt(2));
+        rs.close();
+        List<Integer> ids = new ArrayList<>(POINTS_COUNT*2);
+        for(int i = 0; i < POINTS_COUNT*2; i++) {
+            int value = (int)Math.round(Math.random()*maxId);
+            if(ids.contains(value))
+                i--;
+            else
+                ids.add(value);
+        }
+        st.close();
+        fromNodes = new GHPlace[POINTS_COUNT];
+        toNodes = new GHPlace[POINTS_COUNT];
+        PreparedStatement pst = conn.prepareStatement("select y1, x1 from (select y1, x1, source from ways union select y2, x2, target from ways) t where source=?");
+        for(int i = 0; i < POINTS_COUNT*2; i++) {
+            pst.clearParameters();
+            pst.setInt(1, ids.get(i));
+            rs = pst.executeQuery();
+            rs.next();
+            if(i < POINTS_COUNT)
+                fromNodes[i] = new GHPlace(rs.getDouble(1), rs.getDouble(2));
+            else
+                toNodes[i-POINTS_COUNT] = new GHPlace(rs.getDouble(1), rs.getDouble(2));
+            rs.close();
+        }
+        pst.close();
+        conn.close();
     }
     
     @After
@@ -94,12 +130,11 @@ public class OverlayTest extends TestCase {
         super.tearDown();
     }
     
-    private PointList getPath2() throws Exception {
+    private PointList getPath2(final GHPlace from, final GHPlace to) throws Exception {
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
-        RawEncoder vehicle = new RawEncoder(130);
+        RawEncoder vehicle = new MyCarFlagEncoder(130);
         
-        String dbName = "berlin_routing";
         try(Connection conn = Main.getConnection(dbName); 
             Statement st = conn.createStatement()) {
             ResultSet rs;
@@ -119,24 +154,22 @@ public class OverlayTest extends TestCase {
         
         GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
-        GHResponse ph = instance.route(new GHRequest(fromNodes[0], toNodes[0]).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.406608,13.286591&point=52.568004,13.53241
+        GHResponse ph = instance.route(new GHRequest(from, to).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.406608,13.286591&point=52.568004,13.53241
         time = System.nanoTime() - time;
-        assertTrue(ph.found());
+        if(!ph.found()) return null;
         System.out.println("road graph: "+time/1e9);
         System.out.println(ph.distance());
         System.out.println(ph.points().size());
-        System.out.println(ph.points());
+        System.out.println(ph.path.calcNodes());
         System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
         return ph.points();
     }
     
-    private PointList getPath1() throws Exception {
-        int scale = 13;
+    private PointList getPath1(final GHPlace from, final GHPlace to, int scale) throws Exception {
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
-        RawEncoder vehicle = new RawEncoder(130);
+        RawEncoder vehicle = new MyCarFlagEncoder(130);
         
-        String dbName = "berlin_routing";
         try(Connection conn = Main.getConnection(dbName); 
             Statement st = conn.createStatement()) {
             ResultSet rs;
@@ -165,9 +198,9 @@ public class OverlayTest extends TestCase {
         Graph g = graph.copyTo(s);
         */
         
-        String start_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(fromNodes[0].lon, fromNodes[0].lat, scale), scale);
+        String start_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(from.lon, from.lat, scale), scale);
         Cell startCell = task.getSubgraph(start_qkey);
-        String end_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(toNodes[0].lon, toNodes[0].lat, scale), scale);
+        String end_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(to.lon, to.lat, scale), scale);
         Cell endCell = task.getSubgraph(end_qkey);
         Set<BoundaryNode> set = new TreeSet<>();
         set.addAll(startCell.boundaryNodes);
@@ -184,7 +217,8 @@ public class OverlayTest extends TestCase {
         */
         GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
-        GHResponse ph = instance.route(new GHRequest(fromNodes[0], toNodes[0]).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));
+        GHResponse ph = instance.route(new GHRequest(from, to).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));
+        if(!ph.found()) return null;
         /*time = System.nanoTime() - time;
         assertTrue(ph.found());
         System.out.println("overlay: "+time/1e9);*/
@@ -199,13 +233,17 @@ public class OverlayTest extends TestCase {
         time = System.nanoTime() - time;
         System.out.println(ph.path.calcNodes());
         System.out.println("overlay: "+time/1e9);
-        System.out.println(roadPoints);
+        System.out.println(roadPoints.size());
         System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
         return roadPoints;
     }
     
     @Test
     public void testPath() throws Exception {
-        assertEquals(getPath1(), getPath2());
+        for(int i = 0; i < fromNodes.length; i++) {
+            PointList expected = getPath2(fromNodes[i], toNodes[i]);
+            for(int j = Main.MIN_SCALE; j < Main.MAX_SCALE; j ++)
+                assertEquals(expected, getPath1(fromNodes[i], toNodes[i], j));
+        }
     }
 }

@@ -47,11 +47,13 @@ public class Main {
     public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS = 10;
     private final static Map<String, ConnectionPool> DATASOURCES = new HashMap<>();
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
+    public static boolean TEST = false;
     
     static {
         for(String db: DBS)
             DATASOURCES.put(db, new ConnectionPool(db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
-        
+        for(ConnectionPool ds: DATASOURCES.values())
+                    ds.close();
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
@@ -63,7 +65,10 @@ public class Main {
     
     public static Connection getConnection(final String db) {
         try {
-            return DATASOURCES.get(db).getDataSource().getConnection();
+            if(TEST)
+                return DriverManager.getConnection(ConnectionPool.JDBC_URI + db, "postgres", "postgres");
+            else
+                return DATASOURCES.get(db).getDataSource().getConnection();
         } catch (SQLException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }

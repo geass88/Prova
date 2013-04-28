@@ -224,6 +224,7 @@ public class SubgraphTask implements Runnable {
             try {
                 st1.close();
                 conn.close();
+                System.out.println("connection closed");
             } catch (SQLException ex) {
                 logger.log(Level.SEVERE, null, ex);
             }
