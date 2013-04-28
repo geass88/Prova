@@ -151,11 +151,13 @@ public class OverlayTest extends TestCase {
         GHResponse ph = instance.route(new GHRequest(from, to).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));//52.406608,13.286591&point=52.568004,13.53241
         time = System.nanoTime() - time;
         if(!ph.found()) return null;
+        
         System.out.println("road graph: "+time/1e9);
+        /*
         System.out.println(ph.distance());
         System.out.println(ph.points().size());
         System.out.println(ph.path.calcNodes());
-        System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
+        System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));*/
         return ph.points();
     }
     
@@ -222,10 +224,10 @@ public class OverlayTest extends TestCase {
         //time = System.nanoTime();
         PointList roadPoints = task.pathUnpacking(graph, ph.path, start_qkey, end_qkey);
         time = System.nanoTime() - time;
-        System.out.println(ph.path.calcNodes());
+        //System.out.println(ph.path.calcNodes());
         System.out.println("overlay: "+time/1e9);
-        System.out.println(roadPoints.size());
-        System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
+        //System.out.println(roadPoints.size());
+        //System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
         return roadPoints;
     }
     
