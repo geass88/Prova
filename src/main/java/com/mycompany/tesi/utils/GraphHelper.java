@@ -60,19 +60,24 @@ public class GraphHelper {
         
     }
     
-    public static GraphStorage cloneGraph(final Graph g, final BoundaryNode[] nodes) {
+    public static GraphStorage cloneGraph(final Graph g, final Cell start, final Cell end) {
         GraphStorage g1 = new GraphBuilder().create();
         g1.combinedEncoder(RawEncoder.COMBINED_ENCODER);
         
         for(int i = 0; i < g.nodes(); i++)
             g1.setNode(i, g.getLatitude(i), g.getLongitude(i));
         
-        Set<Integer> markedNodes = new TreeSet<>();
-        for(int i = 0; i < nodes.length; i++)
-            markedNodes.add(nodes[i].getRoadNodeId());
+        Set<Integer> markedNodes1 = new TreeSet<>();
+        Set<Integer> markedNodes2 = new TreeSet<>();
+        for(BoundaryNode node: start.boundaryNodes)
+            markedNodes1.add(node.getRoadNodeId());
+        
+        for(BoundaryNode node: end.boundaryNodes)
+            markedNodes2.add(node.getRoadNodeId());
+        
         AllEdgesIterator i = g.getAllEdges();
         while(i.next()) {
-            if(markedNodes.contains(i.baseNode()) && markedNodes.contains(i.adjNode()))
+            if((markedNodes1.contains(i.baseNode()) && markedNodes1.contains(i.adjNode())) || (markedNodes2.contains(i.baseNode()) && markedNodes2.contains(i.adjNode())))
                 continue;
             g1.edge(i.baseNode(), i.adjNode(), i.distance(), i.flags()).wayGeometry(i.wayGeometry());
         }

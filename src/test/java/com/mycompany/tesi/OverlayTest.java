@@ -79,6 +79,7 @@ public class OverlayTest extends TestCase {
     
     @BeforeClass
     public static void setUpClass() {
+        System.out.println("SETUP");
     }
     
     @AfterClass
@@ -204,16 +205,13 @@ public class OverlayTest extends TestCase {
         Cell startCell = task.getSubgraph(start_qkey);
         String end_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(to.lon, to.lat, scale), scale);
         Cell endCell = task.getSubgraph(end_qkey);
-        Set<BoundaryNode> set = new TreeSet<>();
-        set.addAll(startCell.boundaryNodes);
-        set.addAll(endCell.boundaryNodes);
-        graph = GraphHelper.cloneGraph(graph, set.toArray(new BoundaryNode[set.size()]));
+        graph = GraphHelper.cloneGraph(graph, startCell, endCell);
         GraphHelper.union(graph, startCell, vehicle);
         if(!end_qkey.equals(start_qkey))
             GraphHelper.union(graph, endCell, vehicle);
         
-        /*System.out.println(start_qkey + " " + end_qkey);
-        System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(13465), graph.getLatitude(13465), scale), scale));
+        //System.out.println(start_qkey + " " + end_qkey);
+        /*System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(13465), graph.getLatitude(13465), scale), scale));
         
         System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(14483), graph.getLatitude(14483), scale), scale));
         */

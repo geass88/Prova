@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -52,8 +51,7 @@ public class Main {
     static {
         for(String db: DBS)
             DATASOURCES.put(db, new ConnectionPool(db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
-        for(ConnectionPool ds: DATASOURCES.values())
-                    ds.close();
+        
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
