@@ -158,6 +158,7 @@ public class Main {
         return null;
     }
     
+    // unused
     static void loadTiles(Connection conn) throws SQLException {
         Envelope2D bound = getBound(conn);
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);

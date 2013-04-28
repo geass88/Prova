@@ -36,6 +36,7 @@ import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.RawEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
+import com.mycompany.tesi.utils.GraphHelper;
 import com.mycompany.tesi.utils.QuadKeyManager;
 import com.mycompany.tesi.utils.TileSystem;
 import com.vividsolutions.jts.geom.Geometry;
@@ -129,45 +130,6 @@ public class OverlayTest extends TestCase {
         System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
     }
     
-    private void union(final Graph graph, final Cell cell, final RawEncoder vehicle) {
-        Map<Integer, Integer> inverse = new HashMap<>();
-        for(Integer key: cell.graph2subgraph.keySet()) {
-            int value = cell.graph2subgraph.get(key);
-            graph.setNode(key, cell.graph.getLatitude(value), cell.graph.getLongitude(value));
-            inverse.put(value, key);
-        }
-        
-        AllEdgesIterator iterator = cell.graph.getAllEdges();
-        while(iterator.next()) {
-            EdgeIterator edge;
-            if(cell.encoder.isForward(iterator.flags()))
-                edge = graph.edge(inverse.get(iterator.baseNode()), inverse.get(iterator.adjNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isBackward(iterator.flags())));
-            else
-                edge = graph.edge(inverse.get(iterator.adjNode()), inverse.get(iterator.baseNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isForward(iterator.flags())));
-            edge.wayGeometry(iterator.wayGeometry());
-        }
-        
-    }
-    
-    private GraphStorage cloneGraph(final Graph g, BoundaryNode[] nodes) {
-        GraphStorage g1 = new GraphBuilder().create();
-        g1.combinedEncoder(RawEncoder.COMBINED_ENCODER);
-        
-        for(int i = 0; i < g.nodes(); i++)
-            g1.setNode(i, g.getLatitude(i), g.getLongitude(i));
-        
-        Set<Integer> marked = new TreeSet<>();
-        for(int i = 0; i < nodes.length; i++)
-            marked.add(nodes[i].getRoadNodeId());
-        AllEdgesIterator i = g.getAllEdges();
-        while(i.next()) {
-            if(marked.contains(i.baseNode()) && marked.contains(i.adjNode()))
-                continue;
-            g1.edge(i.baseNode(), i.adjNode(), i.distance(), i.flags()).wayGeometry(i.wayGeometry());
-        }
-        return g1;
-    }
-    
     @Test
     public void testPath1() throws Exception {
         int scale = 13;
@@ -211,16 +173,16 @@ public class OverlayTest extends TestCase {
         Set<BoundaryNode> set = new TreeSet<>();
         set.addAll(startCell.boundaryNodes);
         set.addAll(endCell.boundaryNodes);
-        graph = cloneGraph(graph, set.toArray(new BoundaryNode[set.size()]));
-        union(graph, startCell, vehicle);
+        graph = GraphHelper.cloneGraph(graph, set.toArray(new BoundaryNode[set.size()]));
+        GraphHelper.union(graph, startCell, vehicle);
         if(!end_qkey.equals(start_qkey))
-            union(graph, endCell, vehicle);
+            GraphHelper.union(graph, endCell, vehicle);
         
-        System.out.println(start_qkey + " " + end_qkey);
+        /*System.out.println(start_qkey + " " + end_qkey);
         System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(13465), graph.getLatitude(13465), scale), scale));
         
         System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(14483), graph.getLatitude(14483), scale), scale));
-        
+        */
         GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
         GHResponse ph = instance.route(new GHRequest(fromNodes[0], toNodes[0]).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));

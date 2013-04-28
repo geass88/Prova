@@ -62,7 +62,7 @@ public class BoundaryNode implements Comparable<BoundaryNode>, Serializable {
     
     @Override
     public int compareTo(BoundaryNode o) {
-        return (o!=null && this.nodeId == o.nodeId? 0: 1);
+        return (o!=null && this.roadNodeId == o.roadNodeId? 0: 1);
     }
     
 }
