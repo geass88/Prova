@@ -172,7 +172,7 @@ public class OverlayTest extends TestCase {
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
         RawEncoder vehicle = new MyCarFlagEncoder(130);
-        
+        TileSystem tileSystem;
         try(Connection conn = Main.getConnection(dbName); 
             Statement st = conn.createStatement()) {
             ResultSet rs;
@@ -191,8 +191,8 @@ public class OverlayTest extends TestCase {
                 }
             }
             rs.close();
+            tileSystem = new TileSystem(Main.getBound(conn), Main.MAX_SCALE);
         }
-        TileSystem tileSystem = new TileSystem(Main.getBound(Main.getConnection(dbName)), Main.MAX_SCALE);
         tileSystem.computeTree();
         SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
         /*
