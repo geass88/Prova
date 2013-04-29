@@ -50,8 +50,8 @@ import org.junit.Test;
  */
 public class OverlayTest extends TestCase {
     
-    private GHPlace[] fromNodes = { new GHPlace(52.4059488, 13.2831624) };
-    private GHPlace[] toNodes = { new GHPlace(52.5663245, 13.5318755) };
+    private GHPlace[] fromNodes;// = { new GHPlace(52.4059488, 13.2831624) };
+    private GHPlace[] toNodes;// = { new GHPlace(52.5663245, 13.5318755) };
     private final static String dbName = "berlin_routing";
     private final static int POINTS_COUNT = 1;
     private final WKTReader reader = new WKTReader();
@@ -83,7 +83,7 @@ public class OverlayTest extends TestCase {
                 ids.add(value);
         }
         st.close();
-        //ids.set(0, 17553); ids.set(1, 8403);
+        ids.set(0, 17553); ids.set(1, 8403);
         
         //ids.set(0, 19474); ids.set(1, 32874);
         fromNodes = new GHPlace[POINTS_COUNT];
