@@ -71,6 +71,13 @@ public class OverlayTest extends TestCase {
         Connection conn = Main.getConnection(dbName);
         Statement st = conn.createStatement();
         
+        /*List<Integer> a = new ArrayList<>();
+        ResultSet rs = st.executeQuery("select distinct source from (select source from overlay_13 union select target from overlay_13) n");
+        while(rs.next())
+            a.add(rs.getInt(1));
+        rs.close();
+        int maxId = a.size()-1;
+        */
         ResultSet rs = st.executeQuery("SELECT max(source), max(target) from ways");
         rs.next();
         int maxId = Math.max(rs.getInt(1), rs.getInt(2));
@@ -82,12 +89,13 @@ public class OverlayTest extends TestCase {
                 i--;
             else
                 ids.add(value);
+                //ids.add(a.get(value));
         }
         st.close();
         //ids.set(0, 17553); ids.set(1, 8403);
         
         //ids.set(0, 19474); ids.set(1, 32874);
-        ids.set(0, 19306); ids.set(1, 2339);
+        ids.set(0, 10258); ids.set(1, 21855);//hamburg
         fromNodes = new GHPlace[POINTS_COUNT];
         toNodes = new GHPlace[POINTS_COUNT];
         PreparedStatement pst = conn.prepareStatement("select y1, x1 from (select y1, x1, source from ways union select y2, x2, target from ways) t where source=?");
@@ -216,7 +224,7 @@ public class OverlayTest extends TestCase {
         if(!end_qkey.equals(start_qkey))
             GraphHelper.union(graph, endCell, vehicle);
         
-    //    System.out.println(start_qkey + " " + end_qkey);
+        System.out.println(start_qkey + " " + end_qkey);
         /*System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(13465), graph.getLatitude(13465), scale), scale));
         
         System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(14483), graph.getLatitude(14483), scale), scale));

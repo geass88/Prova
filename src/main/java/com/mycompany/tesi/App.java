@@ -230,7 +230,7 @@ public class App {
         graph.edge(1,3, 800, vehicle.flags(50., false));//.wayGeometry(pillar);*/
         graph.edge(2,3, 100, vehicle.flags(50, true));
         graph.edge(3,1, 200, vehicle.flags(10, false));
-        graph.edge(1,2, 100, vehicle.flags(50, true)).wayGeometry(pillar);
+        graph.edge(1,2, 100, vehicle.flags(50, false)).wayGeometry(pillar);
         //graph.edge(1,3, 800, enc.flags(50, false));//.wayGeometry(pillar);
         Map<Integer, Integer> ids=new HashMap<>();
         ids.put(1, 30);
@@ -239,13 +239,15 @@ public class App {
         for(Integer i: ids.keySet())
             graph1.setNode(ids.get(i), graph.getLatitude(i), graph.getLongitude(i));
         AllEdgesIterator i = graph.getAllEdges();
-        while(i.next())
+        while(i.next()) {
+            PointList g =i.wayGeometry();
             if(vehicle.isForward(i.flags()))
-                graph1.edge(ids.get(i.baseNode()), ids.get(i.adjNode()), i.distance(), vehicle1.flags(vehicle.getSpeedHooked(i.flags()), vehicle.isBackward(i.flags())));
+                graph1.edge(ids.get(i.baseNode()), ids.get(i.adjNode()), i.distance(), vehicle1.flags(vehicle.getSpeedHooked(i.flags()), vehicle.isBackward(i.flags()))).wayGeometry(g);
             else {
-                System.out.println(ids.get(i.adjNode())+" "+ids.get(i.baseNode()));
-                graph1.edge(ids.get(i.adjNode()), ids.get(i.baseNode()), i.distance(), vehicle1.flags(vehicle.getSpeedHooked(i.flags()), vehicle.isForward(i.flags())));
+                g.reverse();
+                graph1.edge(ids.get(i.adjNode()), ids.get(i.baseNode()), i.distance(), vehicle1.flags(vehicle.getSpeedHooked(i.flags()), vehicle.isForward(i.flags()))).wayGeometry(g);
             }
+        }
         for(int d=0; d<=graph.nodes(); d++)
         System.out.println("node "+graph.getLatitude(d)+" " + graph.getLongitude(d));
         i = graph.getAllEdges();
