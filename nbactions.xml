@@ -7,7 +7,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xms128m -Xmx3096m -classpath %classpath com.mycompany.tesi.Main</exec.args>
+                <exec.args>-Xms128m -Xmx2560m -classpath %classpath com.mycompany.tesi.Main</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -18,7 +18,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xms128m -Xmx3096m -classpath %classpath com.mycompany.tesi.Main</exec.args>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xms128m -Xmx2560m -classpath %classpath com.mycompany.tesi.Main</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -30,7 +30,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>${profiler.args} -Xms128m -Xmx3096m -classpath %classpath com.mycompany.tesi.Main</exec.args>
+                <exec.args>${profiler.args} -Xms128m -Xmx2560m -classpath %classpath com.mycompany.tesi.Main</exec.args>
                 <exec.executable>${profiler.java}</exec.executable>
             </properties>
         </action>

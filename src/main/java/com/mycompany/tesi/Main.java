@@ -149,19 +149,6 @@ public class Main {
             pool.execute(new TasksHelper(tileSystem, db, i));//new SubgraphTask(tileSystem, db, i));
     }
     
-    static PointList getPillars(Geometry g) {
-        int pillarNumber = g.getNumPoints() - 2;
-        if(pillarNumber > 0) {
-            PointList pillarNodes = new PointList(pillarNumber);
-            for(int i = 1; i <= pillarNumber; i ++) {
-                pillarNodes.add(g.getCoordinates()[i].getOrdinate(1), g.getCoordinates()[i].getOrdinate(0));
-                //System.out.println("lat=" + g.getCoordinates()[i].getOrdinate(1) +" lon = "+ g.getCoordinates()[i].getOrdinate(0));
-            }
-            return pillarNodes;
-        }
-        return null;
-    }
-    
     // unused
     static void loadTiles(Connection conn) throws SQLException {
         Envelope2D bound = getBound(conn);

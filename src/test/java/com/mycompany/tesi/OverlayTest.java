@@ -130,7 +130,7 @@ public class OverlayTest extends TestCase {
                 String wkt = rs.getString(6);
                 if(wkt != null) {
                     Geometry geometry = reader.read(wkt);
-                    edge.wayGeometry(Main.getPillars(geometry));
+                    edge.wayGeometry(GraphHelper.getPillars(geometry));
                 }
             }
             rs.close();
@@ -155,7 +155,7 @@ public class OverlayTest extends TestCase {
             while(rs.next()) {
                 EdgeIterator edge = graph.edge(rs.getInt(1), rs.getInt(2), rs.getDouble(3), vehicle.flags(rs.getDouble(5), rs.getBoolean(4)));
                 Geometry geometry = reader.read(rs.getString(6));
-                edge.wayGeometry(Main.getPillars(geometry));
+                edge.wayGeometry(GraphHelper.getPillars(geometry));
             }
             rs.close();
         }
@@ -193,7 +193,7 @@ public class OverlayTest extends TestCase {
                 String wkt = rs.getString(6);
                 if(wkt != null) {
                     Geometry geometry = reader.read(wkt);
-                    edge.wayGeometry(Main.getPillars(geometry));
+                    edge.wayGeometry(GraphHelper.getPillars(geometry));
                 }
             }
             rs.close();

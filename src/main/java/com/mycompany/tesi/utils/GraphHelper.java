@@ -24,6 +24,7 @@ import com.graphhopper.util.PointList;
 import com.mycompany.tesi.SubgraphTask.Cell;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.hooks.RawEncoder;
+import com.vividsolutions.jts.geom.Geometry;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -84,4 +85,16 @@ public class GraphHelper {
         return g1;
     }
     
+    public static PointList getPillars(Geometry g) {
+        int pillarNumber = g.getNumPoints() - 2;
+        if(pillarNumber > 0) {
+            PointList pillarNodes = new PointList(pillarNumber);
+            for(int i = 1; i <= pillarNumber; i ++) {
+                pillarNodes.add(g.getCoordinates()[i].getOrdinate(1), g.getCoordinates()[i].getOrdinate(0));
+                //System.out.println("lat=" + g.getCoordinates()[i].getOrdinate(1) +" lon = "+ g.getCoordinates()[i].getOrdinate(0));
+            }
+            return pillarNodes;
+        }
+        return null;
+    }
 }

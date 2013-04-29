@@ -33,6 +33,7 @@ import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.RawEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
+import com.mycompany.tesi.utils.GraphHelper;
 import com.mycompany.tesi.utils.QuadKeyManager;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -349,7 +350,7 @@ public class SubgraphTask implements Runnable {
                         EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags); //inner 
                         if(withGeometry) {
                             Geometry geometry = reader.read(rs.getString("geometry"));
-                            edge.wayGeometry(Main.getPillars(geometry));
+                            edge.wayGeometry(GraphHelper.getPillars(geometry));
                         }
                     }
                 }
@@ -487,7 +488,13 @@ class TasksHelper implements Runnable {
                 }
             }
             st1.close();
-
+            /*SubgraphTask t1 = new SubgraphTask(tileSystem, dbName, scale, list);
+            Map<String, SubgraphTask.Cell> map = t1.getSubgraphs();
+            int count = 0;
+            for(SubgraphTask.Cell c: map.values())
+                count = c.boundaryNodes.size();
+            System.out.println(dbName +" "+scale+" AvgboundaryNodes" + count/list.size());
+            if(1==1) {return;}*/
             int amount = scale>6? 1<<(scale-7): 1;
             int start;
             List<SubgraphTask> tasks = new LinkedList<>();
