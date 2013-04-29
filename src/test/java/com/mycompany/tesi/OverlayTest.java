@@ -53,9 +53,11 @@ public class OverlayTest extends TestCase {
     private GHPlace[] fromNodes = { new GHPlace(52.4059488, 13.2831624) };
     private GHPlace[] toNodes = { new GHPlace(52.5663245, 13.5318755) };
     private final static String dbName = "berlin_routing";
-    private final static int POINTS_COUNT = 2;
+    private final static int POINTS_COUNT = 1;
     private final WKTReader reader = new WKTReader();
+    private TileSystem tileSystem;
     
+    List<Integer> ids;
     public OverlayTest(String testName) {
         super(testName);
     }
@@ -72,7 +74,7 @@ public class OverlayTest extends TestCase {
         rs.next();
         int maxId = Math.max(rs.getInt(1), rs.getInt(2));
         rs.close();
-        List<Integer> ids = new ArrayList<>(POINTS_COUNT*2);
+        ids = new ArrayList<>(POINTS_COUNT*2);
         for(int i = 0; i < POINTS_COUNT*2; i++) {
             int value = (int)Math.round(Math.random()*maxId);
             if(ids.contains(value))
@@ -81,8 +83,8 @@ public class OverlayTest extends TestCase {
                 ids.add(value);
         }
         st.close();
-        //ids.set(0, 22098);
-        //ids.set(1, 1165);
+        //ids.set(0, 19474);
+        //ids.set(1, 32874);
         fromNodes = new GHPlace[POINTS_COUNT];
         toNodes = new GHPlace[POINTS_COUNT];
         PreparedStatement pst = conn.prepareStatement("select y1, x1 from (select y1, x1, source from ways union select y2, x2, target from ways) t where source=?");
@@ -98,6 +100,8 @@ public class OverlayTest extends TestCase {
             rs.close();
         }
         pst.close();
+        tileSystem = new TileSystem(Main.getBound(conn), Main.MAX_SCALE);
+        tileSystem.computeTree();
         conn.close();
     }
     
@@ -138,9 +142,9 @@ public class OverlayTest extends TestCase {
         System.out.println("road graph: "+time/1e9);
         /*
         System.out.println(ph.distance());
-        System.out.println(ph.points().size());
+        System.out.println(ph.points().size());*/
         System.out.println(ph.path.calcNodes());
-        System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));*/
+//        System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));*/
         return ph.points();
     }
     
@@ -148,7 +152,6 @@ public class OverlayTest extends TestCase {
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
         RawEncoder vehicle = new MyCarFlagEncoder(130);
-        TileSystem tileSystem;
         try(Connection conn = Main.getConnection(dbName); 
             Statement st = conn.createStatement()) {
             ResultSet rs;
@@ -167,9 +170,7 @@ public class OverlayTest extends TestCase {
                 }
             }
             rs.close();
-            tileSystem = new TileSystem(Main.getBound(conn), Main.MAX_SCALE);
         }
-        tileSystem.computeTree();
         SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
         /*
         GraphStorage s = new GraphBuilder().create();
@@ -186,7 +187,7 @@ public class OverlayTest extends TestCase {
         if(!end_qkey.equals(start_qkey))
             GraphHelper.union(graph, endCell, vehicle);
         
-        //System.out.println(start_qkey + " " + end_qkey);
+        System.out.println(start_qkey + " " + end_qkey);
         /*System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(13465), graph.getLatitude(13465), scale), scale));
         
         System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(14483), graph.getLatitude(14483), scale), scale));
@@ -207,7 +208,7 @@ public class OverlayTest extends TestCase {
         //time = System.nanoTime();
         PointList roadPoints = task.pathUnpacking(graph, ph.path, start_qkey, end_qkey);
         time = System.nanoTime() - time;
-        //System.out.println(ph.path.calcNodes());
+        System.out.println(ph.path.calcNodes());
         System.out.println("overlay: "+time/1e9);
         //System.out.println(roadPoints.size());
         //System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
@@ -216,8 +217,9 @@ public class OverlayTest extends TestCase {
     
     @Test
     public void testPath() throws Exception {
-        for(int i = 0; i < fromNodes.length; i++) {
+        for(int i = 0; i < POINTS_COUNT; i++) {
             PointList expected = getPath2(fromNodes[i], toNodes[i]);
+            System.out.println("FROM: "+ids.get(i) + " TO: " + ids.get(i+POINTS_COUNT));
             for(int j = Main.MIN_SCALE; j < Main.MAX_SCALE; j ++)
                 assertEquals(expected, getPath1(fromNodes[i], toNodes[i], j));
         }
