@@ -83,8 +83,9 @@ public class OverlayTest extends TestCase {
                 ids.add(value);
         }
         st.close();
-        //ids.set(0, 19474);
-        //ids.set(1, 32874);
+        //ids.set(0, 17553); ids.set(1, 8403);
+        
+        //ids.set(0, 19474); ids.set(1, 32874);
         fromNodes = new GHPlace[POINTS_COUNT];
         toNodes = new GHPlace[POINTS_COUNT];
         PreparedStatement pst = conn.prepareStatement("select y1, x1 from (select y1, x1, source from ways union select y2, x2, target from ways) t where source=?");
@@ -109,6 +110,32 @@ public class OverlayTest extends TestCase {
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
+    }
+    
+    private GraphStorage readGraph(String table) throws Exception {
+        GraphStorage graph = new GraphBuilder().create();
+        graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
+        RawEncoder vehicle = new MyCarFlagEncoder(130);
+        
+        try(Connection conn = Main.getConnection(dbName); 
+            Statement st = conn.createStatement()) {
+            ResultSet rs;
+            rs = st.executeQuery("select * from ((select distinct source, y1, x1 from " + table + ") union (select distinct target, y2, x2 from " + table + ")) nodes order by source");
+            while(rs.next())
+                graph.setNode(rs.getInt(1), rs.getDouble(2), rs.getDouble(3));
+            rs.close();
+            rs = st.executeQuery("select source, target, km*1000, reverse_cost<>1000000, freeflow_speed, st_astext(the_geom) from " + table);//st_astext(the_geom)
+            while(rs.next()) {
+                EdgeIterator edge = graph.edge(rs.getInt(1), rs.getInt(2), rs.getDouble(3), vehicle.flags(rs.getDouble(5), rs.getBoolean(4)));
+                String wkt = rs.getString(6);
+                if(wkt != null) {
+                    Geometry geometry = reader.read(wkt);
+                    edge.wayGeometry(Main.getPillars(geometry));
+                }
+            }
+            rs.close();
+        }
+        return graph;
     }
     
     private PointList getPath2(final GHPlace from, final GHPlace to) throws Exception {
@@ -143,7 +170,7 @@ public class OverlayTest extends TestCase {
         /*
         System.out.println(ph.distance());
         System.out.println(ph.points().size());*/
-        System.out.println(ph.path.calcNodes());
+      //  System.out.println(ph.path.calcNodes());
 //        System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));*/
         return ph.points();
     }
@@ -187,7 +214,7 @@ public class OverlayTest extends TestCase {
         if(!end_qkey.equals(start_qkey))
             GraphHelper.union(graph, endCell, vehicle);
         
-        System.out.println(start_qkey + " " + end_qkey);
+   //     System.out.println(start_qkey + " " + end_qkey);
         /*System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(13465), graph.getLatitude(13465), scale), scale));
         
         System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(14483), graph.getLatitude(14483), scale), scale));
@@ -208,7 +235,7 @@ public class OverlayTest extends TestCase {
         //time = System.nanoTime();
         PointList roadPoints = task.pathUnpacking(graph, ph.path, start_qkey, end_qkey);
         time = System.nanoTime() - time;
-        System.out.println(ph.path.calcNodes());
+  //      System.out.println(ph.path.calcNodes());
         System.out.println("overlay: "+time/1e9);
         //System.out.println(roadPoints.size());
         //System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
