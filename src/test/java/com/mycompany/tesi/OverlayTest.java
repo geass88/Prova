@@ -53,7 +53,7 @@ public class OverlayTest extends TestCase {
     
     private GHPlace[] fromNodes;// = { new GHPlace(52.4059488, 13.2831624) };
     private GHPlace[] toNodes;// = { new GHPlace(52.5663245, 13.5318755) };
-    private final static String dbName = "london_routing";
+    private final static String dbName = "hamburg_routing";
     private final static int POINTS_COUNT = 1;
     private final WKTReader reader = new WKTReader();
     private TileSystem tileSystem;
@@ -86,7 +86,8 @@ public class OverlayTest extends TestCase {
         st.close();
         //ids.set(0, 17553); ids.set(1, 8403);
         
-        ids.set(0, 19474); ids.set(1, 32874);
+        //ids.set(0, 19474); ids.set(1, 32874);
+        ids.set(0, 19306); ids.set(1, 2339);
         fromNodes = new GHPlace[POINTS_COUNT];
         toNodes = new GHPlace[POINTS_COUNT];
         PreparedStatement pst = conn.prepareStatement("select y1, x1 from (select y1, x1, source from ways union select y2, x2, target from ways) t where source=?");

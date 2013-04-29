@@ -31,6 +31,7 @@ import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.Helper;
 import com.graphhopper.util.PointList;
 import static com.mycompany.tesi.TasksHelper.POOL_SIZE;
+import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -210,8 +211,11 @@ public class App {
         
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
+        GraphStorage graph1 = new GraphBuilder().create();
+        graph.combinedEncoder(MyCarFlagEncoder.COMBINED_ENCODER);
         final VehicleEncoder enc = AcceptWay.parse("CAR").firstEncoder();
         final MyCarFlagEncoder vehicle = new MyCarFlagEncoder(130);
+        final MyCarFlagEncoder vehicle1 = new MyCarFlagEncoder(130);
         //graph.combinedEncoder(vehicle.COMBINED_ENCODER);
         graph.setNode(1, 1, 2);
         graph.setNode(2, 2, 3);
@@ -224,20 +228,40 @@ public class App {
         graph.edge(3,1, 200, vehicle.flags(10.1, false));
         graph.edge(1,2, 100, vehicle.flags(50., true));//.wayGeometry(pillar);
         graph.edge(1,3, 800, vehicle.flags(50., false));//.wayGeometry(pillar);*/
-        graph.edge(2,3, 100, enc.flags(50, true));
-        graph.edge(3,1, 200, enc.flags(10, false));
-        graph.edge(1,2, 100, enc.flags(50, true)).wayGeometry(pillar);
+        graph.edge(2,3, 100, vehicle.flags(50, true));
+        graph.edge(3,1, 200, vehicle.flags(10, false));
+        graph.edge(1,2, 100, vehicle.flags(50, true)).wayGeometry(pillar);
         //graph.edge(1,3, 800, enc.flags(50, false));//.wayGeometry(pillar);
-        
-        for(int d=0; d<=graph.nodes(); d++)
-        System.out.println("node "+graph.getLatitude(d)+" " + graph.getLongitude(d));
+        Map<Integer, Integer> ids=new HashMap<>();
+        ids.put(1, 30);
+        ids.put(3, 10);
+        ids.put(2, 20);
+        for(Integer i: ids.keySet())
+            graph1.setNode(ids.get(i), graph.getLatitude(i), graph.getLongitude(i));
         AllEdgesIterator i = graph.getAllEdges();
         while(i.next())
-            System.out.println(i.baseNode()+" "+i.adjNode() + " " +i.wayGeometry());//+" "+i.flags()+" "+i.distance()+" "+vehicle.getSpeedHooked(i.flags())+ " " + vehicle.isForward(i.flags())+ " " + vehicle.isBackward(i.flags()));
+            if(vehicle.isForward(i.flags()))
+                graph1.edge(ids.get(i.baseNode()), ids.get(i.adjNode()), i.distance(), vehicle1.flags(vehicle.getSpeedHooked(i.flags()), vehicle.isBackward(i.flags())));
+            else {
+                System.out.println(ids.get(i.adjNode())+" "+ids.get(i.baseNode()));
+                graph1.edge(ids.get(i.adjNode()), ids.get(i.baseNode()), i.distance(), vehicle1.flags(vehicle.getSpeedHooked(i.flags()), vehicle.isForward(i.flags())));
+            }
+        for(int d=0; d<=graph.nodes(); d++)
+        System.out.println("node "+graph.getLatitude(d)+" " + graph.getLongitude(d));
+        i = graph.getAllEdges();
+        while(i.next())
+            System.out.println("arc "+i.baseNode()+" "+i.adjNode() + " " +i.wayGeometry() +" " +vehicle.isForward(i.flags())+ " " + vehicle.isBackward(i.flags()));
+
+        
+         for(int d=0; d<=graph1.nodes(); d++)
+        System.out.println("node "+graph1.getLatitude(d)+" " + graph1.getLongitude(d));
+        i = graph1.getAllEdges();
+        while(i.next())
+            System.out.println("arc "+i.baseNode()+" "+i.adjNode() + " " +i.wayGeometry() +" " +vehicle1.isForward(i.flags())+ " " + vehicle1.isBackward(i.flags()));
 
         AlgorithmPreparation op= new NoOpAlgorithmPreparation() {
             @Override public RoutingAlgorithm createAlgo() {                
-                return new AStarBidirection(_graph, enc).type(new com.graphhopper.routing.util.FastestCalc(enc));
+                return new AStarBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
             }
         }.graph(graph);
                 

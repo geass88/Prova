@@ -47,12 +47,13 @@ public class GraphHelper {
         AllEdgesIterator iterator = cell.graph.getAllEdges();
         while(iterator.next()) {
             EdgeIterator edge;
-            if(cell.encoder.isForward(iterator.flags())) {
-                edge = graph.edge(inverse.get(iterator.baseNode()), inverse.get(iterator.adjNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isBackward(iterator.flags())));
+            int flags = iterator.flags();
+            if(cell.encoder.isForward(flags)) {
+                edge = graph.edge(inverse.get(iterator.baseNode()), inverse.get(iterator.adjNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(flags), cell.encoder.isBackward(flags)));
                 edge.wayGeometry(iterator.wayGeometry());
             }
             else {
-                edge = graph.edge(inverse.get(iterator.adjNode()), inverse.get(iterator.baseNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(iterator.flags()), cell.encoder.isForward(iterator.flags())));
+                edge = graph.edge(inverse.get(iterator.adjNode()), inverse.get(iterator.baseNode()), iterator.distance(), vehicle.flags(cell.encoder.getSpeedHooked(flags), cell.encoder.isForward(flags)));
                 PointList pillars = iterator.wayGeometry();
                 pillars.reverse();
                 edge.wayGeometry(pillars);
