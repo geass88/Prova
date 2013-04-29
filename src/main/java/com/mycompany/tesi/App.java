@@ -228,9 +228,9 @@ public class App {
         graph.edge(3,1, 200, enc.flags(10, false));
         graph.edge(1,2, 100, enc.flags(50, true)).wayGeometry(pillar);
         //graph.edge(1,3, 800, enc.flags(50, false));//.wayGeometry(pillar);
-        /*
-        for(int d=0; d<graph.nodes(); d++)
-        System.out.println(graph.getLatitude(d+1)+" " + graph.getLongitude(d+1));*/
+        
+        for(int d=0; d<=graph.nodes(); d++)
+        System.out.println("node "+graph.getLatitude(d)+" " + graph.getLongitude(d));
         AllEdgesIterator i = graph.getAllEdges();
         while(i.next())
             System.out.println(i.baseNode()+" "+i.adjNode() + " " +i.wayGeometry());//+" "+i.flags()+" "+i.distance()+" "+vehicle.getSpeedHooked(i.flags())+ " " + vehicle.isForward(i.flags())+ " " + vehicle.isBackward(i.flags()));

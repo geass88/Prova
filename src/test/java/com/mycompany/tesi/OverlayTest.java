@@ -28,6 +28,7 @@ import com.mycompany.tesi.SubgraphTask.Cell;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.RawEncoder;
+import com.mycompany.tesi.hooks.TimeCalculation;
 import com.mycompany.tesi.utils.GraphHelper;
 import com.mycompany.tesi.utils.QuadKeyManager;
 import com.mycompany.tesi.utils.TileSystem;
@@ -52,7 +53,7 @@ public class OverlayTest extends TestCase {
     
     private GHPlace[] fromNodes;// = { new GHPlace(52.4059488, 13.2831624) };
     private GHPlace[] toNodes;// = { new GHPlace(52.5663245, 13.5318755) };
-    private final static String dbName = "berlin_routing";
+    private final static String dbName = "london_routing";
     private final static int POINTS_COUNT = 1;
     private final WKTReader reader = new WKTReader();
     private TileSystem tileSystem;
@@ -83,9 +84,9 @@ public class OverlayTest extends TestCase {
                 ids.add(value);
         }
         st.close();
-        ids.set(0, 17553); ids.set(1, 8403);
+        //ids.set(0, 17553); ids.set(1, 8403);
         
-        //ids.set(0, 19474); ids.set(1, 32874);
+        ids.set(0, 19474); ids.set(1, 32874);
         fromNodes = new GHPlace[POINTS_COUNT];
         toNodes = new GHPlace[POINTS_COUNT];
         PreparedStatement pst = conn.prepareStatement("select y1, x1 from (select y1, x1, source from ways union select y2, x2, target from ways) t where source=?");
@@ -171,7 +172,7 @@ public class OverlayTest extends TestCase {
         System.out.println(ph.distance());
         System.out.println(ph.points().size());*/
       //  System.out.println(ph.path.calcNodes());
-//        System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));*/
+        // System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
         return ph.points();
     }
     
@@ -214,7 +215,7 @@ public class OverlayTest extends TestCase {
         if(!end_qkey.equals(start_qkey))
             GraphHelper.union(graph, endCell, vehicle);
         
-   //     System.out.println(start_qkey + " " + end_qkey);
+    //    System.out.println(start_qkey + " " + end_qkey);
         /*System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(13465), graph.getLatitude(13465), scale), scale));
         
         System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(14483), graph.getLatitude(14483), scale), scale));
@@ -235,7 +236,7 @@ public class OverlayTest extends TestCase {
         //time = System.nanoTime();
         PointList roadPoints = task.pathUnpacking(graph, ph.path, start_qkey, end_qkey);
         time = System.nanoTime() - time;
-  //      System.out.println(ph.path.calcNodes());
+   //     System.out.println(ph.path.calcNodes());
         System.out.println("overlay: "+time/1e9);
         //System.out.println(roadPoints.size());
         //System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));
@@ -247,7 +248,7 @@ public class OverlayTest extends TestCase {
         for(int i = 0; i < POINTS_COUNT; i++) {
             PointList expected = getPath2(fromNodes[i], toNodes[i]);
             System.out.println("FROM: "+ids.get(i) + " TO: " + ids.get(i+POINTS_COUNT));
-            for(int j = Main.MIN_SCALE; j < Main.MAX_SCALE; j ++)
+            for(int j = Main.MIN_SCALE; j <= Main.MAX_SCALE; j ++)
                 assertEquals(expected, getPath1(fromNodes[i], toNodes[i], j));
         }
     }
