@@ -17,6 +17,7 @@ package com.mycompany.tesi;
 
 import com.mycompany.tesi.utils.TileSystem;
 import com.graphhopper.routing.DijkstraBidirection;
+import com.graphhopper.routing.DijkstraBidirectionRef;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.Path.EdgeVisitor;
 import com.graphhopper.routing.RoutingAlgorithm;
@@ -453,7 +454,7 @@ class AlgorithmPreparation extends NoOpAlgorithmPreparation {
     
     @Override
     public RoutingAlgorithm createAlgo() {
-        return new DijkstraBidirection(_graph, vehicle).type(new FastestCalc(vehicle));
+        return new DijkstraBidirectionRef(_graph, vehicle).type(new FastestCalc(vehicle));
     }
     
 }
