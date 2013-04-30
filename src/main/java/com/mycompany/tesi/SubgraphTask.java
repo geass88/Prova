@@ -387,14 +387,17 @@ public class SubgraphTask implements Runnable {
                 Path path = algo.calcPath(nodesArray[i].getNodeId(), nodesArray[j].getNodeId());
                 Metrics m = null, rm = null;
                 if(path.found()) {
-                   m = new Metrics(path.distance(), new TimeCalculation(vehicle).calcTime(path));
-                   double speed = m.getDistance()*3.6/m.getTime();
-                   if(speed > max_speed) max_speed = speed;
+                    m = new Metrics(path.distance(), new TimeCalculation(vehicle).calcTime(path));
+                    double speed = m.getDistance()*3.6/m.getTime();
+                    if(speed > max_speed) max_speed = speed;
                 }
                 RoutingAlgorithm ralgo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
                 Path rpath = ralgo.calcPath(nodesArray[j].getNodeId(), nodesArray[i].getNodeId());
-                if(rpath.found())
+                if(rpath.found()) {
                     rm = new Metrics(rpath.distance(), new TimeCalculation(vehicle).calcTime(rpath));
+                    double speed = rm.getDistance()*3.6/rm.getTime();
+                    if(speed > max_speed) max_speed = speed;
+                }
                 
                 if(m != null && rm != null && m.compareTo(rm) == 0)
                     storeOverlayEdge(nodesArray[i], nodesArray[j], m, true);
