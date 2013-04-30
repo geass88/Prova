@@ -422,8 +422,8 @@ public class SubgraphTask implements Runnable {
         st2.setInt(2, target.getRoadNodeId());
         st2.setDouble(3, metrics.getDistance()/1000.);
         st2.setDouble(4, metrics.getDistance()*3.6/metrics.getTime());
-        st2.setDouble(5, metrics.getTime());
-        st2.setDouble(6, (bothDir? metrics.getTime(): 1000000));
+        st2.setDouble(5, metrics.getTime()/3600.);
+        st2.setDouble(6, (bothDir? metrics.getTime()/3600.: 1000000));
         st2.setDouble(7, source.getPoint().getX());
         st2.setDouble(8, source.getPoint().getY());
         st2.setDouble(9, target.getPoint().getX());
