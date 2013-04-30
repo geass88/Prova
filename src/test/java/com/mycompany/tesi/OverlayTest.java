@@ -94,7 +94,7 @@ public class OverlayTest extends TestCase {
         st.close();
         //ids.set(0, 17553); ids.set(1, 8403);
         
-        //ids.set(0, 19474); ids.set(1, 32874);
+        ids.set(0, 19474); ids.set(1, 32874);//berlin
         //ids.set(0, 10258); ids.set(1, 21855);//hamburg
         fromNodes = new GHPlace[POINTS_COUNT];
         toNodes = new GHPlace[POINTS_COUNT];

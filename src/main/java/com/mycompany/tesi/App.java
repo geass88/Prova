@@ -217,9 +217,9 @@ public class App {
         final MyCarFlagEncoder vehicle = new MyCarFlagEncoder(130);
         final MyCarFlagEncoder vehicle1 = new MyCarFlagEncoder(130);
         //graph.combinedEncoder(vehicle.COMBINED_ENCODER);
-        graph.setNode(1, 1, 2);
-        graph.setNode(2, 2, 3);
-        graph.setNode(3, 3, 3);
+        graph.setNode(1, 0, 0);
+        graph.setNode(2, 0, 0);
+        graph.setNode(3, 0,0);
         System.out.println("lon "+graph.getLongitude(1));
         PointList pillar = new PointList();
         pillar.add(1.5d, 1.2d);
@@ -229,6 +229,7 @@ public class App {
         graph.edge(1,2, 100, vehicle.flags(50., true));//.wayGeometry(pillar);
         graph.edge(1,3, 800, vehicle.flags(50., false));//.wayGeometry(pillar);*/
         graph.edge(2,3, 100, vehicle.flags(50, true));
+        graph.edge(2,3, 200, vehicle.flags(50, true));
         graph.edge(3,1, 200, vehicle.flags(10, false));
         graph.edge(1,2, 100, vehicle.flags(50, false)).wayGeometry(pillar);
         //graph.edge(1,3, 800, enc.flags(50, false));//.wayGeometry(pillar);

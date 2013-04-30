@@ -77,9 +77,9 @@ public class RawEncoder implements VehicleEncoder {
     public final static CombinedEncoder COMBINED_ENCODER = new CombinedEncoder() {
         @Override
         public int swapDirection(int flags) {
-            if((flags & 3) == 3) 
+            if((flags & BOTH) == BOTH) 
                 return flags;
-            return flags ^ 3;
+            return flags ^ BOTH;
         }
     };
     
