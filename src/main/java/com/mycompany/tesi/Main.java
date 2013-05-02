@@ -84,11 +84,11 @@ public class Main {
         System.in.read();
         for(String dbName: DBS) {
             System.out.println("Processing db " + dbName + " ...");
-            /*try (Connection conn = getConnection(dbName)) {
-                subgraph(conn);
-                //create_tiles(conn);
-            }*/
-            threadedSubgraph(dbName);
+            try (Connection conn = getConnection(dbName)) {
+                //subgraph(conn);
+                create_tiles(conn);
+            }
+            //threadedSubgraph(dbName);
         }
         pool.shutdown();
         /*pool.awaitTermination(1l, TimeUnit.DAYS);
@@ -117,11 +117,11 @@ public class Main {
             TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
             tileSystem.computeTree();
             Enumeration e = tileSystem.getTreeEnumeration();
-            st.execute("TRUNCATE TABLE tiles;");
+            st.execute("TRUNCATE TABLE tiles; TRUNCATE TABLE ways_tiles;");
             while(e.hasMoreElements()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
                 Tile tile = (Tile) node.getUserObject();
-                if(tile == null) continue;
+                if(tile == null || node.isRoot()) continue;
                 TreeNode[] path = node.getPath();
                 String qkey = "";
                 for(int i = 1; i < path.length; i ++)
@@ -139,7 +139,7 @@ public class Main {
                 pst1.executeUpdate();
                 pst1.clearParameters();
             }
-            st.execute("DELETE FROM tiles WHERE qkey='';"); // removing the root node
+            //st.execute("DELETE FROM tiles WHERE qkey='';"); // removing the root node
             
             List<Pair<Integer, Geometry>> list = new LinkedList<>();
             WKTReader reader = new WKTReader();
@@ -165,14 +165,13 @@ public class Main {
                 for(int i = 1; i < path.length; i ++)
                     qkey += path[i-1].getIndex(path[i]);
                 Polygon polygon = tile.getPolygon();
-                for(Pair<Integer, Geometry> p: list) {
+                for(Pair<Integer, Geometry> p: list) 
                     if(polygon.intersects(p.getValue())) {
                         pst2.clearParameters();
                         pst2.setString(1, qkey);
                         pst2.setInt(2, p.getKey());
                         pst2.addBatch();
                     }
-                }
                 pst2.executeBatch();
             }
             pst2.close();
