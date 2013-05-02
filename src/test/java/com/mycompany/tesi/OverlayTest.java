@@ -19,6 +19,7 @@ import com.graphhopper.GHRequest;
 import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.GraphHopperAPI;
+import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
@@ -58,7 +59,8 @@ public class OverlayTest extends TestCase {
     private final WKTReader reader = new WKTReader();
     private TileSystem tileSystem;
     
-    List<Integer> ids;
+    private List<Integer> ids;
+    
     public OverlayTest(String testName) {
         super(testName);
     }
@@ -122,10 +124,10 @@ public class OverlayTest extends TestCase {
         super.tearDown();
     }
     
-    private GraphStorage readGraph(String table) throws Exception {
+    private GraphStorage readGraph(String table, RawEncoder vehicle) throws Exception {
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
-        RawEncoder vehicle = new MyCarFlagEncoder(130);
+        //RawEncoder vehicle = new MyCarFlagEncoder(130);
         
         try(Connection conn = Main.getConnection(dbName); 
             Statement st = conn.createStatement()) {
@@ -148,8 +150,8 @@ public class OverlayTest extends TestCase {
         return graph;
     }
     
-    private PointList getPath2(final GHPlace from, final GHPlace to) throws Exception {
-        GraphStorage graph = new GraphBuilder().create();
+    private PointList getPath2(final Graph graph, final RawEncoder vehicle, final GHPlace from, final GHPlace to) throws Exception {
+        /*GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
         RawEncoder vehicle = new MyCarFlagEncoder(130);
         
@@ -168,7 +170,7 @@ public class OverlayTest extends TestCase {
                 edge.wayGeometry(GraphHelper.getPillars(geometry));
             }
             rs.close();
-        }
+        }*/
         
         GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
@@ -185,8 +187,8 @@ public class OverlayTest extends TestCase {
         return ph.points();
     }
     
-    private PointList getPath1(final GHPlace from, final GHPlace to, int scale) throws Exception {
-        GraphStorage graph = new GraphBuilder().create();
+    private PointList getPath1(Graph graph, final RawEncoder vehicle, final GHPlace from, final GHPlace to, int scale) throws Exception {
+        /*GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
         RawEncoder vehicle = new MyCarFlagEncoder(130);
         try(Connection conn = Main.getConnection(dbName); 
@@ -207,7 +209,7 @@ public class OverlayTest extends TestCase {
                 }
             }
             rs.close();
-        }
+        }*/
         SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
         /*
         GraphStorage s = new GraphBuilder().create();
@@ -224,7 +226,7 @@ public class OverlayTest extends TestCase {
         if(!end_qkey.equals(start_qkey))
             GraphHelper.union(graph, endCell, vehicle);
         
-        System.out.println(start_qkey + " " + end_qkey);
+        //System.out.println(start_qkey + " " + end_qkey);
         /*System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(13465), graph.getLatitude(13465), scale), scale));
         
         System.out.println(QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(graph.getLongitude(14483), graph.getLatitude(14483), scale), scale));
@@ -259,11 +261,20 @@ public class OverlayTest extends TestCase {
     
     @Test
     public void testPath() throws Exception {
-        for(int i = 0; i < POINTS_COUNT; i++) {
-            PointList expected = getPath2(fromNodes[i], toNodes[i]);
-            System.out.println("FROM: "+ids.get(i) + " TO: " + ids.get(i+POINTS_COUNT));
-            for(int j = Main.MIN_SCALE; j <= Main.MAX_SCALE; j ++)
-                assertEquals(expected, getPath1(fromNodes[i], toNodes[i], j));
+        PointList[] expected = new PointList[POINTS_COUNT]; 
+        {
+            RawEncoder vehicleRoad = new MyCarFlagEncoder(130);
+            Graph roadGraph = readGraph("ways", vehicleRoad);        
+            for(int i = 0; i < POINTS_COUNT; i++)
+                expected[i] = getPath2(roadGraph, vehicleRoad, fromNodes[i], toNodes[i]);
+        }
+        for(int j = Main.MIN_SCALE; j <= Main.MAX_SCALE; j ++) {
+            RawEncoder vehicle = new MyCarFlagEncoder(130);
+            Graph graph = readGraph("overlay_" + j, vehicle);
+            for(int i = 0; i < POINTS_COUNT; i++) {
+                System.out.println("FROM: "+ids.get(i) + " TO: " + ids.get(i+POINTS_COUNT) + " scale="+j);
+                assertEquals(expected[i], getPath1(graph, vehicle, fromNodes[i], toNodes[i], j));
+            }
         }
     }
 }
