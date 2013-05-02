@@ -18,11 +18,17 @@ package com.mycompany.tesi;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.utils.TileSystem;
 import com.graphhopper.util.PointList;
+import com.mycompany.tesi.beans.Pair;
 import com.mycompany.tesi.utils.ConnectionPool;
+import com.mycompany.tesi.utils.DefaultCRS;
 import com.vividsolutions.jts.geom.*;
+import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.io.WKTReader;
 import java.sql.*;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -39,7 +45,7 @@ import org.geotoolkit.geometry.Envelope2D;
  */
 public class Main {
     
-    public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing" };
+    public static final String[] DBS = { "prova"};//"berlin_routing", "hamburg_routing", "london_routing" };
     public static final Integer MIN_SCALE = 13;
     public static final Integer MAX_SCALE = 17;
     public static final Integer POOL_SIZE = 3;
@@ -105,7 +111,8 @@ public class Main {
     
     public static void create_tiles(Connection conn) throws SQLException {        
         try (Statement st = conn.createStatement();
-            PreparedStatement pst = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
+            PreparedStatement pst1 = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));");
+            PreparedStatement pst2 = conn.prepareStatement("INSERT INTO ways_tiles(tiles_qkey, ways_id) VALUES(?, ?);")) {
             Envelope2D bound = getBound(conn);
             TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
             tileSystem.computeTree();
@@ -120,20 +127,56 @@ public class Main {
                 for(int i = 1; i < path.length; i ++)
                     qkey += path[i-1].getIndex(path[i]);
 
-                pst.setString(1, qkey);
-                pst.setDouble(2, tile.getRect().getMinX());
-                pst.setDouble(3, tile.getRect().getMinY());
-                pst.setDouble(4, tile.getRect().getMaxX());
-                pst.setDouble(5, tile.getRect().getMaxY());
-                pst.setDouble(6, tile.getRect().getMinX());
-                pst.setDouble(7, tile.getRect().getMinY());
-                pst.setDouble(8, tile.getRect().getMaxX());
-                pst.setDouble(9, tile.getRect().getMaxY());
-                pst.executeUpdate();
-                pst.clearParameters();
+                pst1.setString(1, qkey);
+                pst1.setDouble(2, tile.getRect().getMinX());
+                pst1.setDouble(3, tile.getRect().getMinY());
+                pst1.setDouble(4, tile.getRect().getMaxX());
+                pst1.setDouble(5, tile.getRect().getMaxY());
+                pst1.setDouble(6, tile.getRect().getMinX());
+                pst1.setDouble(7, tile.getRect().getMinY());
+                pst1.setDouble(8, tile.getRect().getMaxX());
+                pst1.setDouble(9, tile.getRect().getMaxY());
+                pst1.executeUpdate();
+                pst1.clearParameters();
             }
             st.execute("DELETE FROM tiles WHERE qkey='';"); // removing the root node
-            st.execute("SELECT my_ways_tiles_fill();"); // call it to fill the relation between tiles and ways
+            
+            List<Pair<Integer, Geometry>> list = new LinkedList<>();
+            WKTReader reader = new WKTReader();
+            ResultSet rs;
+            rs = st.executeQuery("SELECT gid, st_astext(the_geom) AS geometry FROM ways;");
+            try {
+                while(rs.next())
+                    list.add(new Pair(rs.getInt("gid"), reader.read(rs.getString("geometry"))));
+            } catch (ParseException ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                System.exit(0);
+            } finally {
+                rs.close();
+            }
+            
+            e = tileSystem.getTreeEnumeration();
+            while(e.hasMoreElements()) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
+                Tile tile = (Tile) node.getUserObject();
+                if(tile == null || node.isRoot()) continue;
+                TreeNode[] path = node.getPath();
+                String qkey = "";
+                for(int i = 1; i < path.length; i ++)
+                    qkey += path[i-1].getIndex(path[i]);
+                Polygon polygon = tile.getPolygon();
+                for(Pair<Integer, Geometry> p: list) {
+                    if(polygon.intersects(p.getValue())) {
+                        pst2.clearParameters();
+                        pst2.setString(1, qkey);
+                        pst2.setInt(2, p.getKey());
+                        pst2.addBatch();
+                    }
+                }
+                pst2.executeBatch();
+            }
+            pst2.close();
+            //st.execute("SELECT my_ways_tiles_fill();"); // call it to fill the relation between tiles and ways
         }
     }
       
