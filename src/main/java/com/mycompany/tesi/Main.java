@@ -109,7 +109,7 @@ public class Main {
     public static void create_tiles(String dbName) throws SQLException {
         try (Connection conn = getConnection(dbName);
             Statement st = conn.createStatement();
-            PreparedStatement pst1 = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
+            PreparedStatement pst = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
             Envelope2D bound = getBound(conn);
             TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
             tileSystem.computeTree();
@@ -127,19 +127,19 @@ public class Main {
                     qkey += path[i-1].getIndex(path[i]);
 
                 tiles.add(new Pair(qkey, tile.getPolygon()));
-                pst1.clearParameters();
-                pst1.setString(1, qkey);
-                pst1.setDouble(2, tile.getRect().getMinX());
-                pst1.setDouble(3, tile.getRect().getMinY());
-                pst1.setDouble(4, tile.getRect().getMaxX());
-                pst1.setDouble(5, tile.getRect().getMaxY());
-                pst1.setDouble(6, tile.getRect().getMinX());
-                pst1.setDouble(7, tile.getRect().getMinY());
-                pst1.setDouble(8, tile.getRect().getMaxX());
-                pst1.setDouble(9, tile.getRect().getMaxY());
-                pst1.addBatch();
+                pst.clearParameters();
+                pst.setString(1, qkey);
+                pst.setDouble(2, tile.getRect().getMinX());
+                pst.setDouble(3, tile.getRect().getMinY());
+                pst.setDouble(4, tile.getRect().getMaxX());
+                pst.setDouble(5, tile.getRect().getMaxY());
+                pst.setDouble(6, tile.getRect().getMinX());
+                pst.setDouble(7, tile.getRect().getMinY());
+                pst.setDouble(8, tile.getRect().getMaxX());
+                pst.setDouble(9, tile.getRect().getMaxY());
+                pst.addBatch();
             }
-            pst1.executeBatch();
+            pst.executeBatch();
             //st.execute("DELETE FROM tiles WHERE qkey='';"); // removing the root node
             System.out.println("Binding ways-tiles ...");
             
@@ -197,26 +197,7 @@ public class Main {
             }
             Task task = new Task(dbName, tiles.subList(start, tiles.size()), ways);
             pool.execute(task);
-            /*e = tileSystem.getTreeEnumeration();
-            while(e.hasMoreElements()) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
-                Tile tile = (Tile) node.getUserObject();
-                if(tile == null || node.isRoot()) continue;
-                TreeNode[] path = node.getPath();
-                String qkey = "";
-                for(int i = 1; i < path.length; i ++)
-                    qkey += path[i-1].getIndex(path[i]);
-                Polygon polygon = tile.getPolygon();
-                for(Pair<Integer, Geometry> p: ways) 
-                    if(polygon.intersects(p.getValue())) {
-                        pst2.clearParameters();
-                        pst2.setString(1, qkey);
-                        pst2.setInt(2, p.getKey());
-                        pst2.addBatch();
-                    }
-                pst2.executeBatch();
-            }
-            pst2.close();*/
+            
             //st.execute("SELECT my_ways_tiles_fill();"); // call it to fill the relation between tiles and ways
         }
     }
