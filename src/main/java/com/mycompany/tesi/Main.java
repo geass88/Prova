@@ -127,6 +127,7 @@ public class Main {
                 for(int i = 1; i < path.length; i ++)
                     qkey += path[i-1].getIndex(path[i]);
 
+                pst1.clearParameters();
                 pst1.setString(1, qkey);
                 pst1.setDouble(2, tile.getRect().getMinX());
                 pst1.setDouble(3, tile.getRect().getMinY());
@@ -136,9 +137,9 @@ public class Main {
                 pst1.setDouble(7, tile.getRect().getMinY());
                 pst1.setDouble(8, tile.getRect().getMaxX());
                 pst1.setDouble(9, tile.getRect().getMaxY());
-                pst1.executeUpdate();
-                pst1.clearParameters();
+                pst1.addBatch();
             }
+            pst1.executeBatch();
             //st.execute("DELETE FROM tiles WHERE qkey='';"); // removing the root node
             
             List<Pair<Integer, Geometry>> list = new LinkedList<>();
