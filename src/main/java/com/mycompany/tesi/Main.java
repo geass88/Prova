@@ -82,8 +82,8 @@ public class Main {
         System.in.read();
         for(String dbName: DBS) {
             System.out.println("Processing db " + dbName + " ...");
-            create_tiles(dbName);
-            //threadedSubgraph(dbName);
+            //create_tiles(dbName);
+            threadedSubgraph(dbName);
         }
         pool.shutdown();
         /*pool.awaitTermination(1l, TimeUnit.DAYS);
