@@ -17,10 +17,8 @@ package com.mycompany.tesi;
 
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.utils.TileSystem;
-import com.graphhopper.util.PointList;
 import com.mycompany.tesi.beans.Pair;
 import com.mycompany.tesi.utils.ConnectionPool;
-import com.mycompany.tesi.utils.DefaultCRS;
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
@@ -45,7 +43,7 @@ import org.geotoolkit.geometry.Envelope2D;
  */
 public class Main {
     
-    public static final String[] DBS = { "prova"};//"berlin_routing", "hamburg_routing", "london_routing" };
+    public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing" };
     public static final Integer MIN_SCALE = 13;
     public static final Integer MAX_SCALE = 17;
     public static final Integer POOL_SIZE = 3;
