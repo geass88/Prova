@@ -54,7 +54,7 @@ public class OverlayTest extends TestCase {
     private GHPlace[] fromNodes;// = { new GHPlace(52.4059488, 13.2831624) };
     private GHPlace[] toNodes;// = { new GHPlace(52.5663245, 13.5318755) };
     private final static String dbName = "berlin_routing";
-    private final static int POINTS_COUNT = 1;
+    private final static int POINTS_COUNT = 20;
     private final WKTReader reader = new WKTReader();
     private TileSystem tileSystem;
     
@@ -94,7 +94,7 @@ public class OverlayTest extends TestCase {
         st.close();
         //ids.set(0, 17553); ids.set(1, 8403);
         
-        ids.set(0, 19474); ids.set(1, 32874);//berlin
+        //ids.set(0, 19474); ids.set(1, 32874);//berlin
         //ids.set(0, 10258); ids.set(1, 21855);//hamburg
         fromNodes = new GHPlace[POINTS_COUNT];
         toNodes = new GHPlace[POINTS_COUNT];
@@ -180,7 +180,7 @@ public class OverlayTest extends TestCase {
         /*
         System.out.println(ph.distance());
         System.out.println(ph.points().size());*/
-      //  System.out.println(ph.path.calcNodes());
+       // System.out.println(ph.path.calcNodes());
         // System.out.println(new TimeCalculation(vehicle).calcTime(ph.path));
         return ph.points();
     }
@@ -231,6 +231,11 @@ public class OverlayTest extends TestCase {
         */
         GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         long time = System.nanoTime();
+        /*EdgeIterator i = graph.getEdges(21024);
+        while(i.next())
+            //    i.distance(100);
+            System.out.println("SYS "+scale+i.adjNode() +" " + i.baseNode() + " " +i.distance() +" "+vehicle.getSpeedHooked(i.flags())+" "+ vehicle.isForward(i.flags()) + " "+ vehicle.isBackward(i.flags()) );
+        */
         GHResponse ph = instance.route(new GHRequest(from, to).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));
         if(!ph.found()) return null;
         /*time = System.nanoTime() - time;
@@ -245,7 +250,7 @@ public class OverlayTest extends TestCase {
         //time = System.nanoTime();
         PointList roadPoints = task.pathUnpacking(graph, ph.path, start_qkey, end_qkey);
         time = System.nanoTime() - time;
-   //     System.out.println(ph.path.calcNodes());
+      //  System.out.println(ph.path.calcNodes());
         System.out.println("overlay: "+time/1e9);
         //System.out.println(roadPoints.size());
         //System.out.println("TIME: " + new TimeCalculation(vehicle).calcTime(ph.path));

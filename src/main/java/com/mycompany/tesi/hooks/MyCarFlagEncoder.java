@@ -15,7 +15,6 @@
  */
 package com.mycompany.tesi.hooks;
 
-import com.graphhopper.routing.util.CombinedEncoder;
 import com.graphhopper.routing.util.VehicleEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +41,7 @@ public class MyCarFlagEncoder extends RawEncoder implements VehicleEncoder {
         super(maxSpeed);
     }
     
+    @Override
     public int flags(double speed, boolean bothDir) {
         byte dir = bothDir? BOTH: FORWARD;
         speeds.add(speed);
