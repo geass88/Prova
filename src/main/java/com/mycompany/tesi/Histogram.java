@@ -20,7 +20,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.sql.Statement;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -65,9 +66,44 @@ public class Histogram {
         return null;
     }
     
+    public Map<String, Integer> getTableStats(int scale) {
+        String sql1 = "select count(distinct source) from (select source from %s union select target from %s) t";
+        String sql2 = "select count(*) from %s;";
+        String sql3 = "select count(distinct tiles_qkey) from ways_tiles where length(tiles_qkey)=%d";
+        String sql4 = "select count(*) from %s where the_geom is not null;";
+        
+        try(Connection conn = Main.getConnection(dbName); 
+                Statement st = conn.createStatement()) {
+            Map<String, Integer> map = new HashMap<>();
+            String table = scale == 0? "ways": ("overlay_"+scale);
+            ResultSet rs = st.executeQuery(String.format(sql1, table, table));
+            rs.next();
+            map.put("num_nodes", rs.getInt(1));
+            rs.close();
+            rs = st.executeQuery(String.format(sql2, table));
+            rs.next();
+            map.put("num_edges", rs.getInt(1));
+            rs.close();
+            if(scale != 0) {
+                rs = st.executeQuery(String.format(sql3, scale));
+                rs.next();
+                map.put("num_tiles", rs.getInt(1));
+                rs.close();
+            }
+            rs = st.executeQuery(String.format(sql4, table));
+            rs.next();
+            map.put("num_cut_edges", rs.getInt(1));
+            rs.close();         
+            return map;
+        } catch(SQLException ex) {
+            Logger.getLogger(Histogram.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+    
     public static void main(String args[]) {
         Histogram h = new Histogram("london_routing");
-        double min = 0;
+        /*double min = 0;
         int count = 40;
         double step = 10;
         StoreData[] a = h.createHistogram("ways", min, step, count);
@@ -75,7 +111,7 @@ public class Histogram {
             System.out.println(i.getFrequency()+" ");
         for(int i = 0; i <= count; i ++) {
             System.out.println(String.format("[%.2f, %.2f)", a[i].getMin(), a[i].getMax()));
-        }
-        
+        }*/
+        System.out.println(h.getTableStats(15));
     }
 }
