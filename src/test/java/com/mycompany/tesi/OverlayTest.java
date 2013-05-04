@@ -54,7 +54,7 @@ public class OverlayTest extends TestCase {
     
     private GHPlace[] fromNodes;// = { new GHPlace(52.4059488, 13.2831624) };
     private GHPlace[] toNodes;// = { new GHPlace(52.5663245, 13.5318755) };
-    private final static String dbName = "berlin_routing";
+    private final static String dbName = "london_routing";
     private final static int POINTS_COUNT = 20;
     private final WKTReader reader = new WKTReader();
     private TileSystem tileSystem;
