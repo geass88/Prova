@@ -34,4 +34,14 @@
                 <exec.executable>${profiler.java}</exec.executable>
             </properties>
         </action>
+        <action>
+            <actionName>rebuild</actionName>
+            <goals>
+                <goal>clean</goal>
+                <goal>install</goal>
+            </goals>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+        </action>
     </actions>
