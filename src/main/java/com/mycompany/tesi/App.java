@@ -27,6 +27,7 @@ import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.storage.index.Location2IDIndex;
 import com.graphhopper.storage.index.Location2IDQuadtree;
+import com.graphhopper.util.DistanceCalc;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.Helper;
 import com.graphhopper.util.PointList;
@@ -57,8 +58,11 @@ import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeModel;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
+import org.geotoolkit.referencing.CRS;
 import org.geotoolkit.referencing.crs.DefaultImageCRS;
 import org.opengis.geometry.MismatchedDimensionException;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 
 
@@ -135,6 +139,18 @@ public class App {
        */
        // CoordinateReferenceSystem targetCRS = DefaultGeocentricCRS.CARTESIAN;
         pool.shutdown();
+        TileSystem calc1 = new TileSystem(bound, 17);
+        calc1.computeTree();
+        CoordinateReferenceSystem crs = CRS.decode("EPSG:26986");
+        MathTransform tr  = CRS.findMathTransform(DefaultCRS.geographicCRS, crs);
+        List<Tile> l = calc1.visit(17);
+        
+        for(Tile t: l)
+            System.out.println(t.getRect().getLowerCorner().
+                    distance(t.getRect().getUpperCorner()));
+        //new DistanceCalc().calcDist(t.getRect().getMinY(), t.getRect().getMinX(), t.getRect().getMaxY(), t.getRect().getMaxX()));
+        //System.out.println(new DistanceCalc().calcDist(51.515579784224, -0.087890625, 51.522416083001, -0.076904296875));
+        if(1==1) return;
         DirectPosition2D p1 = new DirectPosition2D(DefaultCRS.geographicCRS, 12.42, 41.8445);
         int scale = 11;
         TileSystem calc = new TileSystem(bound, 17);
