@@ -20,21 +20,15 @@ import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.GraphHopperAPI;
 import com.graphhopper.storage.Graph;
-import com.graphhopper.storage.GraphBuilder;
-import com.graphhopper.storage.GraphStorage;
-import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.PointList;
 import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.SubgraphTask.Cell;
 import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.RawEncoder;
-import com.mycompany.tesi.hooks.TimeCalculation;
 import com.mycompany.tesi.utils.GraphHelper;
 import com.mycompany.tesi.utils.QuadKeyManager;
 import com.mycompany.tesi.utils.TileSystem;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.io.WKTReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -56,7 +50,6 @@ public class OverlayTest extends TestCase {
     private GHPlace[] toNodes;// = { new GHPlace(52.5663245, 13.5318755) };
     private final static String dbName = "london_routing";
     private final static int POINTS_COUNT = 20;
-    private final WKTReader reader = new WKTReader();
     private TileSystem tileSystem;
     
     private List<Integer> ids;
@@ -124,31 +117,7 @@ public class OverlayTest extends TestCase {
         super.tearDown();
     }
     
-    private GraphStorage readGraph(String table, RawEncoder vehicle) throws Exception {
-        GraphStorage graph = new GraphBuilder().create();
-        graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
-        //RawEncoder vehicle = new MyCarFlagEncoder(130);
-        
-        try(Connection conn = Main.getConnection(dbName); 
-            Statement st = conn.createStatement()) {
-            ResultSet rs;
-            rs = st.executeQuery("select * from ((select distinct source, y1, x1 from " + table + ") union (select distinct target, y2, x2 from " + table + ")) nodes order by source");
-            while(rs.next())
-                graph.setNode(rs.getInt(1), rs.getDouble(2), rs.getDouble(3));
-            rs.close();
-            rs = st.executeQuery("select source, target, km*1000, reverse_cost<>1000000, freeflow_speed, st_astext(the_geom) from " + table);//st_astext(the_geom)
-            while(rs.next()) {
-                EdgeIterator edge = graph.edge(rs.getInt(1), rs.getInt(2), rs.getDouble(3), vehicle.flags(rs.getDouble(5), rs.getBoolean(4)));
-                String wkt = rs.getString(6);
-                if(wkt != null) {
-                    Geometry geometry = reader.read(wkt);
-                    edge.wayGeometry(GraphHelper.getPillars(geometry));
-                }
-            }
-            rs.close();
-        }
-        return graph;
-    }
+    
     
     private PointList getPath2(final Graph graph, final RawEncoder vehicle, final GHPlace from, final GHPlace to) throws Exception {
         /*GraphStorage graph = new GraphBuilder().create();
@@ -264,13 +233,13 @@ public class OverlayTest extends TestCase {
         PointList[] expected = new PointList[POINTS_COUNT]; 
         {
             RawEncoder vehicleRoad = new MyCarFlagEncoder(130);
-            Graph roadGraph = readGraph("ways", vehicleRoad);        
+            Graph roadGraph = GraphHelper.readGraph(dbName, "ways", vehicleRoad);        
             for(int i = 0; i < POINTS_COUNT; i++)
                 expected[i] = getPath2(roadGraph, vehicleRoad, fromNodes[i], toNodes[i]);
         }
         for(int j = Main.MIN_SCALE; j <= Main.MAX_SCALE; j ++) {
             RawEncoder vehicle = new MyCarFlagEncoder(130);
-            Graph graph = readGraph("overlay_" + j, vehicle);
+            Graph graph = GraphHelper.readGraph(dbName, "overlay_" + j, vehicle);
             for(int i = 0; i < POINTS_COUNT; i++) {
                 System.out.println("FROM: "+ids.get(i) + " TO: " + ids.get(i+POINTS_COUNT) + " scale="+j);
                 assertEquals(expected[i], getPath1(graph, vehicle, fromNodes[i], toNodes[i], j));

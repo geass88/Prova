@@ -21,10 +21,13 @@ import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.PointList;
+import com.mycompany.tesi.Main;
 import com.mycompany.tesi.SubgraphTask.Cell;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.hooks.RawEncoder;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.io.WKTReader;
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -97,5 +100,32 @@ public class GraphHelper {
             return pillarNodes;
         }
         return null;
+    }
+    
+    public static GraphStorage readGraph(String dbName, String table, RawEncoder vehicle) throws Exception {
+        WKTReader reader = new WKTReader();
+        GraphStorage graph = new GraphBuilder().create();
+        graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
+        //RawEncoder vehicle = new MyCarFlagEncoder(130);
+        
+        try(Connection conn = Main.getConnection(dbName); 
+            Statement st = conn.createStatement()) {
+            ResultSet rs;
+            rs = st.executeQuery("select * from ((select distinct source, y1, x1 from " + table + ") union (select distinct target, y2, x2 from " + table + ")) nodes order by source");
+            while(rs.next())
+                graph.setNode(rs.getInt(1), rs.getDouble(2), rs.getDouble(3));
+            rs.close();
+            rs = st.executeQuery("select source, target, km*1000, reverse_cost<>1000000, freeflow_speed, st_astext(the_geom) from " + table);//st_astext(the_geom)
+            while(rs.next()) {
+                EdgeIterator edge = graph.edge(rs.getInt(1), rs.getInt(2), rs.getDouble(3), vehicle.flags(rs.getDouble(5), rs.getBoolean(4)));
+                String wkt = rs.getString(6);
+                if(wkt != null) {
+                    Geometry geometry = reader.read(wkt);
+                    edge.wayGeometry(GraphHelper.getPillars(geometry));
+                }
+            }
+            rs.close();
+        }
+        return graph;
     }
 }

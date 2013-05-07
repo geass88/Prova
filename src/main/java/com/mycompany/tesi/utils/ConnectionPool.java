@@ -85,7 +85,7 @@ public class ConnectionPool {
 
     private final DataSource dataSource;
     private ObjectPool pool;
-    public static final String JDBC_URI = "jdbc:postgresql://127.0.0.1:5432/";//192.168.128.128
+    public static final String JDBC_URI = "jdbc:postgresql://192.168.128.128:5432/";//192.168.128.128
     
     static {
         //
