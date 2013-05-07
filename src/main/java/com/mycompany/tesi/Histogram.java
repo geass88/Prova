@@ -66,7 +66,7 @@ public class Histogram {
         return null;
     }
     
-    public Map<String, Integer> getTableStats(int scale) {
+    public Map<String, Integer> getStatsTable(int scale) {
         String sql1 = "select count(distinct source) from (select source from %s union select target from %s) t";
         String sql2 = "select count(*) from %s;";
         String sql3 = "select count(distinct tiles_qkey) from ways_tiles where length(tiles_qkey)=%d";
@@ -112,6 +112,6 @@ public class Histogram {
         for(int i = 0; i <= count; i ++) {
             System.out.println(String.format("[%.2f, %.2f)", a[i].getMin(), a[i].getMax()));
         }*/
-        System.out.println(h.getTableStats(15));
+        System.out.println(h.getStatsTable(15));
     }
 }
