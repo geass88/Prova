@@ -15,7 +15,9 @@
  */
 package com.mycompany.tesi;
 
+import com.graphhopper.routing.util.AllEdgesIterator;
 import com.mycompany.tesi.beans.StoreData;
+import com.mycompany.tesi.utils.TileSystem;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -66,6 +68,34 @@ public class Histogram {
         return null;
     }
     
+    public StoreData[] createHistogram(String qkey, int scale, double min, double step, int count) {
+        TileSystem tileSystem;
+        try(Connection conn = Main.getConnection(dbName)) {
+            tileSystem = new TileSystem(Main.getBound(conn), Main.MAX_SCALE);
+            tileSystem.computeTree();
+        } catch(SQLException ex) {
+            Logger.getLogger(Histogram.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+        SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
+        SubgraphTask.Cell cell = task.getSubgraph(qkey);
+
+        StoreData[] data = new StoreData[count+1];
+        double v = min;
+        for(int i = 0; i < count; i ++)
+            data[i] = new StoreData(0, v, v += step);
+        data[count] = new StoreData(0, v, v);
+
+        AllEdgesIterator i = cell.graph.getAllEdges();
+        while(i.next()) {
+            int index = (int)Math.floor((cell.encoder.getSpeedHooked(i.flags()) - min) / step);
+            if(index <= count)
+                data[index].setFrequency(data[index].getFrequency()+1);
+        }
+
+        return data;
+    }
+    
     public Map<String, Integer> getStatsTable(int scale) {
         String sql1 = "select count(distinct source) from (select source from %s union select target from %s) t";
         String sql2 = "select count(*) from %s;";
@@ -102,16 +132,15 @@ public class Histogram {
     }
     
     public static void main(String args[]) {
-        Histogram h = new Histogram("london_routing");
-        /*double min = 0;
-        int count = 40;
+        Histogram h = new Histogram("hamburg_routing");
+        double min = 0;
+        int count = 13;
         double step = 10;
-        StoreData[] a = h.createHistogram("ways", min, step, count);
-        for(StoreData i: a)
-            System.out.println(i.getFrequency()+" ");
+        StoreData[] a = h.createHistogram("1202013120232", 13, min, step, count);
+        
         for(int i = 0; i <= count; i ++) {
-            System.out.println(String.format("[%.2f, %.2f)", a[i].getMin(), a[i].getMax()));
-        }*/
-        System.out.println(h.getStatsTable(15));
+            System.out.println(String.format("[%.2f, %.2f) - %d", a[i].getMin(), a[i].getMax(), a[i].getFrequency()));
+        }
+        //System.out.println(h.getStatsTable(15));
     }
 }
