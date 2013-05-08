@@ -106,9 +106,8 @@ public class OverlayTest extends TestCase {
             rs.close();
         }
         pst.close();
-        tileSystem = new TileSystem(Main.getBound(conn), Main.MAX_SCALE);
-        tileSystem.computeTree();
         conn.close();
+        tileSystem = Main.getTileSystem(dbName);
     }
     
     @After

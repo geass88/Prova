@@ -77,14 +77,7 @@ public class Histogram {
     }
     
     public Pair<StoreData[], Double> createHistogram(String qkey, int scale, double min, double step, int count) {
-        TileSystem tileSystem;
-        try(Connection conn = Main.getConnection(dbName)) {
-            tileSystem = new TileSystem(Main.getBound(conn), Main.MAX_SCALE);
-            tileSystem.computeTree();
-        } catch(SQLException ex) {
-            Logger.getLogger(Histogram.class.getName()).log(Level.SEVERE, null, ex);
-            return null;
-        }
+        TileSystem tileSystem = Main.getTileSystem(dbName);
         SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
         SubgraphTask.Cell cell = task.getSubgraph(qkey);
 
@@ -108,14 +101,7 @@ public class Histogram {
     }
     
     public StoreData[] createCliqueHistogram(String qkey, int scale, double min, double step, int count) {
-        TileSystem tileSystem;
-        try(Connection conn = Main.getConnection(dbName)) {
-            tileSystem = new TileSystem(Main.getBound(conn), Main.MAX_SCALE);
-            tileSystem.computeTree();
-        } catch(SQLException ex) {
-            Logger.getLogger(Histogram.class.getName()).log(Level.SEVERE, null, ex);
-            return null;
-        }
+        TileSystem tileSystem = Main.getTileSystem(dbName);
         SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
         SubgraphTask.Cell cell = task.getSubgraph(qkey);
 

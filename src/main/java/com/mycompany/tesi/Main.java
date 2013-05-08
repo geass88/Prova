@@ -50,11 +50,21 @@ public class Main {
     public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS = 10;
     private final static Map<String, ConnectionPool> DATASOURCES = new HashMap<>();
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
+    private final static Map<String, TileSystem> TILE_SYSTEMS = new HashMap<>();
     public static boolean TEST = false;
     
     static {
-        for(String db: DBS)
+        for(String db: DBS) {
             DATASOURCES.put(db, new ConnectionPool(db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
+            
+            try(Connection conn = Main.getConnection(db)) {
+                TileSystem tileSystem = new TileSystem(Main.getBound(conn), MAX_SCALE);
+                tileSystem.computeTree();
+                TILE_SYSTEMS.put(db, tileSystem);
+            } catch(SQLException ex) {
+                Logger.getLogger(Histogram.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
@@ -75,6 +85,10 @@ public class Main {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
+    }
+    
+    public static TileSystem getTileSystem(final String db) {
+        return TILE_SYSTEMS.get(db);
     }
     
     public static void main(String[] args) throws Exception {
@@ -108,9 +122,7 @@ public class Main {
         try (Connection conn = getConnection(dbName);
             Statement st = conn.createStatement();
             PreparedStatement pst = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
-            Envelope2D bound = getBound(conn);
-            TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
-            tileSystem.computeTree();
+            TileSystem tileSystem = getTileSystem(dbName);
             Enumeration e = tileSystem.getTreeEnumeration();
             st.execute("TRUNCATE TABLE tiles; TRUNCATE TABLE ways_tiles;");
             List<Pair<String, Polygon>> tiles = new LinkedList<>();
@@ -200,20 +212,15 @@ public class Main {
         }
     }
       
-    public static void threadedSubgraph(String db) throws Exception {
-        Envelope2D bound;
-        try (Connection conn = getConnection(db)) {
-            bound = getBound(conn);
-        }
-        TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
-        tileSystem.computeTree();
+    public static void threadedSubgraph(final String db) throws Exception {
+        TileSystem tileSystem = getTileSystem(db);
         
         for(int i = MIN_SCALE; i <= MAX_SCALE; i ++)
             pool.execute(new TasksHelper(tileSystem, db, i));//new SubgraphTask(tileSystem, db, i));
     }
     
     // unused
-    static void loadTiles(Connection conn) throws SQLException {
+    /*static void loadTiles(Connection conn) throws SQLException {
         Envelope2D bound = getBound(conn);
         TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
         tileSystem.computeTree();
@@ -226,7 +233,7 @@ public class Main {
             }
         }
         System.out.println(ok);
-    }
+    }*/
 }
 
 /*

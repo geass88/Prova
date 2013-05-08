@@ -271,6 +271,11 @@ public class SubgraphTask implements Runnable {
         return map;
     }
     
+    private Cell buildExteriorSubgraph(String qkey, boolean withGeometry) throws Exception {
+        
+        return null;
+    }
+    
     private Cell buildSubgraph(String qkey, boolean withGeometry) throws Exception {
         Tile tile = tileSystem.getTile(qkey);
         Polygon rect = tile.getPolygon();
@@ -333,7 +338,7 @@ public class SubgraphTask implements Runnable {
                 // else ; // not a cut edge
             }*/
             
-            // without contained
+            // without the contained field (BUGFIX: postgis precision problem)
             boolean lcp1 = line.contains(p1);
             boolean lcp2 = line.contains(p2);
             boolean rcp1 = rect.contains(p1);
