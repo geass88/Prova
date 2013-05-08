@@ -272,8 +272,86 @@ public class SubgraphTask implements Runnable {
     }
     
     private Cell buildExteriorSubgraph(String qkey, boolean withGeometry) throws Exception {
-        
-        return null;
+        Tile tile = tileSystem.getTile(qkey);
+        Polygon rect = tile.getPolygon();
+        Coordinate[] coordinates = { 
+            new Coordinate(tile.getRect().getMinX(), tile.getRect().getMinY()),
+            new Coordinate(tile.getRect().getMaxX(), tile.getRect().getMinY()),
+            new Coordinate(tile.getRect().getMaxX(), tile.getRect().getMaxY())
+        };
+        LineString line = geometryFactory.createLineString(coordinates);
+        Set<BoundaryNode> boundaryNodes = new TreeSet<>();
+        GraphStorage graph = new GraphBuilder().create();
+        graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
+        RawEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
+        Map<Integer, Integer> nodes = new HashMap<>(); // graph to subgraph nodes
+        int count = 0;
+        st1.clearParameters();
+        st1.setString(1, qkey);
+        ResultSet rs;
+        rs = st1.executeQuery();
+        while(rs.next()) { // for each way in a tile
+            Integer s = nodes.get(rs.getInt("source"));
+            if(s == null) {
+                nodes.put(rs.getInt("source"), s = count); 
+                graph.setNode(s, rs.getDouble("y1"), rs.getDouble("x1"));
+                count ++;
+            }
+            Integer t = nodes.get(rs.getInt("target"));
+            if(t == null) {
+                nodes.put(rs.getInt("target"), t = count); 
+                graph.setNode(t, rs.getDouble("y2"), rs.getDouble("x2"));
+                count ++;
+            }
+            
+            int flags = vehicle.flags(rs.getDouble("freeflow_speed"), rs.getBoolean("bothdir"));
+            Point p1 = geometryFactory.createPoint(new Coordinate(rs.getDouble("x1"), rs.getDouble("y1")));
+            Point p2 = geometryFactory.createPoint(new Coordinate(rs.getDouble("x2"), rs.getDouble("y2")));
+            
+            // without the contained field (BUGFIX: postgis precision problem)
+            boolean lcp1 = line.contains(p1);
+            boolean lcp2 = line.contains(p2);
+            boolean rcp1 = rect.contains(p1);
+            boolean rcp2 = rect.contains(p2);
+            if(rcp1 && rcp2) {
+                if(lcp1 != lcp2) {
+                    // cutEdges.add(rs.getInt("gid"));
+                    if(lcp1) {
+                        boundaryNodes.add(new BoundaryNode(s, rs.getInt("source"), p1)); // cut
+                        EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags); 
+                    } else {
+                        boundaryNodes.add(new BoundaryNode(t, rs.getInt("target"), p2)); // cut 
+                        EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags); 
+                    }
+                } else {
+                    if(! lcp1) {// == and not on line
+                        EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags); //inner 
+                        if(withGeometry) {
+                            String wkt = rs.getString("geometry");
+                            if(wkt != null) {
+                                Geometry geometry = reader.read(wkt);
+                                edge.wayGeometry(GraphHelper.getPillars(geometry));
+                            }
+                        }
+                    }
+                }
+            } else {
+                if(rcp1 && !lcp1) {
+                    boundaryNodes.add(new BoundaryNode(t, rs.getInt("target"), p2)); // cut
+                    EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags);
+                    // cutEdges.add(rs.getInt("gid"));
+                }
+                if(rcp2 && !lcp2) {
+                    boundaryNodes.add(new BoundaryNode(s, rs.getInt("source"), p1)); // cut
+                    EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags);
+                    // cutEdges.add(rs.getInt("gid"));
+                }
+            }
+            //
+            //System.out.println(graph.nodes());
+        }
+        rs.close();
+        return new Cell(graph, boundaryNodes, vehicle, nodes);
     }
     
     private Cell buildSubgraph(String qkey, boolean withGeometry) throws Exception {
@@ -354,8 +432,11 @@ public class SubgraphTask implements Runnable {
                     if(! lcp1) {// == and not on line
                         EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags); //inner 
                         if(withGeometry) {
-                            Geometry geometry = reader.read(rs.getString("geometry"));
-                            edge.wayGeometry(GraphHelper.getPillars(geometry));
+                            String wkt = rs.getString("geometry");
+                            if(wkt != null) {
+                                Geometry geometry = reader.read(wkt);
+                                edge.wayGeometry(GraphHelper.getPillars(geometry));
+                            }
                         }
                     }
                 }
