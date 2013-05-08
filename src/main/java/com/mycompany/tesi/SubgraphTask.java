@@ -105,7 +105,8 @@ public class SubgraphTask implements Runnable {
             System.out.println("Thread run ...");
             
             for(String q: qkeys)
-                computeClique(q);
+                computeClique(q, false);
+            // TODO: computeClique(q, true); // calcolo velocità massima del tile!!
             st2.executeBatch();
             st3.executeBatch();
         } catch(Exception e) {
@@ -271,7 +272,7 @@ public class SubgraphTask implements Runnable {
         return map;
     }
     
-    private Cell buildExteriorSubgraph(String qkey, boolean withGeometry) throws Exception {
+    private Cell buildExteriorSubgraph(String qkey/*, boolean withGeometry*/) throws Exception {
         Tile tile = tileSystem.getTile(qkey);
         Polygon rect = tile.getPolygon();
         Coordinate[] coordinates = { 
@@ -325,14 +326,14 @@ public class SubgraphTask implements Runnable {
                     }
                 } else {
                     if(! lcp1) {// == and not on line
-                        EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags); //inner 
-                        if(withGeometry) {
+                        /*EdgeIterator edge = */ graph.edge(s, t, rs.getDouble("distance"), flags); //inner 
+                        /*if(withGeometry) {
                             String wkt = rs.getString("geometry");
                             if(wkt != null) {
                                 Geometry geometry = reader.read(wkt);
                                 edge.wayGeometry(GraphHelper.getPillars(geometry));
                             }
-                        }
+                        }*/
                     }
                 }
             } else {
@@ -457,8 +458,8 @@ public class SubgraphTask implements Runnable {
         return new Cell(graph, boundaryNodes, vehicle, nodes);
     }
     
-    private void computeClique(String qkey) throws Exception {
-        Cell cell = buildSubgraph(qkey, false);
+    private void computeClique(String qkey, boolean exterior) throws Exception {
+        Cell cell = exterior? buildExteriorSubgraph(qkey): buildSubgraph(qkey, false);
         Graph graph = cell.graph;
         RawEncoder vehicle = cell.encoder;
         
@@ -484,21 +485,25 @@ public class SubgraphTask implements Runnable {
                     if(speed > max_speed) max_speed = speed;
                 }
                 
-                if(m != null && rm != null && m.compareTo(rm) == 0)
-                    storeOverlayEdge(nodesArray[i], nodesArray[j], m, true);
-                else {
-                    if(m != null)
-                        storeOverlayEdge(nodesArray[i], nodesArray[j], m, false);
-                    if(rm != null)
-                        storeOverlayEdge(nodesArray[j], nodesArray[i], rm, false);
+                if(! exterior) {
+                    if(m != null && rm != null && m.compareTo(rm) == 0)
+                        storeOverlayEdge(nodesArray[i], nodesArray[j], m, true);
+                    else {
+                        if(m != null)
+                            storeOverlayEdge(nodesArray[i], nodesArray[j], m, false);
+                        if(rm != null)
+                            storeOverlayEdge(nodesArray[j], nodesArray[i], rm, false);
+                    }
                 }
             }
         }
-        st3.clearParameters();
-        st3.setDouble(1, max_speed);
-        st3.setString(2, qkey);
-        //st3.executeUpdate();
-        st3.addBatch();
+        if(exterior) {
+            st3.clearParameters();
+            st3.setDouble(1, max_speed);
+            st3.setString(2, qkey);
+            //st3.executeUpdate();
+            st3.addBatch();
+        }
     }
     
     private void storeOverlayEdge(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
