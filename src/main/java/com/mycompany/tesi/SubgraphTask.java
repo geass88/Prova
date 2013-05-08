@@ -318,10 +318,10 @@ public class SubgraphTask implements Runnable {
                     // cutEdges.add(rs.getInt("gid"));
                     if(lcp1) {
                         boundaryNodes.add(new BoundaryNode(s, rs.getInt("source"), p1)); // cut
-                        EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags); 
+                        /*EdgeIterator edge = */ graph.edge(s, t, rs.getDouble("distance"), flags); 
                     } else {
                         boundaryNodes.add(new BoundaryNode(t, rs.getInt("target"), p2)); // cut 
-                        EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags); 
+                        /*EdgeIterator edge = */ graph.edge(s, t, rs.getDouble("distance"), flags); 
                     }
                 } else {
                     if(! lcp1) {// == and not on line
@@ -338,12 +338,12 @@ public class SubgraphTask implements Runnable {
             } else {
                 if(rcp1 && !lcp1) {
                     boundaryNodes.add(new BoundaryNode(t, rs.getInt("target"), p2)); // cut
-                    EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags);
+                    /*EdgeIterator edge = */ graph.edge(s, t, rs.getDouble("distance"), flags);
                     // cutEdges.add(rs.getInt("gid"));
                 }
                 if(rcp2 && !lcp2) {
                     boundaryNodes.add(new BoundaryNode(s, rs.getInt("source"), p1)); // cut
-                    EdgeIterator edge = graph.edge(s, t, rs.getDouble("distance"), flags);
+                    /*EdgeIterator edge = */ graph.edge(s, t, rs.getDouble("distance"), flags);
                     // cutEdges.add(rs.getInt("gid"));
                 }
             }
