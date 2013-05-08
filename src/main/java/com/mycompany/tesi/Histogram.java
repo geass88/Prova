@@ -15,8 +15,16 @@
  */
 package com.mycompany.tesi;
 
+import com.graphhopper.routing.Path;
+import com.graphhopper.routing.RoutingAlgorithm;
 import com.graphhopper.routing.util.AllEdgesIterator;
+import com.graphhopper.storage.Graph;
+import com.mycompany.tesi.beans.BoundaryNode;
+import com.mycompany.tesi.beans.Metrics;
+import com.mycompany.tesi.beans.Pair;
 import com.mycompany.tesi.beans.StoreData;
+import com.mycompany.tesi.hooks.RawEncoder;
+import com.mycompany.tesi.hooks.TimeCalculation;
 import com.mycompany.tesi.utils.TileSystem;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -68,7 +76,7 @@ public class Histogram {
         return null;
     }
     
-    public StoreData[] createHistogram(String qkey, int scale, double min, double step, int count) {
+    public Pair<StoreData[], Double> createHistogram(String qkey, int scale, double min, double step, int count) {
         TileSystem tileSystem;
         try(Connection conn = Main.getConnection(dbName)) {
             tileSystem = new TileSystem(Main.getBound(conn), Main.MAX_SCALE);
@@ -87,12 +95,76 @@ public class Histogram {
         data[count] = new StoreData(0, v, v);
 
         AllEdgesIterator i = cell.graph.getAllEdges();
+        double max_speed = 0.;
         while(i.next()) {
-            int index = (int)Math.floor((cell.encoder.getSpeedHooked(i.flags()) - min) / step);
+            double speed = cell.encoder.getSpeedHooked(i.flags());
+            int index = (int)Math.floor((speed - min) / step);
             if(index <= count)
                 data[index].setFrequency(data[index].getFrequency()+1);
+            if(speed > max_speed) max_speed = speed;
         }
+        Pair<StoreData[], Double> pair = new Pair<>(data, max_speed);
+        return pair;
+    }
+    
+    public StoreData[] createCliqueHistogram(String qkey, int scale, double min, double step, int count) {
+        TileSystem tileSystem;
+        try(Connection conn = Main.getConnection(dbName)) {
+            tileSystem = new TileSystem(Main.getBound(conn), Main.MAX_SCALE);
+            tileSystem.computeTree();
+        } catch(SQLException ex) {
+            Logger.getLogger(Histogram.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+        SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
+        SubgraphTask.Cell cell = task.getSubgraph(qkey);
 
+        StoreData[] data = new StoreData[count+1];
+        double v = min;
+        for(int i = 0; i < count; i ++)
+            data[i] = new StoreData(0, v, v += step);
+        data[count] = new StoreData(0, v, v);
+        
+        Graph graph = cell.graph;
+        RawEncoder vehicle = cell.encoder;
+        
+        BoundaryNode[] nodesArray = cell.boundaryNodes.toArray(new BoundaryNode[cell.boundaryNodes.size()]);
+        for(int i = 0; i < nodesArray.length; i ++) {
+            for(int j = i+1; j < nodesArray.length; j ++) {
+                //if(i == j) continue;
+                RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
+                Path path = algo.calcPath(nodesArray[i].getNodeId(), nodesArray[j].getNodeId());
+                Metrics m = null, rm = null;
+                double speed = 0., rspeed = 0.;
+                if(path.found()) {
+                    m = new Metrics(path.distance(), new TimeCalculation(vehicle).calcTime(path));
+                    speed = m.getDistance()*3.6/m.getTime();
+                }
+                RoutingAlgorithm ralgo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
+                Path rpath = ralgo.calcPath(nodesArray[j].getNodeId(), nodesArray[i].getNodeId());
+                if(rpath.found()) {
+                    rm = new Metrics(rpath.distance(), new TimeCalculation(vehicle).calcTime(rpath));
+                    rspeed = rm.getDistance()*3.6/rm.getTime();
+                }
+                
+                if(m != null && rm != null && m.compareTo(rm) == 0) {
+                    int index = (int)Math.floor((speed - min) / step);
+                    if(index <= count)
+                        data[index].setFrequency(data[index].getFrequency()+1);  
+                } else {
+                    if(m != null) {
+                        int index = (int)Math.floor((speed - min) / step);
+                        if(index <= count)
+                            data[index].setFrequency(data[index].getFrequency()+1);  
+                    }
+                    if(rm != null) {
+                        int index = (int)Math.floor((rspeed - min) / step);
+                        if(index <= count)
+                            data[index].setFrequency(data[index].getFrequency()+1);  
+                    }
+                }
+            }
+        }
         return data;
     }
     
@@ -136,7 +208,7 @@ public class Histogram {
         double min = 0;
         int count = 13;
         double step = 10;
-        StoreData[] a = h.createHistogram("1202013120232", 13, min, step, count);
+        StoreData[] a = h.createHistogram("1202013120232", 13, min, step, count).getKey();
         
         for(int i = 0; i <= count; i ++) {
             System.out.println(String.format("[%.2f, %.2f) - %d", a[i].getMin(), a[i].getMax(), a[i].getFrequency()));
