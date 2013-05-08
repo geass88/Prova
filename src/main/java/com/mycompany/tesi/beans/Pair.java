@@ -15,11 +15,13 @@
  */
 package com.mycompany.tesi.beans;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Tommaso
  */
-public class Pair<K, V> {
+public class Pair<K, V> implements Serializable {
     private K key;
     private V value;
 
