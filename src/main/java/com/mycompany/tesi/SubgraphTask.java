@@ -584,19 +584,19 @@ class TasksHelper implements Runnable {
 
     @Override
     public void run() {
-        Connection conn = Main.getConnection(this.dbName);
         try {
-            PreparedStatement st1;
-            st1 = conn.prepareStatement(sql1);
-            st1.setInt(1, scale);
-            logger.log(Level.INFO, String.format("Computing cliques for %s and scale=%d", dbName, scale));
             List<String> list = new LinkedList<>();
-            try (ResultSet rs1 = st1.executeQuery()) {
-                while(rs1.next()) { // for each tiles
-                    list.add(rs1.getString(1));
+            try(Connection conn = Main.getConnection(this.dbName); 
+                    PreparedStatement st = conn.prepareStatement(sql1)) {
+                st.setInt(1, scale);
+                logger.log(Level.INFO, String.format("Computing cliques for %s and scale=%d", dbName, scale));
+
+                try (ResultSet rs1 = st.executeQuery()) {
+                    while(rs1.next()) { // for each tiles
+                        list.add(rs1.getString(1));
+                    }
                 }
             }
-            st1.close();
             
             int amount = scale>6? 1<<(scale-7): 1;
             int start;
@@ -616,19 +616,14 @@ class TasksHelper implements Runnable {
             for(SubgraphTask t: tasks) {
                 cutEdges.addAll(t.getCutEdges());
             }
-            try (PreparedStatement st2 = conn.prepareStatement(sql2)) {
-                st2.setInt(1, scale);
-                st2.setArray(2, conn.createArrayOf("integer", cutEdges.toArray()));
-                st2.executeQuery();
+            try (Connection conn = Main.getConnection(dbName);
+                    PreparedStatement st = conn.prepareStatement(sql2)) {
+                st.setInt(1, scale);
+                st.setArray(2, conn.createArrayOf("integer", cutEdges.toArray()));
+                st.executeQuery();
             }
         } catch (SQLException | InterruptedException ex) {
             logger.log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                conn.close();
-            } catch (SQLException ex) {
-                Logger.getLogger(TasksHelper.class.getName()).log(Level.SEVERE, null, ex);
-            }
         }
     }
 
