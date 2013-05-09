@@ -43,6 +43,7 @@ import java.util.logging.Logger;
 public class Histogram {
     
     private final String dbName;
+    private final static Logger logger = Logger.getLogger(Histogram.class.getName());
     
     public Histogram(final String dbName) {
         this.dbName = dbName;
@@ -71,7 +72,7 @@ public class Histogram {
             rs.close();
             return data;
         } catch(SQLException ex) {
-            Logger.getLogger(Histogram.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         }
         return null;
     }
@@ -184,7 +185,7 @@ public class Histogram {
             rs.close();         
             return map;
         } catch(SQLException ex) {
-            Logger.getLogger(Histogram.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         }
         return null;
     }
