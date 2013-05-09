@@ -80,7 +80,7 @@ public class Histogram {
     public Pair<StoreData[], Double> createHistogram(String qkey, int scale, double min, double step, int count) {
         TileSystem tileSystem = Main.getTileSystem(dbName);
         SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
-        SubgraphTask.Cell cell = task.getSubgraph(qkey);
+        SubgraphTask.Cell cell = task.getSubgraph(qkey, false);
 
         StoreData[] data = new StoreData[count+1];
         double v = min;
@@ -104,7 +104,7 @@ public class Histogram {
     public StoreData[] createCliqueHistogram(String qkey, int scale, double min, double step, int count) {
         TileSystem tileSystem = Main.getTileSystem(dbName);
         SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
-        SubgraphTask.Cell cell = task.getSubgraph(qkey);
+        SubgraphTask.Cell cell = task.getSubgraph(qkey, false);
 
         StoreData[] data = new StoreData[count+1];
         double v = min;

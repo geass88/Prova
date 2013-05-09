@@ -232,11 +232,17 @@ public class SubgraphTask implements Runnable {
         return null;
     }
     
-    public Cell getSubgraph(String qkey) {
+    /**
+     * 
+     * @param qkey
+     * @param exterior - specify to use the cell porcupine instead of the interior cell graph
+     * @return 
+     */
+    public Cell getSubgraph(String qkey, boolean exterior) {
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
-            return buildSubgraph(qkey, true);
+            return exterior? buildExteriorSubgraph(qkey): buildSubgraph(qkey, true);
         } catch(Exception e) {
             logger.log(Level.SEVERE, null, e);
         } finally {
@@ -250,14 +256,14 @@ public class SubgraphTask implements Runnable {
         return null;
     }
     
-    public Map<String, Cell> getSubgraphs() {
+    public Map<String, Cell> getSubgraphs(boolean exterior) {
         if(qkeys == null || qkeys.isEmpty()) return null;
         Map<String, Cell> map = new HashMap<>();
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
             for(String qkey: qkeys) 
-                map.put(qkey, buildSubgraph(qkey, true));
+                map.put(qkey, exterior? buildExteriorSubgraph(qkey): buildSubgraph(qkey, true));
         } catch(Exception e) {
             logger.log(Level.SEVERE, null, e);
         } finally {
@@ -469,7 +475,7 @@ public class SubgraphTask implements Runnable {
     /**
      * Compute the clique between all the boundary nodes of a cell
      * @param qkey - identify uniquely a cell
-     * @param exterior - specify to use the porcupine instead of the interior cell graph
+     * @param exterior - specify to use the cell porcupine instead of the interior cell graph
      * @throws Exception 
      */
     private void computeClique(String qkey, boolean exterior) throws Exception {

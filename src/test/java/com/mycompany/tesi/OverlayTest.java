@@ -186,9 +186,9 @@ public class OverlayTest extends TestCase {
         */
         
         String start_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(from.lon, from.lat, scale), scale);
-        Cell startCell = task.getSubgraph(start_qkey);
+        Cell startCell = task.getSubgraph(start_qkey, false);
         String end_qkey = QuadKeyManager.fromTileXY(tileSystem.pointToTileXY(to.lon, to.lat, scale), scale);
-        Cell endCell = task.getSubgraph(end_qkey);
+        Cell endCell = task.getSubgraph(end_qkey, false);
         graph = GraphHelper.cloneGraph(graph, startCell, endCell);
         GraphHelper.union(graph, startCell, vehicle);
         if(!end_qkey.equals(start_qkey))
