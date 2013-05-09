@@ -104,9 +104,8 @@ public class SubgraphTask implements Runnable {
             
             for(String qkey: qkeys) {
                 computeClique(qkey, false); // compute and store the clique
-                computeClique(qkey, true); // compute and store the cell max speed
+                computeClique(qkey, true); // compute and store the cell max speed using the porcupine
             }
-            // TODO: computeClique(qkey, true); // calcolo velocità massima del tile!!
             st2.executeBatch();
             st3.executeBatch();
         } catch(Exception e) {
@@ -273,7 +272,7 @@ public class SubgraphTask implements Runnable {
     }
     
     /**
-     * Build the exterior cell subgraph for the given quadkey (hedgehog = interior subgraph + cut-edges)
+     * Build the exterior cell subgraph for the given quadkey (porcupine = interior subgraph + cut-edges)
      * @param qkey
      * @return
      * @throws Exception 
@@ -474,7 +473,7 @@ public class SubgraphTask implements Runnable {
     /**
      * Compute the clique between all the boundary nodes of a cell
      * @param qkey - identify uniquely a cell
-     * @param exterior - specify to use the hedgehog instead of the interior cell graph
+     * @param exterior - specify to use the porcupine instead of the interior cell graph
      * @throws Exception 
      */
     private void computeClique(String qkey, boolean exterior) throws Exception {
