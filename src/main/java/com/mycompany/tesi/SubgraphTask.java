@@ -104,9 +104,11 @@ public class SubgraphTask implements Runnable {
             st3 = conn.prepareStatement(sql3);
             System.out.println("Thread run ...");
             
-            for(String q: qkeys)
-                computeClique(q, false);
-            // TODO: computeClique(q, true); // calcolo velocità massima del tile!!
+            for(String qkey: qkeys) {
+                computeClique(qkey, false);
+                computeClique(qkey, true);
+            }
+            // TODO: computeClique(qkey, true); // calcolo velocità massima del tile!!
             st2.executeBatch();
             st3.executeBatch();
         } catch(Exception e) {
@@ -485,7 +487,7 @@ public class SubgraphTask implements Runnable {
                     if(speed > max_speed) max_speed = speed;
                 }
                 
-                if(! exterior) {
+                if(! exterior) { // store the clique edge
                     if(m != null && rm != null && m.compareTo(rm) == 0)
                         storeOverlayEdge(nodesArray[i], nodesArray[j], m, true);
                     else {
@@ -497,7 +499,7 @@ public class SubgraphTask implements Runnable {
                 }
             }
         }
-        if(exterior) {
+        if(exterior) { // store the interior speed
             st3.clearParameters();
             st3.setDouble(1, max_speed);
             st3.setString(2, qkey);
