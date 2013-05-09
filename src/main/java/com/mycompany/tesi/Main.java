@@ -52,6 +52,7 @@ public class Main {
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
     private final static Map<String, TileSystem> TILE_SYSTEMS = new HashMap<>();
     public static boolean TEST = false;
+    private final static Logger logger = Logger.getLogger(Main.class.getName());
     
     static {
         for(String db: DBS) {
@@ -62,7 +63,7 @@ public class Main {
                 tileSystem.computeTree();
                 TILE_SYSTEMS.put(db, tileSystem);
             } catch(SQLException ex) {
-                Logger.getLogger(Histogram.class.getName()).log(Level.SEVERE, null, ex);
+                logger.log(Level.SEVERE, null, ex);
             }
         }
         
@@ -82,7 +83,7 @@ public class Main {
             else
                 return DATASOURCES.get(db).getDataSource().getConnection();
         } catch (SQLException ex) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         }
         return null;
     }
@@ -126,7 +127,7 @@ public class Main {
             Enumeration e = tileSystem.getTreeEnumeration();
             st.execute("TRUNCATE TABLE tiles; TRUNCATE TABLE ways_tiles;");
             List<Pair<String, Polygon>> tiles = new LinkedList<>();
-            System.out.println("Saving tiles ...");
+            logger.log(Level.INFO, "Saving tiles ...");
             while(e.hasMoreElements()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
                 Tile tile = (Tile) node.getUserObject();
@@ -151,20 +152,17 @@ public class Main {
             }
             pst.executeBatch();
             //st.execute("DELETE FROM tiles WHERE qkey='';"); // removing the root node
-            System.out.println("Binding ways-tiles ...");
+            logger.log(Level.INFO, "Binding ways-tiles ...");
             
             List<Pair<Integer, Geometry>> ways = new LinkedList<>();
             WKTReader reader = new WKTReader();
-            ResultSet rs;
-            rs = st.executeQuery("SELECT gid, st_astext(the_geom) AS geometry FROM ways;");
-            try {
+            
+            try(ResultSet rs = st.executeQuery("SELECT gid, st_astext(the_geom) AS geometry FROM ways;")) {
                 while(rs.next())
                     ways.add(new Pair(rs.getInt("gid"), reader.read(rs.getString("geometry"))));
             } catch (ParseException ex) {
-                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                logger.log(Level.SEVERE, null, ex);
                 System.exit(0);
-            } finally {
-                rs.close();
             }
             
             class Task implements Runnable {
@@ -194,7 +192,7 @@ public class Main {
                                 }
                         st.executeBatch();
                     } catch (SQLException ex) {
-                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                        logger.log(Level.SEVERE, null, ex);
                     }
                 }
                 
