@@ -47,7 +47,7 @@ public class Main {
     public static final Integer MIN_SCALE = 13;
     public static final Integer MAX_SCALE = 17;
     public static final Integer POOL_SIZE = 3;
-    public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS = 10;
+    public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS = 20;
     private final static Map<String, ConnectionPool> DATASOURCES = new HashMap<>();
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
     private final static Map<String, TileSystem> TILE_SYSTEMS = new HashMap<>();
