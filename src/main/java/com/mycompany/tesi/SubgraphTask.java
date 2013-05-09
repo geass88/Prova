@@ -100,7 +100,7 @@ public class SubgraphTask implements Runnable {
             st1 = conn.prepareStatement(sql1); 
             st2 = conn.prepareStatement(String.format(sql2, this.scale));
             st3 = conn.prepareStatement(sql3);
-            System.out.println("Thread run ...");
+            logger.log(Level.INFO, "Thread run ...");
             
             for(String qkey: qkeys) {
                 computeClique(qkey, false); // compute and store the clique
@@ -353,8 +353,6 @@ public class SubgraphTask implements Runnable {
                     // cutEdges.add(rs.getInt("gid"));
                 }
             }
-            //
-            //System.out.println(graph.nodes());
         }
         rs.close();
         return new Cell(graph, boundaryNodes, vehicle, nodes);
@@ -463,8 +461,6 @@ public class SubgraphTask implements Runnable {
                     cutEdges.add(rs.getInt("gid"));
                 }
             }
-            //
-            //System.out.println(graph.nodes());
         }
         rs.close();
         return new Cell(graph, boundaryNodes, vehicle, nodes);
@@ -578,7 +574,8 @@ class TasksHelper implements Runnable {
     private final int scale;
     private String dbName;
     private final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
-
+    private final static Logger logger = Logger.getLogger(TasksHelper.class.getName());
+    
     public TasksHelper(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
         this.scale = scale;
@@ -592,7 +589,7 @@ class TasksHelper implements Runnable {
             PreparedStatement st1;
             st1 = conn.prepareStatement(sql1);
             st1.setInt(1, scale);
-            System.out.println(String.format("Computing cliques for %s and scale=%d", dbName, scale));
+            logger.log(Level.INFO, String.format("Computing cliques for %s and scale=%d", dbName, scale));
             List<String> list = new LinkedList<>();
             try (ResultSet rs1 = st1.executeQuery()) {
                 while(rs1.next()) { // for each tiles
@@ -600,13 +597,7 @@ class TasksHelper implements Runnable {
                 }
             }
             st1.close();
-            /*SubgraphTask t1 = new SubgraphTask(tileSystem, dbName, scale, list);
-            Map<String, SubgraphTask.Cell> map = t1.getSubgraphs();
-            int count = 0;
-            for(SubgraphTask.Cell c: map.values())
-                count = c.boundaryNodes.size();
-            System.out.println(dbName +" "+scale+" AvgboundaryNodes" + count/list.size());
-            if(1==1) {return;}*/
+            
             int amount = scale>6? 1<<(scale-7): 1;
             int start;
             List<SubgraphTask> tasks = new LinkedList<>();
@@ -620,7 +611,7 @@ class TasksHelper implements Runnable {
             tasks.add(task);
             pool.shutdown();
             pool.awaitTermination(1l, TimeUnit.DAYS);
-            System.out.println(String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
+            logger.log(Level.INFO, String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
             Set<Integer> cutEdges = new TreeSet<>();
             for(SubgraphTask t: tasks) {
                 cutEdges.addAll(t.getCutEdges());
@@ -631,7 +622,7 @@ class TasksHelper implements Runnable {
                 st2.executeQuery();
             }
         } catch (SQLException | InterruptedException ex) {
-            Logger.getLogger(TasksHelper.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         } finally {
             try {
                 conn.close();
