@@ -114,7 +114,6 @@ public class Histogram {
                 data[index].setFrequency(data[index].getFrequency()+1);
             if(speed > max_speed) max_speed = speed;
         }
-//        if(Double.isInfinite(max_speed) || Double.isNaN(max_speed)) max_speed = 0.;
         return new Pair<>(data, max_speed);
     }
     

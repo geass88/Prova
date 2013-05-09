@@ -72,7 +72,7 @@ public class SubgraphTask implements Runnable {
     private final int scale;
     private String dbName;
     
-    public static final int maxSpeed = 130;
+    public static final int MAX_SPEED = 130;
     public static final String sql1 = "SELECT ways.gid, ways.source, ways.target, ways.freeflow_speed, ways.length, ways.reverse_cost<>1000000 AS bothdir, ways.km*1000 AS distance, ways.x1, ways.y1, ways.x2, ways.y2, st_astext(ways.the_geom) AS geometry " + //st_contains(shape, the_geom) AS contained
             "FROM ways JOIN ways_tiles ON gid = ways_id JOIN tiles ON tiles_qkey = qkey WHERE qkey = ? ORDER BY gid";
     public static final String sql2 = "INSERT INTO \"overlay_%d\"(source, target, km, freeflow_speed, length, reverse_cost, x1, y1, x2, y2) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
@@ -296,7 +296,7 @@ public class SubgraphTask implements Runnable {
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
-        RawEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
+        RawEncoder vehicle = new MyCarFlagEncoder(MAX_SPEED);
         Map<Integer, Integer> nodes = new HashMap<>(); // graph to subgraph nodes
         int count = 0;
         st1.clearParameters();
@@ -384,7 +384,7 @@ public class SubgraphTask implements Runnable {
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
-        RawEncoder vehicle = new MyCarFlagEncoder(maxSpeed);
+        RawEncoder vehicle = new MyCarFlagEncoder(MAX_SPEED);
         Map<Integer, Integer> nodes = new HashMap<>(); // graph to subgraph nodes
         int count = 0;
         st1.clearParameters();
