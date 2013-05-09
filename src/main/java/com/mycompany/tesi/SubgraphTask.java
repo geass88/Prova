@@ -46,6 +46,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -234,7 +235,7 @@ public class SubgraphTask implements Runnable {
     
     /**
      * 
-     * @param qkey
+     * @param qkey - identify uniquely a cell
      * @param exterior - specify to use the cell porcupine instead of the interior cell graph
      * @return 
      */
@@ -519,7 +520,10 @@ public class SubgraphTask implements Runnable {
         }
         if(exterior) { // store the interior speed
             st3.clearParameters();
-            st3.setDouble(1, max_speed);
+            if(Double.isInfinite(max_speed) || Double.isNaN(max_speed))
+                st3.setNull(1, Types.DOUBLE);
+            else
+                st3.setDouble(1, max_speed);
             st3.setString(2, qkey);
             //st3.executeUpdate();
             st3.addBatch();
@@ -531,7 +535,9 @@ public class SubgraphTask implements Runnable {
         st2.setInt(1, source.getRoadNodeId());
         st2.setInt(2, target.getRoadNodeId());
         st2.setDouble(3, metrics.getDistance()/1000.);
-        st2.setDouble(4, metrics.getDistance()*3.6/metrics.getTime());
+        double speed = metrics.getDistance()*3.6/metrics.getTime();
+        if(Double.isInfinite(speed) || Double.isNaN(speed)) speed = 0.;
+        st2.setDouble(4, speed);
         st2.setDouble(5, metrics.getTime()/3600.);
         st2.setDouble(6, (bothDir? metrics.getTime()/3600.: 1000000));
         st2.setDouble(7, source.getPoint().getX());

@@ -49,6 +49,14 @@ public class Histogram {
         this.dbName = dbName;
     }
     
+    /**
+     * Global histogram based on road graph
+     * @param table
+     * @param min
+     * @param step
+     * @param count
+     * @return 
+     */
     public StoreData[] createHistogram(String table, double min, double step, int count) {
         String sql = String.format("SELECT COUNT(*) AS frequency, floor((freeflow_speed-?)/?) AS index "
                 + "FROM \"%s\" WHERE freeflow_speed >= ? GROUP BY index ORDER BY index", table);
@@ -77,6 +85,15 @@ public class Histogram {
         return null;
     }
     
+    /**
+     * Cell histogram based on road graph
+     * @param qkey
+     * @param scale
+     * @param min
+     * @param step
+     * @param count
+     * @return 
+     */
     public Pair<StoreData[], Double> createHistogram(String qkey, int scale, double min, double step, int count) {
         TileSystem tileSystem = Main.getTileSystem(dbName);
         SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
@@ -97,14 +114,24 @@ public class Histogram {
                 data[index].setFrequency(data[index].getFrequency()+1);
             if(speed > max_speed) max_speed = speed;
         }
-        Pair<StoreData[], Double> pair = new Pair<>(data, max_speed);
-        return pair;
+//        if(Double.isInfinite(max_speed) || Double.isNaN(max_speed)) max_speed = 0.;
+        return new Pair<>(data, max_speed);
     }
     
-    public StoreData[] createCliqueHistogram(String qkey, int scale, double min, double step, int count) {
+    /**
+     * Cell histogram based on overlay graph (interior | exterior)
+     * @param qkey - cell id
+     * @param exterior - true to use cell porcupine instead of interior cell subgraph
+     * @param scale - zoom level
+     * @param min
+     * @param step
+     * @param count
+     * @return 
+     */
+    public Pair<StoreData[], Double> createCliqueHistogram(String qkey, boolean exterior, int scale, double min, double step, int count) {
         TileSystem tileSystem = Main.getTileSystem(dbName);
         SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale);
-        SubgraphTask.Cell cell = task.getSubgraph(qkey, false);
+        SubgraphTask.Cell cell = task.getSubgraph(qkey, exterior);
 
         StoreData[] data = new StoreData[count+1];
         double v = min;
@@ -116,6 +143,7 @@ public class Histogram {
         RawEncoder vehicle = cell.encoder;
         
         BoundaryNode[] nodesArray = cell.boundaryNodes.toArray(new BoundaryNode[cell.boundaryNodes.size()]);
+        double max_speed = 0.;
         for(int i = 0; i < nodesArray.length; i ++) {
             for(int j = i+1; j < nodesArray.length; j ++) {
                 //if(i == j) continue;
@@ -126,12 +154,14 @@ public class Histogram {
                 if(path.found()) {
                     m = new Metrics(path.distance(), new TimeCalculation(vehicle).calcTime(path));
                     speed = m.getDistance()*3.6/m.getTime();
+                    if(speed > max_speed) max_speed = speed;
                 }
                 RoutingAlgorithm ralgo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
                 Path rpath = ralgo.calcPath(nodesArray[j].getNodeId(), nodesArray[i].getNodeId());
                 if(rpath.found()) {
                     rm = new Metrics(rpath.distance(), new TimeCalculation(vehicle).calcTime(rpath));
                     rspeed = rm.getDistance()*3.6/rm.getTime();
+                    if(rspeed > max_speed) max_speed = rspeed;
                 }
                 
                 if(m != null && rm != null && m.compareTo(rm) == 0) {
@@ -152,7 +182,7 @@ public class Histogram {
                 }
             }
         }
-        return data;
+        return new Pair<>(data, max_speed);
     }
     
     public Map<String, Integer> getStatsTable(int scale) {
