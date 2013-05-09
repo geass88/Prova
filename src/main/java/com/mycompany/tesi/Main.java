@@ -38,7 +38,7 @@ import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
 
 /**
- * Preprocessing: creazione e salvataggio tiles.
+ * Preprocessing: creazione e salvataggio tiles, creazione overlay_graph.
  * @author Tommaso
  */
 public class Main {
