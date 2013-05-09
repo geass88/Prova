@@ -105,8 +105,8 @@ public class SubgraphTask implements Runnable {
             System.out.println("Thread run ...");
             
             for(String qkey: qkeys) {
-                computeClique(qkey, false);
-                computeClique(qkey, true);
+                computeClique(qkey, false); // compute and store the clique
+                computeClique(qkey, true); // compute and store the cell max speed
             }
             // TODO: computeClique(qkey, true); // calcolo velocità massima del tile!!
             st2.executeBatch();
@@ -274,6 +274,12 @@ public class SubgraphTask implements Runnable {
         return map;
     }
     
+    /**
+     * Build the exterior cell subgraph for the given quadkey (hedgehog = interior subgraph + cut-edges)
+     * @param qkey
+     * @return
+     * @throws Exception 
+     */
     private Cell buildExteriorSubgraph(String qkey/*, boolean withGeometry*/) throws Exception {
         Tile tile = tileSystem.getTile(qkey);
         Polygon rect = tile.getPolygon();
@@ -357,6 +363,13 @@ public class SubgraphTask implements Runnable {
         return new Cell(graph, boundaryNodes, vehicle, nodes);
     }
     
+    /**
+     * Build the interior cell subgraph for the given quadkey
+     * @param qkey
+     * @param withGeometry - add the way geometry
+     * @return
+     * @throws Exception 
+     */
     private Cell buildSubgraph(String qkey, boolean withGeometry) throws Exception {
         Tile tile = tileSystem.getTile(qkey);
         Polygon rect = tile.getPolygon();
@@ -460,6 +473,12 @@ public class SubgraphTask implements Runnable {
         return new Cell(graph, boundaryNodes, vehicle, nodes);
     }
     
+    /**
+     * Compute the clique between all the boundary nodes of a cell
+     * @param qkey - identify uniquely a cell
+     * @param exterior - specify to use the hedgehog instead of the interior cell graph
+     * @throws Exception 
+     */
     private void computeClique(String qkey, boolean exterior) throws Exception {
         Cell cell = exterior? buildExteriorSubgraph(qkey): buildSubgraph(qkey, false);
         Graph graph = cell.graph;
