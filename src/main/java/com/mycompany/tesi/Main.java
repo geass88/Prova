@@ -22,12 +22,16 @@ import com.mycompany.tesi.utils.ConnectionPool;
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.*;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.InvalidPropertiesFormatException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
@@ -43,7 +47,7 @@ import org.geotoolkit.geometry.Envelope2D;
  */
 public class Main {
     
-    public static final String[] DBS = { "berlin_routing", "hamburg_routing", "london_routing" };
+    public static final String[] DBS;// = { "berlin_routing", "hamburg_routing", "london_routing" };
     public static final Integer MIN_SCALE = 13;
     public static final Integer MAX_SCALE = 17;
     public static final Integer POOL_SIZE = 3;
@@ -53,8 +57,17 @@ public class Main {
     private final static Map<String, TileSystem> TILE_SYSTEMS = new HashMap<>();
     public static boolean TEST = false;
     private final static Logger logger = Logger.getLogger(Main.class.getName());
+    public final static Properties PROPERTIES = new Properties();
     
     static {
+        try {
+            PROPERTIES.loadFromXML(new FileInputStream("config.xml"));
+        } catch (Exception ex) {
+            logger.log(Level.SEVERE, null, ex);
+            System.exit(0);
+        }
+        DBS = PROPERTIES.getProperty("jdbc_databases", "routing").split(" ");
+        
         for(String db: DBS) {
             DATASOURCES.put(db, new ConnectionPool(db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
             
