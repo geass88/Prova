@@ -17,7 +17,6 @@
 package com.mycompany.tesi.utils;
 
 import com.mycompany.tesi.Main;
-import java.awt.image.ImageObserver;
 import java.io.IOException;
 import javax.sql.DataSource;
 import java.sql.Connection;
