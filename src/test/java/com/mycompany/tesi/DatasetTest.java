@@ -43,7 +43,7 @@ public class DatasetTest extends TestCase {
     @Override
     public void setUp() {
         RawEncoder vehicle = new MyCarFlagEncoder(SubgraphTask.MAX_SPEED);
-        graph = GraphHelper.readGraph("berlin_routing", "ways", vehicle);
+        graph = GraphHelper.readGraph("london_routing", "ways", vehicle);
     }
     
     @After
@@ -54,7 +54,7 @@ public class DatasetTest extends TestCase {
     
     @Test
     public void testDataset() throws Exception {
-        File file = new File("places");
+        File file = new File("Londonways");
         assertTrue(file.exists());
         int count = 0;
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
