@@ -79,7 +79,8 @@ public class Main {
     public static Connection getConnection(final String db) {
         try {
             if(TEST)
-                return DriverManager.getConnection(ConnectionPool.JDBC_URI + db, "postgres", "postgres");
+                return DriverManager.getConnection(ConnectionPool.JDBC_URI + db, 
+                        ConnectionPool.JDBC_USERNAME, ConnectionPool.JDBC_PASSWORD);
             else
                 return DATASOURCES.get(db).getDataSource().getConnection();
         } catch (SQLException ex) {
@@ -96,7 +97,7 @@ public class Main {
         System.out.println("Sure?");
         System.in.read();
         for(String dbName: DBS) {
-            System.out.println("Processing db " + dbName + " ...");
+            logger.log(Level.INFO, "Processing db {0} ...", dbName);
             //create_tiles(dbName);
             threadedSubgraph(dbName);
         }
