@@ -218,7 +218,7 @@ public class Main {
     }
     
     // unused
-    public static void loadTiles(final String db) throws SQLException {
+    public static TileSystem loadTiles(final String db) throws SQLException {
         try(Connection conn = getConnection(db)) {
             Envelope2D bound = getBound(conn);
             TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
@@ -231,7 +231,7 @@ public class Main {
                     tile.setUserObject(max_speed);
                 }
             }
-            
+            return tileSystem;
         }
     }
 }
