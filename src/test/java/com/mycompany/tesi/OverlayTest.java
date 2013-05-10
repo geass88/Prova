@@ -231,13 +231,13 @@ public class OverlayTest extends TestCase {
     public void testPath() throws Exception {
         PointList[] expected = new PointList[POINTS_COUNT]; 
         {
-            RawEncoder vehicleRoad = new MyCarFlagEncoder(130);
+            RawEncoder vehicleRoad = new MyCarFlagEncoder(SubgraphTask.MAX_SPEED);
             Graph roadGraph = GraphHelper.readGraph(dbName, "ways", vehicleRoad);        
             for(int i = 0; i < POINTS_COUNT; i++)
                 expected[i] = getPath2(roadGraph, vehicleRoad, fromNodes[i], toNodes[i]);
         }
         for(int j = Main.MIN_SCALE; j <= Main.MAX_SCALE; j ++) {
-            RawEncoder vehicle = new MyCarFlagEncoder(130);
+            RawEncoder vehicle = new MyCarFlagEncoder(SubgraphTask.MAX_SPEED);
             Graph graph = GraphHelper.readGraph(dbName, "overlay_" + j, vehicle);
             for(int i = 0; i < POINTS_COUNT; i++) {
                 System.out.println("FROM: "+ids.get(i) + " TO: " + ids.get(i+POINTS_COUNT) + " scale="+j);
