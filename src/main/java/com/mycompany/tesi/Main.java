@@ -218,20 +218,22 @@ public class Main {
     }
     
     // unused
-    /*static void loadTiles(Connection conn) throws SQLException {
-        Envelope2D bound = getBound(conn);
-        TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
-        tileSystem.computeTree();
-        boolean ok = true;
-        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT qkey FROM tiles")) {
-            while(rs.next()) {
-                Tile tile = tileSystem.getTile(rs.getString("qkey"));
-                
-                ok &= tile != null;
+    public static void loadTiles(final String db) throws SQLException {
+        try(Connection conn = getConnection(db)) {
+            Envelope2D bound = getBound(conn);
+            TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);
+            tileSystem.computeTree();
+            try (Statement st = conn.createStatement(); 
+                    ResultSet rs = st.executeQuery("SELECT qkey, max_speed FROM tiles WHERE max_speed IS NOT NULL")) {
+                while(rs.next()) {
+                    Tile tile = tileSystem.getTile(rs.getString("qkey"));
+                    double max_speed = rs.getDouble("max_speed");
+                    tile.setUserObject(max_speed);
+                }
             }
+            
         }
-        System.out.println(ok);
-    }*/
+    }
 }
 
 /*

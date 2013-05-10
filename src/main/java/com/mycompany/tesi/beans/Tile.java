@@ -27,8 +27,9 @@ import org.geotoolkit.geometry.jts.JTS;
 public class Tile implements Serializable {
     
     private Envelope2D rect;
+    private Object userObject;
 
-    public Tile(Envelope2D rect) {
+    public Tile(final Envelope2D rect) {
         this.rect = rect;
     }
 
@@ -43,4 +44,13 @@ public class Tile implements Serializable {
     public Polygon getPolygon() {
         return JTS.toGeometry(rect);
     }
+
+    public Object getUserObject() {
+        return userObject;
+    }
+
+    public void setUserObject(Object userObject) {
+        this.userObject = userObject;
+    }
+    
 }
