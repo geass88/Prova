@@ -30,7 +30,7 @@ public class TileXYRectangle {
         this.upperCorner = new TileXY(Math.max(cornerX, upperCornerX), Math.max(cornerY, upperCornerY));
     }
     
-    public TileXYRectangle(TileXY corner1, TileXY corner2) {
+    public TileXYRectangle(final TileXY corner1, final TileXY corner2) {
         this.lowerCorner = new TileXY(Math.min(corner1.getX(), corner2.getX()), Math.min(corner1.getY(), corner2.getY()));
         this.upperCorner = new TileXY(Math.max(corner1.getX(), corner2.getX()), Math.max(corner1.getY(), corner2.getY()));
     }
@@ -47,7 +47,7 @@ public class TileXYRectangle {
         return lowerCorner;
     }
 
-    public void setLowerCorner(TileXY lowerCorner) {
+    public void setLowerCorner(final TileXY lowerCorner) {
         this.lowerCorner = lowerCorner;
     }
 
@@ -55,7 +55,7 @@ public class TileXYRectangle {
         return upperCorner;
     }
 
-    public void setUpperCorner(TileXY upperCorner) {
+    public void setUpperCorner(final TileXY upperCorner) {
         this.upperCorner = upperCorner;
     }
     
