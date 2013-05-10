@@ -28,6 +28,7 @@ import com.mycompany.tesi.SubgraphTask.Cell;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.hooks.RawEncoder;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
 import java.sql.*;
 import java.util.HashMap;
@@ -42,6 +43,8 @@ import java.util.logging.Logger;
  * @author Tommaso
  */
 public class GraphHelper {
+    
+    private final static Logger logger = Logger.getLogger(GraphHelper.class.getName());
     
     public static void union(final Graph graph, final Cell cell, final RawEncoder vehicle) {
         Map<Integer, Integer> inverse = new HashMap<>();
@@ -106,7 +109,7 @@ public class GraphHelper {
         return null;
     }
     
-    public static GraphStorage readGraph(String dbName, String table, RawEncoder vehicle) throws Exception {
+    public static GraphStorage readGraph(String dbName, String table, RawEncoder vehicle) {
         WKTReader reader = new WKTReader();
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
@@ -129,13 +132,13 @@ public class GraphHelper {
                 }
             }
             rs.close();
-        } catch(SQLException ex) {
-            Logger.getLogger(Histogram.class.getName()).log(Level.SEVERE, null, ex);
+        } catch(SQLException | ParseException ex) {
+            logger.log(Level.SEVERE, null, ex);
         }
         return graph;
     }
     
-    public static GraphStorage readGraph(String dbName, String table) throws Exception {
+    public static GraphStorage readGraph(String dbName, String table) {
         WKTReader reader = new WKTReader();
         GraphStorage graph = new GraphBuilder().create();
         
@@ -160,6 +163,8 @@ public class GraphHelper {
                 }
             }
             rs.close();
+        } catch(SQLException | ParseException ex) {
+            logger.log(Level.SEVERE, null, ex);
         }
         return graph;
     }
