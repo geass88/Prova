@@ -87,9 +87,6 @@ public class ConnectionPool {
 
     private final DataSource dataSource;
     private ObjectPool pool;
-    public static final String JDBC_URI;// = "jdbc:postgresql://192.168.128.128:5432/";//192.168.128.128
-    public static final String JDBC_USERNAME;// = "postgres";
-    public static final String JDBC_PASSWORD;// = "postgres";
     private static final Logger logger = Logger.getLogger(ConnectionPool.class.getName());
     
     static {
@@ -105,13 +102,14 @@ public class ConnectionPool {
             logger.log(Level.SEVERE, null, ex);
             System.exit(0);
         }
-        JDBC_URI = Main.PROPERTIES.getProperty("jdbc_uri", "jdbc:postgresql://localhost:5432/");
-        JDBC_USERNAME = Main.PROPERTIES.getProperty("jdbc_username", "postgres");
-        JDBC_PASSWORD = Main.PROPERTIES.getProperty("jdbc_password", "postgres");
     }
     
     public ConnectionPool(final String dbName, int poolSize) {
+        final String JDBC_URI = Main.PROPERTIES.getProperty("jdbc_uri", "jdbc:postgresql://localhost:5432/");
+        final String JDBC_USERNAME = Main.PROPERTIES.getProperty("jdbc_username", "postgres");
+        final String JDBC_PASSWORD = Main.PROPERTIES.getProperty("jdbc_password", "postgres");
         this.dataSource = setupDataSource(JDBC_URI + dbName, JDBC_USERNAME, JDBC_PASSWORD, poolSize);
+        logger.log(Level.INFO, "Setup datasource {0} done!", dbName);
     }
     
     public void close() {

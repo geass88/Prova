@@ -92,8 +92,8 @@ public class Main {
     public static Connection getConnection(final String db) {
         try {
             if(TEST)
-                return DriverManager.getConnection(ConnectionPool.JDBC_URI + db, 
-                        ConnectionPool.JDBC_USERNAME, ConnectionPool.JDBC_PASSWORD);
+                return DriverManager.getConnection(PROPERTIES.getProperty("jdbc_uri", "jdbc:postgresql://localhost:5432/") + db, 
+                        PROPERTIES.getProperty("jdbc_username", "postgres"), PROPERTIES.getProperty("jdbc_password", "postgres"));
             else
                 return DATASOURCES.get(db).getDataSource().getConnection();
         } catch (SQLException ex) {
