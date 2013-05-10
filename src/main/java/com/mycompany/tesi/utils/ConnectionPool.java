@@ -86,6 +86,7 @@ public class ConnectionPool {
     private final DataSource dataSource;
     private ObjectPool pool;
     public static final String JDBC_URI = "jdbc:postgresql://192.168.128.128:5432/";//192.168.128.128
+    private static final Logger logger = Logger.getLogger(ConnectionPool.class.getName());
     
     static {
         //
@@ -97,7 +98,7 @@ public class ConnectionPool {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException ex) {
-            Logger.getLogger(ConnectionPool.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
             System.exit(0);
         }
     }
@@ -110,7 +111,7 @@ public class ConnectionPool {
         try {
             pool.close();
         } catch (Exception ex) {
-            Logger.getLogger(ConnectionPool.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         }
     }
     
@@ -159,7 +160,7 @@ public class ConnectionPool {
                 System.out.println("");
             }
         } catch(SQLException e) {
-            e.printStackTrace();
+            logger.severe(e.getMessage());
         } finally {
             try { if (rset != null) rset.close(); } catch(Exception e) { }
             try { if (stmt != null) stmt.close(); } catch(Exception e) { }
