@@ -15,6 +15,7 @@
  */
 package com.mycompany.tesi.utils;
 
+import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.beans.TileXYRectangle;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -121,33 +122,47 @@ public class ObstacleCreator {
         return list;
     }
     
-    private double maxSpeed(final TileXYRectangle rect, final TileXYRectangle obs) {
+    private double maxSpeed(final TileXYRectangle rect, final TileXYRectangle obstacle, final int scale) {
         int N = rect.getWidth() + 1, 
             M = rect.getHeight() + 1;
         
-        double inside_speed = 0.;
-        double outside_speed = 0.;
+        double insideSpeed = 0.;
+        double outsideSpeed = 0.;
         for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
-            for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++)
-                if(obs.getLowerCorner().getX()<=i && i<=obs.getUpperCorner().getX() && 
-                        obs.getLowerCorner().getY()<=j && j<= obs.getUpperCorner().getY()) { // (i, j) in {rect intersection obs}
-                    inside_speed ++;
+            for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
+                Tile tile = tileSystem.getTile(i, j, scale);
+                double maxSpeed = tile==null? 0: (double) tile.getUserObject();
+                if(obstacle.getLowerCorner().getX()<=i && i<=obstacle.getUpperCorner().getX() && 
+                        obstacle.getLowerCorner().getY()<=j && j<= obstacle.getUpperCorner().getY()) { // (i, j) in {rect intersection obs}
+                    if(maxSpeed > insideSpeed)
+                        insideSpeed = maxSpeed;
                 } else {
-                    outside_speed ++;
+                    if(maxSpeed > outsideSpeed)
+                        outsideSpeed = maxSpeed;
                 }
-        System.out.println(inside_speed);
-        System.out.println(outside_speed);
-        return 0.;
+            }
+        //System.out.println(insideSpeed);
+        //System.out.println(outsideSpeed);
+        return insideSpeed;
     }
     
-    public Set<TileXYRectangle> getObstacles(final Point start, final Point end, final int scale) {
+    public TileXYRectangle getObstacle(final Point start, final Point end, final int scale) {
         TileXYRectangle rect = findRect(start, end, scale);
         List<TileXY> seeds = listSeeds(rect, start, end, scale);
         Set<TileXYRectangle> obstacles = new TreeSet<>();
         for(TileXY seed: seeds) {
             obstacles.addAll(buildRect(rect, seed));
         }
-        return obstacles;
+        TileXYRectangle bestObstacle = null;
+        double bestSpeed = 0;
+        for(TileXYRectangle obstacle: obstacles) {
+            double speed = maxSpeed(rect, obstacle, scale);
+            if(speed > bestSpeed) {
+                bestObstacle = obstacle;
+                bestSpeed = speed;
+            }
+        }
+        return bestObstacle;
     }
     
 }

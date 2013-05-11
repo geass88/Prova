@@ -238,8 +238,8 @@ public class Main {
                     ResultSet rs = st.executeQuery("SELECT qkey, max_speed FROM tiles WHERE max_speed IS NOT NULL")) {
                 while(rs.next()) {
                     Tile tile = tileSystem.getTile(rs.getString("qkey"));
-                    double max_speed = rs.getDouble("max_speed");
-                    tile.setUserObject(max_speed);
+                    double maxSpeed = rs.getDouble("max_speed");
+                    tile.setUserObject(maxSpeed);
                 }
             }
             return tileSystem;
