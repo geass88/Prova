@@ -56,10 +56,10 @@ public class ObstacleCreator {
             TileXY startTileXY = tileSystem.pointToTileXY(start.getX(), start.getY(), scale);
             TileXY endTileXY = tileSystem.pointToTileXY(end.getX(), end.getY(), scale);
             TileXYRectangle rect = new TileXYRectangle(startTileXY, endTileXY);
-            System.out.println(QuadKeyManager.fromTileXY(startTileXY, scale));
+            /*System.out.println(QuadKeyManager.fromTileXY(startTileXY, scale));
             System.out.println(QuadKeyManager.fromTileXY(endTileXY, scale));
             System.out.println(startTileXY);
-            System.out.println(endTileXY);
+            System.out.println(endTileXY);*/
             return rect;
         } catch (Exception ex) {
             logger.log(Level.SEVERE, null, ex);
@@ -169,7 +169,21 @@ public class ObstacleCreator {
             return null;
         Tile lowerTile = tileSystem.getTile(bestObstacle.getLowerCorner(), scale);
         Tile upperTile = tileSystem.getTile(bestObstacle.getUpperCorner(), scale);
-        Envelope2D envelope = new Envelope2D(lowerTile.getRect().getLowerCorner(), upperTile.getRect().getUpperCorner());
+        /*System.out.println("best "+bestObstacle);
+        System.out.println("best "+bestObstacle.getLowerCorner());
+        System.out.println("best "+bestObstacle.getUpperCorner());
+        
+        System.out.println(lowerTile.getRect().getLowerCorner().getX());
+        System.out.println(lowerTile.getRect().getLowerCorner().getY());
+        System.out.println(lowerTile.getRect().getUpperCorner().getX());
+        System.out.println(lowerTile.getRect().getUpperCorner().getY());
+        System.out.println(upperTile.getRect().getLowerCorner().getX());
+        System.out.println(upperTile.getRect().getLowerCorner().getY());
+        System.out.println(upperTile.getRect().getUpperCorner().getX());
+        System.out.println(upperTile.getRect().getUpperCorner().getY());
+        */
+        Envelope2D envelope = new Envelope2D(new DirectPosition2D(lowerTile.getRect().getLowerCorner().x, upperTile.getRect().getLowerCorner().y),
+                new DirectPosition2D(upperTile.getRect().getUpperCorner().x, lowerTile.getRect().getUpperCorner().y));
         return envelope;
     }
     
