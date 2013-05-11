@@ -71,4 +71,62 @@ public class ObstacleCreator {
                 geometryFactory.createPoint(new Coordinate(end.getX(), end.getY())), scale);
     }
     
+    /**
+     * Find all the rectangles within rect
+     * @param rect
+     * @return 
+     */
+    public List<TileXYRectangle> buildRect(final TileXYRectangle rect) {// list_zone
+        int N = rect.getWidth() + 1, 
+            M = rect.getHeight() + 1;
+        
+        List<TileXYRectangle> list = new LinkedList<>();
+        int threshold = (N*M)/2;
+        for(int x = N; x > 0; x --)
+            for(int y = M; y > 0; y --)// x*y>threshold
+                for(int i = 0; i < N+1-x; i ++)
+                    for(int j = 0; j < M+1-y; j ++)
+                        list.add(new TileXYRectangle(rect.getLowerCorner().getX()+i, rect.getLowerCorner().getY()+j, x-1, y-1));
+        return list;
+    }
+    
+    /**
+     * Find all the rectangles within rect that contains obs
+     * @param rect
+     * @param obs
+     * @return 
+     */
+    public List<TileXYRectangle> buildRect1(final TileXYRectangle rect, final TileXY obs) {
+        int N = rect.getWidth() + 1, 
+            M = rect.getHeight() + 1;
+        
+        List<TileXYRectangle> list = new LinkedList<>();
+        int threshold = N*M/2;
+        for(int l_sx = rect.getLowerCorner().getX(); l_sx <= obs.getX(); l_sx ++)
+            for(int l_dx = rect.getUpperCorner().getX(); l_dx >= obs.getX(); l_dx --)
+                for(int l_up = rect.getUpperCorner().getY(); l_up >= obs.getY(); l_up --)
+                    for(int l_dw = rect.getLowerCorner().getY(); l_dw <= obs.getY(); l_dw ++)
+                        list.add(new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, l_up - l_dw));
+        return list;
+    }
+    
+    public double maxSpeed(final TileXYRectangle rect, final TileXYRectangle obs) {
+        int N = rect.getWidth() + 1, 
+            M = rect.getHeight() + 1;
+        
+        double inside_speed = 0.;
+        double outside_speed = 0.;
+        for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
+            for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++)
+                if(obs.getLowerCorner().getX()<=i && i<=obs.getUpperCorner().getX() && 
+                        obs.getLowerCorner().getY()<=j && j<= obs.getUpperCorner().getY()) { // (i, j) in {rect intersection obs}
+                    inside_speed ++;
+                } else {
+                    outside_speed ++;
+                }
+        System.out.println(inside_speed);
+        System.out.println(outside_speed);
+        return 0.;
+    }
+    
 }
