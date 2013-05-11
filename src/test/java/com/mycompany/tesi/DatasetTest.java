@@ -22,6 +22,9 @@ import com.mycompany.tesi.utils.GraphHelper;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -43,7 +46,7 @@ public class DatasetTest extends TestCase {
     @Override
     public void setUp() {
         RawEncoder vehicle = new MyCarFlagEncoder(SubgraphTask.MAX_SPEED);
-        graph = GraphHelper.readGraph("london_routing", "ways", vehicle);
+        graph = GraphHelper.readGraph("hamburg_routing", "ways", vehicle);
     }
     
     @After
@@ -54,7 +57,7 @@ public class DatasetTest extends TestCase {
     
     @Test
     public void testDataset() throws Exception {
-        File file = new File("Londonways");
+        File file = new File("HamburgWays");
         assertTrue(file.exists());
         int count = 0;
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -63,6 +66,7 @@ public class DatasetTest extends TestCase {
                 String[] tokens = s.split(",");
                 Integer id = Integer.valueOf(tokens[0]);
                 double x = Double.valueOf(tokens[1]);
+               // System.out.println(x);
                 double y = Double.valueOf(tokens[2]);
                 if(y != graph.getLatitude(id) || x!= graph.getLongitude(id))
                     count++;
