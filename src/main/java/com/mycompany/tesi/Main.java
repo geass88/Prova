@@ -23,11 +23,9 @@ import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.sql.*;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.InvalidPropertiesFormatException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -53,11 +51,11 @@ public class Main {
     public static final Integer POOL_SIZE = 3;
     public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS = 20;
     private final static Map<String, ConnectionPool> DATASOURCES = new HashMap<>();
-    private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
+    private final static ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
     private final static Map<String, TileSystem> TILE_SYSTEMS = new HashMap<>();
-    public static boolean TEST = false;
     private final static Logger logger = Logger.getLogger(Main.class.getName());
     public final static Properties PROPERTIES = new Properties();
+    public static boolean TEST = false;
     
     static {
         try {
