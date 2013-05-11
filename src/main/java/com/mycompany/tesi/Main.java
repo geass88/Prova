@@ -229,8 +229,7 @@ public class Main {
             pool.execute(new TasksHelper(tileSystem, db, i));//new SubgraphTask(tileSystem, db, i));
     }
     
-    // unused
-    public static TileSystem loadTiles(final String db) throws SQLException {
+    public static TileSystem loadTilesInfo(final String db) throws SQLException {
         try(Connection conn = getConnection(db)) {
             Envelope2D bound = getBound(conn);
             TileSystem tileSystem = new TileSystem(bound, MAX_SCALE);

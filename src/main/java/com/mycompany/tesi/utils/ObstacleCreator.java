@@ -25,6 +25,8 @@ import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.PrecisionModel;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.geotoolkit.geometry.DirectPosition2D;
@@ -35,21 +37,30 @@ import org.geotoolkit.geometry.DirectPosition2D;
  */
 public class ObstacleCreator {
     
-    private TileSystem tileSystem;
+    private final TileSystem tileSystem;
     private GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     private final static Logger logger = Logger.getLogger(ObstacleCreator.class.getName());
     
+    //public ObstacleCreator() {}
     
-    public ObstacleCreator() {}
+    public ObstacleCreator(final TileSystem tileSystem) {
+        this.tileSystem = tileSystem;
+    }
     
-    
-    
-    
-    public List<TileXY> listSeeds(final Point start, final Point end, final int scale) {
+    private TileXYRectangle findRect(final Point start, final Point end, final int scale) {
         try {
             TileXY startTileXY = tileSystem.pointToTileXY(start.getX(), start.getY(), scale);
             TileXY endTileXY = tileSystem.pointToTileXY(end.getX(), end.getY(), scale);
             TileXYRectangle rect = new TileXYRectangle(startTileXY, endTileXY);
+            return rect;
+        } catch (Exception ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+    
+    private List<TileXY> listSeeds(final TileXYRectangle rect, final Point start, final Point end, final int scale) {
+        try {
             List<TileXY> list = new LinkedList<>();
             LineString segment = geometryFactory.createLineString(new Coordinate[] { start.getCoordinate(), end.getCoordinate() });
             
@@ -66,8 +77,8 @@ public class ObstacleCreator {
         return null;
     }
     
-    public List<TileXY> listSeeds(final DirectPosition2D start, final DirectPosition2D end, final int scale) {
-        return listSeeds(geometryFactory.createPoint(new Coordinate(start.getX(), start.getY())), 
+    private List<TileXY> listSeeds(final TileXYRectangle rect, final DirectPosition2D start, final DirectPosition2D end, final int scale) {
+        return listSeeds(rect, geometryFactory.createPoint(new Coordinate(start.getX(), start.getY())), 
                 geometryFactory.createPoint(new Coordinate(end.getX(), end.getY())), scale);
     }
     
@@ -76,7 +87,7 @@ public class ObstacleCreator {
      * @param rect
      * @return 
      */
-    public List<TileXYRectangle> buildRect(final TileXYRectangle rect) {// list_zone
+    private List<TileXYRectangle> buildRect(final TileXYRectangle rect) {// list_zone
         int N = rect.getWidth() + 1, 
             M = rect.getHeight() + 1;
         
@@ -96,7 +107,7 @@ public class ObstacleCreator {
      * @param obs
      * @return 
      */
-    public List<TileXYRectangle> buildRect1(final TileXYRectangle rect, final TileXY obs) {
+    private List<TileXYRectangle> buildRect(final TileXYRectangle rect, final TileXY obs) {
         int N = rect.getWidth() + 1, 
             M = rect.getHeight() + 1;
         
@@ -110,7 +121,7 @@ public class ObstacleCreator {
         return list;
     }
     
-    public double maxSpeed(final TileXYRectangle rect, final TileXYRectangle obs) {
+    private double maxSpeed(final TileXYRectangle rect, final TileXYRectangle obs) {
         int N = rect.getWidth() + 1, 
             M = rect.getHeight() + 1;
         
@@ -127,6 +138,16 @@ public class ObstacleCreator {
         System.out.println(inside_speed);
         System.out.println(outside_speed);
         return 0.;
+    }
+    
+    public Set<TileXYRectangle> getObstacles(final Point start, final Point end, final int scale) {
+        TileXYRectangle rect = findRect(start, end, scale);
+        List<TileXY> seeds = listSeeds(rect, start, end, scale);
+        Set<TileXYRectangle> obstacles = new TreeSet<>();
+        for(TileXY seed: seeds) {
+            obstacles.addAll(buildRect(rect, seed));
+        }
+        return obstacles;
     }
     
 }

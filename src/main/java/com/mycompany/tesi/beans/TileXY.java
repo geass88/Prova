@@ -21,7 +21,7 @@ import java.io.Serializable;
  *
  * @author Tommaso
  */
-public class TileXY implements Serializable {
+public class TileXY implements Serializable, Comparable<TileXY> {
  
     private int x;
     private int y;
@@ -55,4 +55,10 @@ public class TileXY implements Serializable {
     public String toString() {
         return String.format("(%d, %d)", x, y);
     }
+
+    @Override
+    public int compareTo(final TileXY o) {
+        return (o!=null && o.x == x && o.y == y? 0: 1);
+    }
+    
 }

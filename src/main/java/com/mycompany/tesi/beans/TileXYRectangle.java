@@ -19,7 +19,7 @@ package com.mycompany.tesi.beans;
  *
  * @author Tommaso
  */
-public class TileXYRectangle {
+public class TileXYRectangle implements Comparable<TileXYRectangle> {
     
     private TileXY lowerCorner;
     private TileXY upperCorner;
@@ -63,6 +63,11 @@ public class TileXYRectangle {
     public String toString() {
         return String.format("RECT(%d %d, %d %d)", this.lowerCorner.getX(), 
             this.lowerCorner.getY(), this.upperCorner.getX(), this.upperCorner.getY());
+    }
+
+    @Override
+    public int compareTo(final TileXYRectangle o) {
+        return o!=null && o.getLowerCorner().compareTo(lowerCorner)==0 && o.getUpperCorner().compareTo(upperCorner)==0? 0: 1;
     }
     
 }
