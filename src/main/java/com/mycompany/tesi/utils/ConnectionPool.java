@@ -108,7 +108,7 @@ public class ConnectionPool {
         final String JDBC_USERNAME = Main.PROPERTIES.getProperty("jdbc_username", "postgres");
         final String JDBC_PASSWORD = Main.PROPERTIES.getProperty("jdbc_password", "postgres");
         this.dataSource = setupDataSource(JDBC_URI + dbName, JDBC_USERNAME, JDBC_PASSWORD, poolSize);
-        logger.log(Level.INFO, "Setup datasource {0} done!", dbName);
+        logger.log(Level.INFO, "Datasource {0} setup done!", dbName);
     }
     
     public void close() {
