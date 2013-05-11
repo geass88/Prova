@@ -31,6 +31,7 @@ import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.geotoolkit.geometry.DirectPosition2D;
+import org.geotoolkit.geometry.Envelope2D;
 
 /**
  *
@@ -146,7 +147,7 @@ public class ObstacleCreator {
         return insideSpeed;
     }
     
-    public TileXYRectangle getObstacle(final Point start, final Point end, final int scale) {
+    public Envelope2D getObstacle(final Point start, final Point end, final int scale) {
         TileXYRectangle rect = findRect(start, end, scale);
         List<TileXY> seeds = listSeeds(rect, start, end, scale);
         Set<TileXYRectangle> obstacles = new TreeSet<>();
@@ -162,7 +163,12 @@ public class ObstacleCreator {
                 bestSpeed = speed;
             }
         }
-        return bestObstacle;
+        if(bestObstacle == null)
+            return null;
+        Tile lowerTile = tileSystem.getTile(bestObstacle.getLowerCorner(), scale);
+        Tile upperTile = tileSystem.getTile(bestObstacle.getUpperCorner(), scale);
+        Envelope2D envelope = new Envelope2D(lowerTile.getRect().getLowerCorner(), upperTile.getRect().getUpperCorner());
+        return envelope;
     }
     
 }
