@@ -16,6 +16,7 @@
 package com.mycompany.tesi.utils;
 
 import com.graphhopper.util.shapes.GHPlace;
+import com.mycompany.tesi.Main;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.beans.TileXYRectangle;
@@ -55,6 +56,10 @@ public class ObstacleCreator {
             TileXY startTileXY = tileSystem.pointToTileXY(start.getX(), start.getY(), scale);
             TileXY endTileXY = tileSystem.pointToTileXY(end.getX(), end.getY(), scale);
             TileXYRectangle rect = new TileXYRectangle(startTileXY, endTileXY);
+            System.out.println(QuadKeyManager.fromTileXY(startTileXY, scale));
+            System.out.println(QuadKeyManager.fromTileXY(endTileXY, scale));
+            System.out.println(startTileXY);
+            System.out.println(endTileXY);
             return rect;
         } catch (Exception ex) {
             logger.log(Level.SEVERE, null, ex);
@@ -128,6 +133,7 @@ public class ObstacleCreator {
         for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
             for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
                 Tile tile = tileSystem.getTile(i, j, scale);
+                //if(tile == null) continue;
                 double maxSpeed = tile==null? 0: (double) tile.getUserObject();
                 if(obstacle.getLowerCorner().getX()<=i && i<=obstacle.getUpperCorner().getX() && 
                         obstacle.getLowerCorner().getY()<=j && j<= obstacle.getUpperCorner().getY()) { // (i, j) in {rect intersection obs}
@@ -177,4 +183,14 @@ public class ObstacleCreator {
                 geometryFactory.createPoint(new Coordinate(end.lon, end.lat)), scale);
     }
     
+    public static void main(String []args) throws Exception {
+        //03131313111232021
+        //03131313111232211
+        //point=51.51769,-0.128467&point=51.514885,-0.122437
+        //51.512749,-0.132136&point=51.516514,-0.12321
+        TileSystem tileSystem = Main.loadTilesInfo("london_routing");
+        //lon1=-0.132136&lat1=51.512749&lon2=-0.12321&lat2=51.516514
+        ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem);
+        System.out.println(obstacleCreator.getObstacle(new GHPlace(51.512749,-0.132136), new GHPlace(51.516514,-0.12321), 17));
+    }
 }

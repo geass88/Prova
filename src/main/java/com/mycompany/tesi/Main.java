@@ -59,7 +59,7 @@ public class Main {
     
     static {
         try {
-            PROPERTIES.loadFromXML(new FileInputStream("config.xml"));
+            PROPERTIES.loadFromXML(new FileInputStream("F:\\Tommaso\\Workspace\\Tesi\\config.xml"));
         } catch (Exception ex) {
             logger.log(Level.SEVERE, null, ex);
             System.exit(0);
