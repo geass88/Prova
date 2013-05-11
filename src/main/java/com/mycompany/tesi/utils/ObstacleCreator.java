@@ -130,9 +130,6 @@ public class ObstacleCreator {
     }
     
     private double quality(final TileXYRectangle rect, final TileXYRectangle obstacle, final int scale) {
-        int N = rect.getWidth() + 1, 
-            M = rect.getHeight() + 1;
-        
         double insideSpeed = 0.;
         double outsideSpeed = 0.;
         for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
@@ -151,8 +148,10 @@ public class ObstacleCreator {
             }
         //System.out.println(insideSpeed);
         //System.out.println(outsideSpeed);
-        double ok = outsideSpeed/insideSpeed > 0.5 ?1:0;
-        return ok + N*M;
+        int W = obstacle.getWidth() + 1, 
+            H = obstacle.getHeight() + 1;
+        double ok = insideSpeed/outsideSpeed < 0.7? 1:0;
+        return ok * W*H;
     }
     
     public Envelope2D getObstacle(final Point start, final Point end, final int scale) {

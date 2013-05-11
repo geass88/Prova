@@ -66,17 +66,8 @@ public class Main {
         }
         DBS = PROPERTIES.getProperty("jdbc_databases", "routing").split(" ");
         
-        for(String db: DBS) {
+        for(String db: DBS)
             DATASOURCES.put(db, new ConnectionPool(db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
-            
-            try(Connection conn = Main.getConnection(db)) {
-                TileSystem tileSystem = new TileSystem(Main.getBound(conn), MAX_SCALE);
-                tileSystem.computeTree();
-                TILE_SYSTEMS.put(db, tileSystem);
-            } catch(SQLException ex) {
-                logger.log(Level.SEVERE, null, ex);
-            }
-        }
         
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
@@ -101,6 +92,14 @@ public class Main {
     }
     
     public static TileSystem getTileSystem(final String db) {
+        if(!TILE_SYSTEMS.containsKey(db))
+            try(Connection conn = Main.getConnection(db)) {
+                TileSystem tileSystem = new TileSystem(Main.getBound(conn), MAX_SCALE);
+                tileSystem.computeTree();
+                TILE_SYSTEMS.put(db, tileSystem);
+            } catch(SQLException ex) {
+                logger.log(Level.SEVERE, null, ex);
+            }
         return TILE_SYSTEMS.get(db);
     }
     
