@@ -51,15 +51,20 @@ public class ObstacleCreator {
         this.tileSystem = tileSystem;
     }
     
-    private TileXYRectangle findRect(final Point start, final Point end, final int scale) {
+    private TileXYRectangle findRect(final Point start, final Point end, final int scale, boolean outer) {
         try {
             TileXY startTileXY = tileSystem.pointToTileXY(start.getX(), start.getY(), scale);
             TileXY endTileXY = tileSystem.pointToTileXY(end.getX(), end.getY(), scale);
             TileXYRectangle rect = new TileXYRectangle(startTileXY, endTileXY);
-            /*System.out.println(QuadKeyManager.fromTileXY(startTileXY, scale));
-            System.out.println(QuadKeyManager.fromTileXY(endTileXY, scale));
-            System.out.println(startTileXY);
-            System.out.println(endTileXY);*/
+            if(outer) return rect;
+            int stepX = startTileXY.getX() == endTileXY.getX()? 0: 1;
+            int stepY = startTileXY.getY() == endTileXY.getY()? 0: 1;
+            TileXY corner = rect.getLowerCorner();
+            corner.setX(corner.getX()+stepX);
+            corner.setY(corner.getY()+stepY);
+            corner = rect.getUpperCorner();
+            corner.setX(corner.getX()-stepX);
+            corner.setY(corner.getY()-stepY);
             return rect;
         } catch (Exception ex) {
             logger.log(Level.SEVERE, null, ex);
@@ -124,7 +129,7 @@ public class ObstacleCreator {
         return list;
     }
     
-    private double maxSpeed(final TileXYRectangle rect, final TileXYRectangle obstacle, final int scale) {
+    private double quality(final TileXYRectangle rect, final TileXYRectangle obstacle, final int scale) {
         int N = rect.getWidth() + 1, 
             M = rect.getHeight() + 1;
         
@@ -134,7 +139,7 @@ public class ObstacleCreator {
             for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
                 Tile tile = tileSystem.getTile(i, j, scale);
                 //if(tile == null) continue;
-                double maxSpeed = tile==null? 0: (double) tile.getUserObject();
+                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
                 if(obstacle.getLowerCorner().getX()<=i && i<=obstacle.getUpperCorner().getX() && 
                         obstacle.getLowerCorner().getY()<=j && j<= obstacle.getUpperCorner().getY()) { // (i, j) in {rect intersection obs}
                     if(maxSpeed > insideSpeed)
@@ -146,23 +151,25 @@ public class ObstacleCreator {
             }
         //System.out.println(insideSpeed);
         //System.out.println(outsideSpeed);
-        return insideSpeed;
+        double ok = outsideSpeed/insideSpeed > 0.5 ?1:0;
+        return ok + N*M;
     }
     
     public Envelope2D getObstacle(final Point start, final Point end, final int scale) {
-        TileXYRectangle rect = findRect(start, end, scale);
-        List<TileXY> seeds = listSeeds(rect, start, end, scale);
+        TileXYRectangle outerRect = findRect(start, end, scale, true);
+        TileXYRectangle innerRect = findRect(start, end, scale, false);
+        List<TileXY> seeds = listSeeds(innerRect, start, end, scale);
         Set<TileXYRectangle> obstacles = new TreeSet<>();
         for(TileXY seed: seeds) {
-            obstacles.addAll(buildRect(rect, seed));
+            obstacles.addAll(buildRect(innerRect, seed));
         }
         TileXYRectangle bestObstacle = null;
-        double bestSpeed = 0;
+        double bestQ = 0;
         for(TileXYRectangle obstacle: obstacles) {
-            double speed = maxSpeed(rect, obstacle, scale);
-            if(speed > bestSpeed) {
+            double quality = quality(outerRect, obstacle, scale);
+            if(quality > bestQ) {
                 bestObstacle = obstacle;
-                bestSpeed = speed;
+                bestQ = quality;
             }
         }
         if(bestObstacle == null)
