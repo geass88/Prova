@@ -15,6 +15,7 @@
  */
 package com.mycompany.tesi.utils;
 
+import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.beans.TileXYRectangle;
@@ -77,11 +78,6 @@ public class ObstacleCreator {
             logger.log(Level.SEVERE, null, ex);
         }
         return null;
-    }
-    
-    private List<TileXY> listSeeds(final TileXYRectangle rect, final DirectPosition2D start, final DirectPosition2D end, final int scale) {
-        return listSeeds(rect, geometryFactory.createPoint(new Coordinate(start.getX(), start.getY())), 
-                geometryFactory.createPoint(new Coordinate(end.getX(), end.getY())), scale);
     }
     
     /**
@@ -169,6 +165,16 @@ public class ObstacleCreator {
         Tile upperTile = tileSystem.getTile(bestObstacle.getUpperCorner(), scale);
         Envelope2D envelope = new Envelope2D(lowerTile.getRect().getLowerCorner(), upperTile.getRect().getUpperCorner());
         return envelope;
+    }
+    
+    public Envelope2D getObstacle(final DirectPosition2D start, final DirectPosition2D end, final int scale) {
+        return getObstacle(geometryFactory.createPoint(new Coordinate(start.getX(), start.getY())), 
+                geometryFactory.createPoint(new Coordinate(end.getX(), end.getY())), scale);
+    }
+    
+    public Envelope2D getObstacle(final GHPlace start, final GHPlace end, final int scale) {
+        return getObstacle(geometryFactory.createPoint(new Coordinate(start.lon, start.lat)), 
+                geometryFactory.createPoint(new Coordinate(end.lon, end.lat)), scale);
     }
     
 }
