@@ -45,11 +45,16 @@ public class ObstacleCreator {
     private final TileSystem tileSystem;
     private GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     private final static Logger logger = Logger.getLogger(ObstacleCreator.class.getName());
-    
+    private boolean precise = false;
     //public ObstacleCreator() {}
     
     public ObstacleCreator(final TileSystem tileSystem) {
         this.tileSystem = tileSystem;
+    }
+    
+    public ObstacleCreator(final TileSystem tileSystem, boolean precise) {
+        this.tileSystem = tileSystem;
+        this.precise = precise;
     }
     
     private TileXYRectangle findRect(final Point start, final Point end, final int scale, boolean outer) {
@@ -169,7 +174,7 @@ public class ObstacleCreator {
         return speed;
     }
     
-    private double estimateSpeed1(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
+    private double estimateSpeed1(final TileXYRectangle obstacle, final int scale) {
         double speed = 0.;
         int lx = obstacle.getLowerCorner().getX();
         int ly = obstacle.getLowerCorner().getY();
@@ -202,7 +207,7 @@ public class ObstacleCreator {
     }
     
     private double quality(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
-        double insideSpeed = estimateSpeed(obstacle, scale);
+        double insideSpeed = precise? estimateSpeed1(obstacle, scale): estimateSpeed(obstacle, scale);
         
         int W = obstacle.getWidth() + 1, 
             H = obstacle.getHeight() + 1;
@@ -220,7 +225,7 @@ public class ObstacleCreator {
         }
         TileXYRectangle bestObstacle = null;
         double bestQ = 0;
-        double outsideSpeed = estimateSpeed(outerRect, scale);
+        double outsideSpeed = precise? estimateSpeed1(outerRect, scale): estimateSpeed(outerRect, scale);
         for(TileXYRectangle obstacle: obstacles) {
             double quality = quality(obstacle, scale, outsideSpeed);//quality(outerRect, obstacle, scale);
             if(quality > bestQ) {
