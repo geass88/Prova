@@ -57,8 +57,9 @@ public class ObstacleCreator {
             TileXY endTileXY = tileSystem.pointToTileXY(end.getX(), end.getY(), scale);
             TileXYRectangle rect = new TileXYRectangle(startTileXY, endTileXY);
             if(outer) return rect;
-            int stepX = startTileXY.getX() == endTileXY.getX()? 0: 1;
-            int stepY = startTileXY.getY() == endTileXY.getY()? 0: 1;
+            
+            int stepX = Math.abs(startTileXY.getX() - endTileXY.getX()) > 1 ? 1: 0; 
+            int stepY = Math.abs(startTileXY.getY() - endTileXY.getY()) > 1 ? 1: 0;
             TileXY corner = rect.getLowerCorner();
             corner.setX(corner.getX()+stepX);
             corner.setY(corner.getY()+stepY);
@@ -151,7 +152,36 @@ public class ObstacleCreator {
         int W = obstacle.getWidth() + 1, 
             H = obstacle.getHeight() + 1;
         double ok = insideSpeed/outsideSpeed < 0.7? 1:0;
-        return ok * W*H;
+        return ok * W * H;
+    }
+        
+    private double outsideSpeed(final TileXYRectangle rect, final int scale) {
+        double outsideSpeed = 0.;
+        for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
+            for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
+                Tile tile = tileSystem.getTile(i, j, scale);
+                //if(tile == null) continue;
+                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
+                if(maxSpeed > outsideSpeed)
+                        outsideSpeed = maxSpeed;
+            }
+        return outsideSpeed;
+    }
+    
+    private double quality(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
+        double insideSpeed = 0.;
+        for(int i = obstacle.getLowerCorner().getX(); i <= obstacle.getUpperCorner().getX(); i ++)
+            for(int j = obstacle.getLowerCorner().getY(); j <= obstacle.getUpperCorner().getY(); j ++) {
+                Tile tile = tileSystem.getTile(i, j, scale);
+                //if(tile == null) continue;
+                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
+                if(maxSpeed > insideSpeed)
+                    insideSpeed = maxSpeed;
+            }
+        int W = obstacle.getWidth() + 1, 
+            H = obstacle.getHeight() + 1;
+        double ok = insideSpeed/outsideSpeed < 0.7? 1: 0;
+        return ok * W * H;
     }
     
     public Envelope2D getObstacle(final Point start, final Point end, final int scale) {
@@ -164,8 +194,9 @@ public class ObstacleCreator {
         }
         TileXYRectangle bestObstacle = null;
         double bestQ = 0;
+        double outsideSpeed = outsideSpeed(outerRect, scale);
         for(TileXYRectangle obstacle: obstacles) {
-            double quality = quality(outerRect, obstacle, scale);
+            double quality = quality(obstacle, scale, outsideSpeed);//quality(outerRect, obstacle, scale);
             if(quality > bestQ) {
                 bestObstacle = obstacle;
                 bestQ = quality;
