@@ -184,6 +184,42 @@ public class ObstacleCreator {
         return ok * W * H;
     }
     
+    private double quality1(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
+        double insideSpeed = 0.;
+        int lx = obstacle.getLowerCorner().getX();
+        int ly = obstacle.getLowerCorner().getY();
+        int ux = obstacle.getUpperCorner().getX();
+        int uy = obstacle.getUpperCorner().getY();
+        int w = ux-lx+1;
+        java.util.BitSet set = new java.util.BitSet(w*(uy-ly+1));
+        
+        for(int i = lx; i <= ux; i ++)
+            for(int j = ly; j <= uy; j ++) {
+                if(set.get((i-lx)*w+j-ly)) continue;
+                
+                int s = 0;
+                for(int k = i, l = j; k % 2 == 0 && l % 2 == 0 && i+(2<<s) <= ux+1 && j+(2<<s) <= uy+1; l /= 2, k /= 2) s ++;
+                if(scale - s < 13) s = scale - 13;
+                int pow = 1 << s;
+                for(int k = 0; k < pow; k ++)
+                    for(int l = 0; l < pow; l ++)
+                        set.set((k+i-lx)*w+l+j-ly);
+                Tile tile = tileSystem.getTile(i/pow, j/pow, scale-s);
+                
+                //    tile = tileSystem.getTile(i, j, scale);
+                //if(tile == null) continue;
+                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
+                if(maxSpeed > insideSpeed)
+                    insideSpeed = maxSpeed;
+                //if(print)
+                    //System.out.println("rect: " + i/pow + " "+ j/pow +" "+ (scale-s));
+            }
+        int W = obstacle.getWidth() + 1, 
+            H = obstacle.getHeight() + 1;
+        double ok = insideSpeed/outsideSpeed < 0.7? 1: 0;
+        return ok * W * H;
+    }
+    
     public Envelope2D getObstacle(final Point start, final Point end, final int scale) {
         TileXYRectangle outerRect = findRect(start, end, scale, true);
         TileXYRectangle innerRect = findRect(start, end, scale, false);
@@ -196,12 +232,13 @@ public class ObstacleCreator {
         double bestQ = 0;
         double outsideSpeed = outsideSpeed(outerRect, scale);
         for(TileXYRectangle obstacle: obstacles) {
-            double quality = quality(obstacle, scale, outsideSpeed);//quality(outerRect, obstacle, scale);
+            double quality = quality1(obstacle, scale, outsideSpeed);//quality(outerRect, obstacle, scale);
             if(quality > bestQ) {
                 bestObstacle = obstacle;
                 bestQ = quality;
             }
         }
+        //quality1(bestObstacle, scale, outsideSpeed, true);
         if(bestObstacle == null)
             return null;
         Tile lowerTile = tileSystem.getTile(bestObstacle.getLowerCorner(), scale);
