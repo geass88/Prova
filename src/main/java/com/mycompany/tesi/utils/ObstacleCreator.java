@@ -26,6 +26,7 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.PrecisionModel;
+import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -155,43 +156,27 @@ public class ObstacleCreator {
         return ok * W * H;
     }
         
-    private double outsideSpeed(final TileXYRectangle rect, final int scale) {
-        double outsideSpeed = 0.;
+    private double estimateSpeed(final TileXYRectangle rect, final int scale) {
+        double speed = 0.;
         for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
             for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
                 Tile tile = tileSystem.getTile(i, j, scale);
                 //if(tile == null) continue;
                 double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
-                if(maxSpeed > outsideSpeed)
-                        outsideSpeed = maxSpeed;
+                if(maxSpeed > speed)
+                        speed = maxSpeed;
             }
-        return outsideSpeed;
+        return speed;
     }
     
-    private double quality(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
-        double insideSpeed = 0.;
-        for(int i = obstacle.getLowerCorner().getX(); i <= obstacle.getUpperCorner().getX(); i ++)
-            for(int j = obstacle.getLowerCorner().getY(); j <= obstacle.getUpperCorner().getY(); j ++) {
-                Tile tile = tileSystem.getTile(i, j, scale);
-                //if(tile == null) continue;
-                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
-                if(maxSpeed > insideSpeed)
-                    insideSpeed = maxSpeed;
-            }
-        int W = obstacle.getWidth() + 1, 
-            H = obstacle.getHeight() + 1;
-        double ok = insideSpeed/outsideSpeed < 0.7? 1: 0;
-        return ok * W * H;
-    }
-    
-    private double quality1(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
-        double insideSpeed = 0.;
+    private double estimateSpeed1(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
+        double speed = 0.;
         int lx = obstacle.getLowerCorner().getX();
         int ly = obstacle.getLowerCorner().getY();
         int ux = obstacle.getUpperCorner().getX();
         int uy = obstacle.getUpperCorner().getY();
         int w = ux-lx+1;
-        java.util.BitSet set = new java.util.BitSet(w*(uy-ly+1));
+        BitSet set = new BitSet(w*(uy-ly+1));
         
         for(int i = lx; i <= ux; i ++)
             for(int j = ly; j <= uy; j ++) {
@@ -206,14 +191,19 @@ public class ObstacleCreator {
                         set.set((k+i-lx)*w+l+j-ly);
                 Tile tile = tileSystem.getTile(i/pow, j/pow, scale-s);
                 
-                //    tile = tileSystem.getTile(i, j, scale);
                 //if(tile == null) continue;
                 double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
-                if(maxSpeed > insideSpeed)
-                    insideSpeed = maxSpeed;
+                if(maxSpeed > speed)
+                    speed = maxSpeed;
                 //if(print)
                     //System.out.println("rect: " + i/pow + " "+ j/pow +" "+ (scale-s));
             }
+        return speed;
+    }
+    
+    private double quality(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
+        double insideSpeed = estimateSpeed(obstacle, scale);
+        
         int W = obstacle.getWidth() + 1, 
             H = obstacle.getHeight() + 1;
         double ok = insideSpeed/outsideSpeed < 0.7? 1: 0;
@@ -230,9 +220,9 @@ public class ObstacleCreator {
         }
         TileXYRectangle bestObstacle = null;
         double bestQ = 0;
-        double outsideSpeed = outsideSpeed(outerRect, scale);
+        double outsideSpeed = estimateSpeed(outerRect, scale);
         for(TileXYRectangle obstacle: obstacles) {
-            double quality = quality1(obstacle, scale, outsideSpeed);//quality(outerRect, obstacle, scale);
+            double quality = quality(obstacle, scale, outsideSpeed);//quality(outerRect, obstacle, scale);
             if(quality > bestQ) {
                 bestObstacle = obstacle;
                 bestQ = quality;
