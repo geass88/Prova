@@ -206,16 +206,17 @@ public class ObstacleCreator {
             H = obstacle.getHeight() + 1;
         double ok = insideSpeed/outsideSpeed < 0.7? 1:0;
         return ok * W * H;
+        //return insideSpeed/outsideSpeed; //alpha
     }
-    
-    private double quality(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
+    //old
+    /*private double quality(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
         double insideSpeed = precise? estimateSpeed1(obstacle, scale): estimateSpeed(obstacle, scale);
         
         int W = obstacle.getWidth() + 1, 
             H = obstacle.getHeight() + 1;
         double ok = insideSpeed/outsideSpeed < 0.7? 1: 0;
         return ok * W * H;
-    }
+    }*/
     
     public Obstacle getObstacle(final Point start, final Point end, final int scale) {
         TileXYRectangle outerRect = findRect(start, end, scale, true);
@@ -226,10 +227,15 @@ public class ObstacleCreator {
             obstacles.addAll(buildRect(innerRect, seed));
         }
         TileXYRectangle bestObstacle = null;
-        double bestQ = 0;
+        double bestQ = 0., alpha = 0.;
         double outsideSpeed = precise? estimateSpeed1(outerRect, scale): estimateSpeed(outerRect, scale);
         for(TileXYRectangle obstacle: obstacles) {
-            double quality = quality(obstacle, scale, outsideSpeed);//quality(outerRect, obstacle, scale);
+            double insideSpeed = precise? estimateSpeed1(obstacle, scale): estimateSpeed(obstacle, scale);
+            int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
+            alpha = insideSpeed/outsideSpeed;
+            double ok = alpha < 0.7? 1: 0;
+            double quality = ok * W * H;
+            //double quality = quality(outerRect, obstacle, scale);
             if(quality > bestQ) {
                 bestObstacle = obstacle;
                 bestQ = quality;
@@ -255,7 +261,7 @@ public class ObstacleCreator {
         */
         Envelope2D envelope = new Envelope2D(new DirectPosition2D(lowerTile.getRect().getLowerCorner().x, upperTile.getRect().getLowerCorner().y),
                 new DirectPosition2D(upperTile.getRect().getUpperCorner().x, lowerTile.getRect().getUpperCorner().y));
-        return new Obstacle(envelope, 1., scale);
+        return new Obstacle(envelope, alpha, scale);
     }
     
     public Obstacle getObstacle(final DirectPosition2D start, final DirectPosition2D end, final int scale) {
