@@ -246,6 +246,7 @@ public class ObstacleCreator {
     }
 }
 
+// Speed Estimation Strategy
 interface SpeedEstimator {
     public abstract Double estimateSpeed(final TileXYRectangle obstacle, final int scale);
 }
