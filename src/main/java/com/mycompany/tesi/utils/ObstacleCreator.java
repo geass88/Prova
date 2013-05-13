@@ -17,6 +17,7 @@ package com.mycompany.tesi.utils;
 
 import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.Main;
+import com.mycompany.tesi.beans.Obstacle;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.beans.TileXYRectangle;
@@ -45,11 +46,11 @@ public class ObstacleCreator {
     private final TileSystem tileSystem;
     private GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     private final static Logger logger = Logger.getLogger(ObstacleCreator.class.getName());
-    private boolean precise = false;
+    private boolean precise;
     //public ObstacleCreator() {}
     
     public ObstacleCreator(final TileSystem tileSystem) {
-        this.tileSystem = tileSystem;
+        this(tileSystem, false);
     }
     
     public ObstacleCreator(final TileSystem tileSystem, boolean precise) {
@@ -216,7 +217,7 @@ public class ObstacleCreator {
         return ok * W * H;
     }
     
-    public Envelope2D getObstacle(final Point start, final Point end, final int scale) {
+    public Obstacle getObstacle(final Point start, final Point end, final int scale) {
         TileXYRectangle outerRect = findRect(start, end, scale, true);
         TileXYRectangle innerRect = findRect(start, end, scale, false);
         List<TileXY> seeds = listSeeds(innerRect, start, end, scale);
@@ -254,15 +255,15 @@ public class ObstacleCreator {
         */
         Envelope2D envelope = new Envelope2D(new DirectPosition2D(lowerTile.getRect().getLowerCorner().x, upperTile.getRect().getLowerCorner().y),
                 new DirectPosition2D(upperTile.getRect().getUpperCorner().x, lowerTile.getRect().getUpperCorner().y));
-        return envelope;
+        return new Obstacle(envelope, 1., scale);
     }
     
-    public Envelope2D getObstacle(final DirectPosition2D start, final DirectPosition2D end, final int scale) {
+    public Obstacle getObstacle(final DirectPosition2D start, final DirectPosition2D end, final int scale) {
         return getObstacle(geometryFactory.createPoint(new Coordinate(start.getX(), start.getY())), 
                 geometryFactory.createPoint(new Coordinate(end.getX(), end.getY())), scale);
     }
     
-    public Envelope2D getObstacle(final GHPlace start, final GHPlace end, final int scale) {
+    public Obstacle getObstacle(final GHPlace start, final GHPlace end, final int scale) {
         return getObstacle(geometryFactory.createPoint(new Coordinate(start.lon, start.lat)), 
                 geometryFactory.createPoint(new Coordinate(end.lon, end.lat)), scale);
     }
@@ -272,7 +273,7 @@ public class ObstacleCreator {
         //03131313111232211
         //point=51.51769,-0.128467&point=51.514885,-0.122437
         //51.512749,-0.132136&point=51.516514,-0.12321
-        TileSystem tileSystem = Main.loadTilesInfo("london_routing");
+        TileSystem tileSystem = Main.getFullTileSystem("london_routing");
         //lon1=-0.132136&lat1=51.512749&lon2=-0.12321&lat2=51.516514
         ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem);
         System.out.println(obstacleCreator.getObstacle(new GHPlace(51.512749,-0.132136), new GHPlace(51.516514,-0.12321), 17));
