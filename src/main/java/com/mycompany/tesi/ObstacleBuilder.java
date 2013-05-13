@@ -37,7 +37,7 @@ import java.util.logging.Logger;
  */
 public class ObstacleBuilder {
     
-    private static Logger logger = Logger.getLogger(ObstacleBuilder.class.getName());
+    private static final Logger logger = Logger.getLogger(ObstacleBuilder.class.getName());
     
     public static void main(String[] args) throws Exception {
         final String[] FILES = { "BerlinSourceTarget", "HamburgSourceTarget", "London_Source_Target" };
@@ -61,33 +61,38 @@ public class ObstacleBuilder {
             }
             try (BufferedReader reader = new BufferedReader(new FileReader(file));
                     Connection conn = Main.getConnection(db); 
-                    PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(id, x1, y1, x2, y2, alpha, scale_grain, type, time) VALUES(?, ?, ?, ?, ?, ?, ?, ?);")) {
-                String s; reader.readLine();
+                    PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(id, source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
+                String s; reader.readLine(); // skip the first row
                 int serial = 1;
+                int obst_id = 1;
                 while((s=reader.readLine()) != null) {
                     String[] tokens = s.split(",");
                     Integer source = Integer.valueOf(tokens[0]);
                     Integer target = Integer.valueOf(tokens[1]);
                     GHPlace start = nodes.get(source);
                     GHPlace end = nodes.get(target);
-                    for(ObstacleCreator creator: creators) {
+                    for(int j = 0; j < creators.length; j ++) {
                         long time1 = System.nanoTime();
-                        Obstacle obstacle = creator.getObstacle(start, end, 17);
+                        Obstacle obstacle = creators[j].getObstacle(start, end, 17);
                         long time2 = System.nanoTime();
                         if(obstacle != null) {
                             st.clearParameters();
                             st.setInt(1, serial ++);
-                            st.setDouble(2, obstacle.getRect().getLowerCorner().x);
-                            st.setDouble(3, obstacle.getRect().getLowerCorner().y);
-                            st.setDouble(4, obstacle.getRect().getUpperCorner().x);
-                            st.setDouble(5, obstacle.getRect().getUpperCorner().y);
-                            st.setDouble(6, obstacle.getAlpha());
-                            st.setInt(7, obstacle.getGrainScale());
-                            st.setInt(8, 1);
-                            st.setLong(9, (time2-time1)/1000);
+                            st.setInt(2, source);
+                            st.setInt(3, target);
+                            st.setInt(4, obst_id);
+                            st.setDouble(5, obstacle.getRect().getLowerCorner().x);
+                            st.setDouble(6, obstacle.getRect().getLowerCorner().y);
+                            st.setDouble(7, obstacle.getRect().getUpperCorner().x);
+                            st.setDouble(8, obstacle.getRect().getUpperCorner().y);
+                            st.setDouble(9, obstacle.getAlpha());
+                            st.setInt(10, obstacle.getGrainScale());
+                            st.setInt(11, j);
+                            st.setLong(12, (time2-time1)/1000);
                             st.addBatch();
                         }
                     }
+                    obst_id ++;
                 }
                 st.executeBatch();
             }
