@@ -15,12 +15,8 @@
  */
 package com.mycompany.tesi;
 
-import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.beans.Obstacle;
-import com.mycompany.tesi.hooks.MyCarFlagEncoder;
-import com.mycompany.tesi.hooks.RawEncoder;
-import com.mycompany.tesi.utils.GraphHelper;
 import com.mycompany.tesi.utils.ObstacleCreator;
 import com.mycompany.tesi.utils.TileSystem;
 import java.io.BufferedReader;
@@ -34,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.geotoolkit.geometry.Envelope2D;
 
 /**
  *
@@ -58,7 +53,7 @@ public class ObstacleBuilder {
             }
             
             TileSystem tileSystem = Main.getFullTileSystem(db);
-            ObstacleCreator creator = new ObstacleCreator(tileSystem, false);
+            ObstacleCreator[] creators = { new ObstacleCreator(tileSystem, true), new ObstacleCreator(tileSystem, false) };
             File file = new File("data/" + FILES[i]);
             if(!file.exists()) {
                 logger.log(Level.SEVERE, "The file {0} doesn't exists", FILES[i]);
@@ -66,7 +61,7 @@ public class ObstacleBuilder {
             }
             try (BufferedReader reader = new BufferedReader(new FileReader(file));
                     Connection conn = Main.getConnection(db); 
-                    PreparedStatement st = conn.prepareStatement("INSERT INTO table(id, x1, y1, x2, y2, alpha, type, time) VALUES(?, ?, ?, ?, ?, ?, ?, ?);")) {
+                    PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(id, x1, y1, x2, y2, alpha, scale_grain, type, time) VALUES(?, ?, ?, ?, ?, ?, ?, ?);")) {
                 String s; reader.readLine();
                 int serial = 1;
                 while((s=reader.readLine()) != null) {
@@ -75,22 +70,24 @@ public class ObstacleBuilder {
                     Integer target = Integer.valueOf(tokens[1]);
                     GHPlace start = nodes.get(source);
                     GHPlace end = nodes.get(target);
-                    long time1 = System.nanoTime();
-                    Obstacle obstacle = creator.getObstacle(start, end, 17);
-                    long time2 = System.nanoTime();
-                    if(obstacle != null) {
-                        st.clearParameters();
-                        st.setInt(1, serial);
-                        st.setDouble(2, obstacle.getRect().getLowerCorner().x);
-                        st.setDouble(3, obstacle.getRect().getLowerCorner().y);
-                        st.setDouble(4, obstacle.getRect().getUpperCorner().x);
-                        st.setDouble(5, obstacle.getRect().getUpperCorner().y);
-                        st.setDouble(6, obstacle.getAlpha());
-                        st.setInt(7, obstacle.getGrainScale());
-                        st.setLong(8, (time2-time1)/1000);
-                        st.addBatch();
+                    for(ObstacleCreator creator: creators) {
+                        long time1 = System.nanoTime();
+                        Obstacle obstacle = creator.getObstacle(start, end, 17);
+                        long time2 = System.nanoTime();
+                        if(obstacle != null) {
+                            st.clearParameters();
+                            st.setInt(1, serial ++);
+                            st.setDouble(2, obstacle.getRect().getLowerCorner().x);
+                            st.setDouble(3, obstacle.getRect().getLowerCorner().y);
+                            st.setDouble(4, obstacle.getRect().getUpperCorner().x);
+                            st.setDouble(5, obstacle.getRect().getUpperCorner().y);
+                            st.setDouble(6, obstacle.getAlpha());
+                            st.setInt(7, obstacle.getGrainScale());
+                            st.setInt(8, 1);
+                            st.setLong(9, (time2-time1)/1000);
+                            st.addBatch();
+                        }
                     }
-                    serial ++;
                 }
                 st.executeBatch();
             }
