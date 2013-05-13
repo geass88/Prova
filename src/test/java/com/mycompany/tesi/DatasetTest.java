@@ -15,7 +15,13 @@
  */
 package com.mycompany.tesi;
 
+import com.graphhopper.GHRequest;
+import com.graphhopper.GHResponse;
+import com.graphhopper.GraphHopper;
+import com.graphhopper.GraphHopperAPI;
 import com.graphhopper.storage.GraphStorage;
+import com.graphhopper.util.shapes.GHPlace;
+import com.mycompany.tesi.hooks.FastestCalc;
 import com.mycompany.tesi.hooks.MyCarFlagEncoder;
 import com.mycompany.tesi.hooks.RawEncoder;
 import com.mycompany.tesi.utils.GraphHelper;
@@ -34,6 +40,7 @@ import org.junit.Test;
 public class DatasetTest extends TestCase {
     
     private GraphStorage graph;
+    private RawEncoder vehicle;
     
     public DatasetTest(String name) {
         super(name);
@@ -42,8 +49,8 @@ public class DatasetTest extends TestCase {
     @Before
     @Override
     public void setUp() {
-        RawEncoder vehicle = new MyCarFlagEncoder(SubgraphTask.MAX_SPEED);
-        graph = GraphHelper.readGraph("hamburg_routing", "ways", vehicle);
+        vehicle = new MyCarFlagEncoder(SubgraphTask.MAX_SPEED);
+        graph = GraphHelper.readGraph("berlin_routing", "ways", vehicle);
     }
     
     @After
@@ -54,19 +61,21 @@ public class DatasetTest extends TestCase {
     
     @Test
     public void testDataset() throws Exception {
-        File file = new File("HamburgWays");
+        File file = new File("data/BerlinSourceTarget");
         assertTrue(file.exists());
+        GraphHopperAPI instance = new GraphHopper(graph).forDesktop();
         int count = 0;
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String s; reader.readLine();
             while((s=reader.readLine()) != null) {
                 String[] tokens = s.split(",");
-                Integer id = Integer.valueOf(tokens[0]);
-                double x = Double.valueOf(tokens[1]);
+                Integer source = Integer.valueOf(tokens[0]);
+                Integer target = Integer.valueOf(tokens[1]);
+                GHResponse ph = instance.route(new GHRequest(new GHPlace(graph.getLatitude(source), graph.getLongitude(source)), 
+                        new GHPlace(graph.getLatitude(target), graph.getLongitude(target))).algorithm("dijkstrabi").type(new FastestCalc(vehicle)).vehicle(vehicle));
                // System.out.println(x);
-                double y = Double.valueOf(tokens[2]);
-                if(y != graph.getLatitude(id) || x!= graph.getLongitude(id))
-                    count++;
+                if(!ph.found())
+                    ++count;
             }
         }
         System.out.println(count);
