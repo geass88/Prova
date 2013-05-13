@@ -135,7 +135,53 @@ public class ObstacleCreator {
                         list.add(new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, l_up - l_dw));
         return list;
     }
+        
+    private double estimateSpeed(final TileXYRectangle rect, final int scale) {
+        double speed = 0.;
+        for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
+            for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
+                Tile tile = tileSystem.getTile(i, j, scale);
+                //if(tile == null) continue;
+                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
+                if(maxSpeed > speed)
+                        speed = maxSpeed;
+            }
+        return speed;
+    }
     
+    private double estimateSpeed1(final TileXYRectangle obstacle, final int scale) {
+        double speed = 0.;
+        int lx = obstacle.getLowerCorner().getX();
+        int ly = obstacle.getLowerCorner().getY();
+        int ux = obstacle.getUpperCorner().getX();
+        int uy = obstacle.getUpperCorner().getY();
+        int w = ux-lx+1;
+        BitSet bitSet = new BitSet(w*(uy-ly+1));
+        
+        for(int i = lx; i <= ux; i ++)
+            for(int j = ly; j <= uy; j ++) {
+                if(bitSet.get((i-lx)*w+j-ly)) continue;
+                
+                int s = 0;
+                for(int k = i, l = j; k % 2 == 0 && l % 2 == 0 && i+(2<<s) <= ux+1 && j+(2<<s) <= uy+1; l /= 2, k /= 2) s ++;
+                if(scale - s < 13) s = scale - 13;
+                int pow = 1 << s;
+                for(int k = 0; k < pow; k ++)
+                    for(int l = 0; l < pow; l ++)
+                        bitSet.set((k+i-lx)*w+l+j-ly);
+                Tile tile = tileSystem.getTile(i/pow, j/pow, scale-s);
+                
+                //if(tile == null) continue;
+                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
+                if(maxSpeed > speed)
+                    speed = maxSpeed;
+                //if(print)
+                    //System.out.println("rect: " + i/pow + " "+ j/pow +" "+ (scale-s));
+            }
+        return speed;
+    }
+    
+    //old
     private double quality(final TileXYRectangle rect, final TileXYRectangle obstacle, final int scale) {
         double insideSpeed = 0.;
         double outsideSpeed = 0.;
@@ -159,51 +205,6 @@ public class ObstacleCreator {
             H = obstacle.getHeight() + 1;
         double ok = insideSpeed/outsideSpeed < 0.7? 1:0;
         return ok * W * H;
-    }
-        
-    private double estimateSpeed(final TileXYRectangle rect, final int scale) {
-        double speed = 0.;
-        for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
-            for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
-                Tile tile = tileSystem.getTile(i, j, scale);
-                //if(tile == null) continue;
-                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
-                if(maxSpeed > speed)
-                        speed = maxSpeed;
-            }
-        return speed;
-    }
-    
-    private double estimateSpeed1(final TileXYRectangle obstacle, final int scale) {
-        double speed = 0.;
-        int lx = obstacle.getLowerCorner().getX();
-        int ly = obstacle.getLowerCorner().getY();
-        int ux = obstacle.getUpperCorner().getX();
-        int uy = obstacle.getUpperCorner().getY();
-        int w = ux-lx+1;
-        BitSet set = new BitSet(w*(uy-ly+1));
-        
-        for(int i = lx; i <= ux; i ++)
-            for(int j = ly; j <= uy; j ++) {
-                if(set.get((i-lx)*w+j-ly)) continue;
-                
-                int s = 0;
-                for(int k = i, l = j; k % 2 == 0 && l % 2 == 0 && i+(2<<s) <= ux+1 && j+(2<<s) <= uy+1; l /= 2, k /= 2) s ++;
-                if(scale - s < 13) s = scale - 13;
-                int pow = 1 << s;
-                for(int k = 0; k < pow; k ++)
-                    for(int l = 0; l < pow; l ++)
-                        set.set((k+i-lx)*w+l+j-ly);
-                Tile tile = tileSystem.getTile(i/pow, j/pow, scale-s);
-                
-                //if(tile == null) continue;
-                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
-                if(maxSpeed > speed)
-                    speed = maxSpeed;
-                //if(print)
-                    //System.out.println("rect: " + i/pow + " "+ j/pow +" "+ (scale-s));
-            }
-        return speed;
     }
     
     private double quality(final TileXYRectangle obstacle, final int scale, double outsideSpeed) {
