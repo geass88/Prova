@@ -185,12 +185,15 @@ public class ObstacleCreator {
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
         double outsideSpeed = estimator.estimateSpeed(outerRect, scale);
+        double maxArea = (outerRect.getWidth()+1)*(outerRect.getHeight()+1)/100.;
+        
         for(TileXYRectangle obstacle: obstacles) {
             double insideSpeed = estimator.estimateSpeed(obstacle, scale);
             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
             double alpha = insideSpeed/outsideSpeed;
             double ok = alpha < 0.7? 1: 0;
-            double quality = ok * (W*H); // ok * (W*H + 1./alpha);
+            double alphaInv = alpha == 0? 130: 1/alpha;
+            double quality = ok * (W*H/maxArea + alphaInv/1.3); // ok * (W*H);
             //double quality = quality(outerRect, obstacle, scale);
             if(quality > bestQ) {
                 bestObstacle = obstacle;
@@ -256,7 +259,7 @@ public class ObstacleCreator {
             TileXYRectangle outerRect = findRect(start, end, scale, true);
             int W = outerRect.getWidth()+1;
             int H = outerRect.getHeight()+1;
-            if(W*H <= 200) break;
+            if(W*H <= 36) break;
         }
         if(scale < Main.MIN_SCALE) scale = Main.MIN_SCALE;
         return scale;
