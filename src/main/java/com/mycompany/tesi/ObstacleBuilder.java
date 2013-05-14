@@ -17,12 +17,10 @@ package com.mycompany.tesi;
 
 import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.beans.Obstacle;
-import com.mycompany.tesi.beans.Pair;
 import com.mycompany.tesi.utils.ObstacleCreator;
 import com.mycompany.tesi.utils.TileSystem;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -62,7 +60,6 @@ public class ObstacleBuilder {
             }
             
             TileSystem tileSystem = Main.getFullTileSystem(db);
-            ObstacleCreator[] creators = { new ObstacleCreator(tileSystem, true), new ObstacleCreator(tileSystem, false) };
             File file = new File("data/" + FILES[i]);
             if(!file.exists()) {
                 logger.log(Level.SEVERE, "The file {0} doesn't exists", FILES[i]);
@@ -79,10 +76,10 @@ public class ObstacleBuilder {
             int start;
             int amount = 100;
             for(start = 0; start+amount < queries.size(); start += amount) {
-                Task task = new Task(db, nodes, queries.subList(start, start+amount), creators);
+                Task task = new Task(db, nodes, queries.subList(start, start+amount), tileSystem);
                 pool.execute(task);
             }
-            pool.execute(new Task(db, nodes, queries.subList(start, queries.size()), creators));
+            pool.execute(new Task(db, nodes, queries.subList(start, queries.size()), tileSystem));
         }
         pool.shutdown();
     }
@@ -93,19 +90,20 @@ class Task implements Runnable {
     private final String db;
     private final Map<Integer, GHPlace> nodes;
     private final List<String> queries;
-    private final ObstacleCreator[] creators;
+    private final TileSystem tileSystem;
 
-    public Task(final String db, final Map<Integer, GHPlace> nodes, final List<String> queries, final ObstacleCreator[] creators) {
+    public Task(final String db, final Map<Integer, GHPlace> nodes, final List<String> queries, final TileSystem tileSystem) {
         this.queries = queries;
         this.nodes = nodes;
         this.db = db;
-        this.creators = creators;
+        this.tileSystem = tileSystem;
     }
 
     @Override
     public void run() {
         try (Connection conn = Main.getConnection(db); 
                 PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
+            ObstacleCreator[] creators = { new ObstacleCreator(tileSystem, true), new ObstacleCreator(tileSystem, false) };
             for(String s: queries) {
                 String[] tokens = s.split(",");
                 Integer obst_id = Integer.valueOf(tokens[0]);
