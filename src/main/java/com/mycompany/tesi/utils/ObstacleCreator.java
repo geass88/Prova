@@ -272,16 +272,16 @@ public class ObstacleCreator {
         ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem);
         GHPlace start = new GHPlace(51.422333, -0.278778);
         GHPlace end = new GHPlace(51.58219, 0.037079);
-        Point startP = obstacleCreator.geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
+        /*Point startP = obstacleCreator.geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
         Point endP = obstacleCreator.geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
         int scale = obstacleCreator.findHeuristicScale(startP, endP);
-        System.out.println("scale="+(scale));
+        System.out.println("scale="+(scale));*/
         long time1 = System.nanoTime();
-        Obstacle obstacle = obstacleCreator.getObstacle(start, end, scale);
+        Obstacle obstacle = obstacleCreator.getObstacle(start, end);
         long time2 = System.nanoTime();
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());
-        System.out.println((time2-time1) + " ns");
+        System.out.println((time2-time1)/1e6 + " ms");
     }
 }
 
