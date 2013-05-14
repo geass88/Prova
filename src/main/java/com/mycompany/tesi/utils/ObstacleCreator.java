@@ -277,7 +277,7 @@ public class ObstacleCreator {
         int scale = obstacleCreator.findHeuristicScale(startP, endP);
         System.out.println("scale="+(scale));*/
         long time1 = System.nanoTime();
-        Obstacle obstacle = obstacleCreator.getObstacle(start, end,15);
+        Obstacle obstacle = obstacleCreator.getObstacle(start, end);
         long time2 = System.nanoTime();
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());

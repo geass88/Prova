@@ -49,6 +49,7 @@ public class DatasetTest extends TestCase {
     @Before
     @Override
     public void setUp() {
+        Main.TEST = true;
         vehicle = new MyCarFlagEncoder(SubgraphTask.MAX_SPEED);
         graph = GraphHelper.readGraph("berlin_routing", "ways", vehicle);
     }
