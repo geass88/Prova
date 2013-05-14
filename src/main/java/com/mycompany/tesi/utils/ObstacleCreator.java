@@ -54,9 +54,9 @@ public class ObstacleCreator {
         this(tileSystem, false);
     }
     
-    public ObstacleCreator(final TileSystem tileSystem, boolean precise) {
+    public ObstacleCreator(final TileSystem tileSystem, boolean climb) {
         this.tileSystem = tileSystem;
-        this.estimator = precise? new PreciseEstimator(tileSystem): new RawEstimator(tileSystem);
+        this.estimator = climb? new ClimberEstimator(tileSystem): new RawEstimator(tileSystem);
     }
     
     private TileXYRectangle findRect(final Point start, final Point end, final int scale, boolean outer) {
@@ -256,7 +256,7 @@ public class ObstacleCreator {
             TileXYRectangle outerRect = findRect(start, end, scale, true);
             int W = outerRect.getWidth()+1;
             int H = outerRect.getHeight()+1;
-            if(W*H < 300) break;
+            if(W*H <= 200) break;
         }
         if(scale < Main.MIN_SCALE) scale = Main.MIN_SCALE;
         return scale;
@@ -267,11 +267,13 @@ public class ObstacleCreator {
         //03131313111232211
         //point=51.51769,-0.128467&point=51.514885,-0.122437
         //51.512749,-0.132136&point=51.516514,-0.12321
-        TileSystem tileSystem = Main.getFullTileSystem("london_routing");
+        TileSystem tileSystem = Main.getFullTileSystem("berlin_routing");
         //lon1=-0.132136&lat1=51.512749&lon2=-0.12321&lat2=51.516514
         ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem, true);
-        GHPlace start = new GHPlace(51.422333, -0.278778);
-        GHPlace end = new GHPlace(51.58219, 0.037079);
+        //13.3068932;52.4289273
+        //13.3294221;52.4325648
+        GHPlace start = new GHPlace(52.4289273, 13.3068932);
+        GHPlace end = new GHPlace(52.4325648, 13.3294221);
         /*Point startP = obstacleCreator.geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
         Point endP = obstacleCreator.geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
         int scale = obstacleCreator.findHeuristicScale(startP, endP);
@@ -293,7 +295,7 @@ interface SpeedEstimator {
 class RawEstimator implements SpeedEstimator {
     private final TileSystem tileSystem;
 
-    public RawEstimator(TileSystem tileSystem) {
+    public RawEstimator(final TileSystem tileSystem) {
         this.tileSystem = tileSystem;
     }
     
@@ -312,10 +314,11 @@ class RawEstimator implements SpeedEstimator {
     }
 }
 
-class PreciseEstimator implements SpeedEstimator {
+// a speed estimator which pay attention to the opportunity of using upper level rectangle to increase speed
+class ClimberEstimator implements SpeedEstimator {
     private final TileSystem tileSystem;
     
-    public PreciseEstimator(TileSystem tileSystem) {
+    public ClimberEstimator(final TileSystem tileSystem) {
         this.tileSystem = tileSystem;
     }
     
