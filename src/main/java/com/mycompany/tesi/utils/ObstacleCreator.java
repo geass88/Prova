@@ -222,13 +222,44 @@ public class ObstacleCreator {
     }
     
     public Obstacle getObstacle(final DirectPosition2D start, final DirectPosition2D end, final int scale) {
-        return getObstacle(geometryFactory.createPoint(new Coordinate(start.getX(), start.getY())), 
-                geometryFactory.createPoint(new Coordinate(end.getX(), end.getY())), scale);
+        Point startPoint = geometryFactory.createPoint(new Coordinate(start.getX(), start.getY()));
+        Point endPoint = geometryFactory.createPoint(new Coordinate(end.getX(), end.getY()));
+        return getObstacle(startPoint, endPoint, scale);
     }
     
     public Obstacle getObstacle(final GHPlace start, final GHPlace end, final int scale) {
-        return getObstacle(geometryFactory.createPoint(new Coordinate(start.lon, start.lat)), 
-                geometryFactory.createPoint(new Coordinate(end.lon, end.lat)), scale);
+        Point startPoint = geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
+        Point endPoint = geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
+        return getObstacle(startPoint, endPoint, scale);
+    }
+    
+    public Obstacle getObstacle(final Point start, final Point end) {
+        int scale = findHeuristicScale(start, end);
+        return getObstacle(start, end, scale);
+    }
+    
+    public Obstacle getObstacle(final DirectPosition2D start, final DirectPosition2D end) {
+        Point startPoint = geometryFactory.createPoint(new Coordinate(start.getX(), start.getY()));
+        Point endPoint = geometryFactory.createPoint(new Coordinate(end.getX(), end.getY()));
+        return getObstacle(startPoint, endPoint);
+    }
+    
+    public Obstacle getObstacle(final GHPlace start, final GHPlace end) {
+        Point startPoint = geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
+        Point endPoint = geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
+        return getObstacle(startPoint, endPoint);
+    }
+    
+    public int findHeuristicScale(final Point start, final Point end) {
+        int scale;
+        for(scale = Main.MAX_SCALE; scale >= Main.MIN_SCALE; scale --) {
+            TileXYRectangle outerRect = findRect(start, end, scale, true);
+            int W = outerRect.getWidth()+1;
+            int H = outerRect.getHeight()+1;
+            if(W*H < 300) break;
+        }
+        if(scale < Main.MIN_SCALE) scale = Main.MIN_SCALE;
+        return scale;
     }
     
     public static void main(String []args) throws Exception {
@@ -243,16 +274,8 @@ public class ObstacleCreator {
         GHPlace end = new GHPlace(51.58219, 0.037079);
         Point startP = obstacleCreator.geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
         Point endP = obstacleCreator.geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
-        int scale;
-        for(scale = Main.MIN_SCALE; scale <= Main.MAX_SCALE; scale++) {
-            TileXYRectangle or = obstacleCreator.findRect(startP, endP, scale, true);
-            int W = or.getWidth()+1;
-            int H = or.getHeight()+1;
-            System.out.println(or);
-            System.out.println("Area " + W*H + " for scale=" + scale);
-            if(W*H > 300) break;
-        }
-        System.out.println("scale="+(--scale));
+        int scale = obstacleCreator.findHeuristicScale(startP, endP);
+        System.out.println("scale="+(scale));
         long time1 = System.nanoTime();
         Obstacle obstacle = obstacleCreator.getObstacle(start, end, scale);
         long time2 = System.nanoTime();
