@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -75,22 +76,31 @@ public class ObstacleBuilder {
                         long time1 = System.nanoTime();
                         Obstacle obstacle = creators[j].getObstacle(start, end);
                         long time2 = System.nanoTime();
+                        
+                        st.clearParameters();
+                        st.setInt(1, serial ++);
+                        st.setInt(2, source);
+                        st.setInt(3, target);
+                        st.setInt(4, obst_id);
                         if(obstacle != null) {
-                            st.clearParameters();
-                            st.setInt(1, serial ++);
-                            st.setInt(2, source);
-                            st.setInt(3, target);
-                            st.setInt(4, obst_id);
                             st.setDouble(5, obstacle.getRect().getLowerCorner().x);
                             st.setDouble(6, obstacle.getRect().getLowerCorner().y);
                             st.setDouble(7, obstacle.getRect().getUpperCorner().x);
                             st.setDouble(8, obstacle.getRect().getUpperCorner().y);
                             st.setDouble(9, obstacle.getAlpha());
                             st.setInt(10, obstacle.getGrainScale());
-                            st.setInt(11, j);
-                            st.setInt(12, (int)(time2-time1)/1000);
-                            st.addBatch();
+                        } else {
+                            st.setNull(5, Types.DOUBLE);
+                            st.setNull(6, Types.DOUBLE);
+                            st.setNull(7, Types.DOUBLE);
+                            st.setNull(8, Types.DOUBLE);
+                            st.setNull(9, Types.DOUBLE);
+                            st.setNull(10, Types.INTEGER);
                         }
+                        st.setInt(11, j);
+                        st.setInt(12, (int)(time2-time1)/1000);
+                        st.addBatch();
+                        
                     }
                     obst_id ++;
                 }
