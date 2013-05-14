@@ -243,14 +243,18 @@ public class ObstacleCreator {
         GHPlace end = new GHPlace(51.58219, 0.037079);
         Point startP = obstacleCreator.geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
         Point endP = obstacleCreator.geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
-        for(int i = Main.MIN_SCALE; i <= Main.MAX_SCALE; i++) {
-            TileXYRectangle or = obstacleCreator.findRect(startP, endP, i, true);
+        int scale;
+        for(scale = Main.MIN_SCALE; scale <= Main.MAX_SCALE; scale++) {
+            TileXYRectangle or = obstacleCreator.findRect(startP, endP, scale, true);
             int W = or.getWidth()+1;
             int H = or.getHeight()+1;
-            System.out.println("Area " + W*H + " for scale=" + i);
+            System.out.println(or);
+            System.out.println("Area " + W*H + " for scale=" + scale);
+            if(W*H > 300) break;
         }
+        System.out.println("scale="+(--scale));
         long time1 = System.nanoTime();
-        Obstacle obstacle = obstacleCreator.getObstacle(start, end, 14);
+        Obstacle obstacle = obstacleCreator.getObstacle(start, end, scale);
         long time2 = System.nanoTime();
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());
