@@ -88,7 +88,7 @@ public class ObstacleBuilder {
                             st.setDouble(9, obstacle.getAlpha());
                             st.setInt(10, obstacle.getGrainScale());
                             st.setInt(11, j);
-                            st.setLong(12, (time2-time1)/1000);
+                            st.setInt(12, (int)(time2-time1)/1000);
                             st.addBatch();
                         }
                     }
