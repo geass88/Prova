@@ -73,7 +73,7 @@ public class ObstacleBuilder {
                     GHPlace end = nodes.get(target);
                     for(int j = 0; j < creators.length; j ++) {
                         long time1 = System.nanoTime();
-                        Obstacle obstacle = creators[j].getObstacle(start, end, 17);
+                        Obstacle obstacle = creators[j].getObstacle(start, end);
                         long time2 = System.nanoTime();
                         if(obstacle != null) {
                             st.clearParameters();
