@@ -17,6 +17,7 @@ package com.mycompany.tesi;
 
 import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.beans.Obstacle;
+import com.mycompany.tesi.utils.GraphHelper;
 import com.mycompany.tesi.utils.ObstacleCreator;
 import com.mycompany.tesi.utils.TileSystem;
 import java.io.BufferedReader;
@@ -51,13 +52,7 @@ public class ObstacleBuilder {
     public static void main(String[] args) throws Exception {        
         for(int i = 0; i < Main.DBS.length; i ++) {
             String db = Main.DBS[i];
-            Map<Integer, GHPlace> nodes = new HashMap<>();
-            try(Connection conn = Main.getConnection(db);
-                Statement st = conn.createStatement();
-                ResultSet rs = st.executeQuery("select * from ((select distinct source, y1, x1 from " + TABLE + ") union (select distinct target, y2, x2 from " + TABLE + ")) nodes order by source")) {
-                while(rs.next())
-                    nodes.put(rs.getInt(1), new GHPlace(rs.getDouble(2), rs.getDouble(3)));
-            }
+            Map<Integer, GHPlace> nodes = GraphHelper.readNodes(db, TABLE);
             
             TileSystem tileSystem = Main.getFullTileSystem(db);
             File file = new File("data/" + FILES[i]);
