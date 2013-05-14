@@ -22,7 +22,7 @@ import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.PointList;
-import com.mycompany.tesi.Histogram;
+import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.Main;
 import com.mycompany.tesi.SubgraphTask.Cell;
 import com.mycompany.tesi.beans.BoundaryNode;
@@ -167,5 +167,18 @@ public class GraphHelper {
             logger.log(Level.SEVERE, null, ex);
         }
         return graph;
+    }
+    
+    public static Map<Integer, GHPlace> readNodes(final String db, final String table) {
+        Map<Integer, GHPlace> nodes = new HashMap<>();
+        try(Connection conn = Main.getConnection(db);
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery("select * from ((select distinct source, y1, x1 from " + table + ") union (select distinct target, y2, x2 from " + table + ")) nodes order by source")) {
+            while(rs.next())
+                nodes.put(rs.getInt(1), new GHPlace(rs.getDouble(2), rs.getDouble(3)));
+        } catch(SQLException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
+        return nodes;
     }
 }
