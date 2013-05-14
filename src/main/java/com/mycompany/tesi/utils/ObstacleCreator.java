@@ -44,9 +44,10 @@ import org.geotoolkit.geometry.Envelope2D;
 public class ObstacleCreator {
     
     private final TileSystem tileSystem;
-    private GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     private final static Logger logger = Logger.getLogger(ObstacleCreator.class.getName());
     private final SpeedEstimator estimator;
+    
     //public ObstacleCreator() {}
     
     public ObstacleCreator(final TileSystem tileSystem) {
@@ -182,18 +183,19 @@ public class ObstacleCreator {
             obstacles.addAll(buildRect(innerRect, seed));
         }
         TileXYRectangle bestObstacle = null;
-        double bestQ = 0., alpha = 0.;
+        double bestQ = 0., alphaObstacle = 0.;
         double outsideSpeed = estimator.estimateSpeed(outerRect, scale);
         for(TileXYRectangle obstacle: obstacles) {
             double insideSpeed = estimator.estimateSpeed(obstacle, scale);
             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
-            alpha = insideSpeed/outsideSpeed;
+            double alpha = insideSpeed/outsideSpeed;
             double ok = alpha < 0.7? 1: 0;
-            double quality = ok * W * H;
+            double quality = ok * (W*H); // ok * (W*H + 1./alpha);
             //double quality = quality(outerRect, obstacle, scale);
             if(quality > bestQ) {
                 bestObstacle = obstacle;
                 bestQ = quality;
+                alphaObstacle = alpha;
             }
         }
         //quality1(bestObstacle, scale, outsideSpeed, true);
@@ -216,7 +218,7 @@ public class ObstacleCreator {
         */
         Envelope2D envelope = new Envelope2D(new DirectPosition2D(lowerTile.getRect().getLowerCorner().x, upperTile.getRect().getLowerCorner().y),
                 new DirectPosition2D(upperTile.getRect().getUpperCorner().x, lowerTile.getRect().getUpperCorner().y));
-        return new Obstacle(envelope, alpha, scale);
+        return new Obstacle(envelope, alphaObstacle, scale);
     }
     
     public Obstacle getObstacle(final DirectPosition2D start, final DirectPosition2D end, final int scale) {
@@ -267,7 +269,7 @@ class RawEstimator implements SpeedEstimator {
                 //if(tile == null) continue;
                 double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
                 if(maxSpeed > speed)
-                        speed = maxSpeed;
+                    speed = maxSpeed;
             }
         return speed;
     }
