@@ -269,7 +269,7 @@ public class ObstacleCreator {
         //51.512749,-0.132136&point=51.516514,-0.12321
         TileSystem tileSystem = Main.getFullTileSystem("london_routing");
         //lon1=-0.132136&lat1=51.512749&lon2=-0.12321&lat2=51.516514
-        ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem);
+        ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem, true);
         GHPlace start = new GHPlace(51.422333, -0.278778);
         GHPlace end = new GHPlace(51.58219, 0.037079);
         /*Point startP = obstacleCreator.geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
@@ -277,7 +277,7 @@ public class ObstacleCreator {
         int scale = obstacleCreator.findHeuristicScale(startP, endP);
         System.out.println("scale="+(scale));*/
         long time1 = System.nanoTime();
-        Obstacle obstacle = obstacleCreator.getObstacle(start, end);
+        Obstacle obstacle = obstacleCreator.getObstacle(start, end,15);
         long time2 = System.nanoTime();
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());
