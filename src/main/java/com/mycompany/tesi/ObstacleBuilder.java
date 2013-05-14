@@ -50,8 +50,7 @@ public class ObstacleBuilder {
     public static final String[] FILES = { "BerlinSourceTarget", "HamburgSourceTarget", "London_Source_Target" };
     public static final String TABLE = "ways";    
     
-    public static void main(String[] args) throws Exception {
-        
+    public static void main(String[] args) throws Exception {        
         for(int i = 0; i < Main.DBS.length; i ++) {
             String db = Main.DBS[i];
             Map<Integer, GHPlace> nodes = new HashMap<>();
@@ -84,14 +83,13 @@ public class ObstacleBuilder {
                 pool.execute(task);
             }
             pool.execute(new Task(db, nodes, queries.subList(start, queries.size()), creators));
-            
         }
         pool.shutdown();
     }
     
 }
-class Task implements Runnable {
 
+class Task implements Runnable {
     private final String db;
     private final Map<Integer, GHPlace> nodes;
     private final List<String> queries;
@@ -107,7 +105,7 @@ class Task implements Runnable {
     @Override
     public void run() {
         try (Connection conn = Main.getConnection(db); 
-                    PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
+                PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
             for(String s: queries) {
                 String[] tokens = s.split(",");
                 Integer obst_id = Integer.valueOf(tokens[0]);
