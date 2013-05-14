@@ -103,11 +103,8 @@ public class ConnectionPool {
         }
     }
     
-    public ConnectionPool(final String dbName, int poolSize) {
-        final String JDBC_URI = Main.PROPERTIES.getProperty("jdbc_uri", "jdbc:postgresql://localhost:5432/");
-        final String JDBC_USERNAME = Main.PROPERTIES.getProperty("jdbc_username", "postgres");
-        final String JDBC_PASSWORD = Main.PROPERTIES.getProperty("jdbc_password", "postgres");
-        this.dataSource = setupDataSource(JDBC_URI + dbName, JDBC_USERNAME, JDBC_PASSWORD, poolSize);
+    public ConnectionPool(final String uri, final String username, final String password, final String dbName, int poolSize) {
+        this.dataSource = setupDataSource(uri + dbName, username, password, poolSize);
         logger.log(Level.INFO, "Datasource {0} setup done!", dbName);
     }
     
@@ -137,7 +134,7 @@ public class ConnectionPool {
         // do it manually.
         //
         System.out.println("Setting up data source.");
-        final ConnectionPool pool = new ConnectionPool("berlin_routing", 10);
+        final ConnectionPool pool = new ConnectionPool(Main.JDBC_URI, Main.JDBC_USERNAME, Main.JDBC_PASSWORD, "berlin_routing", 10);
         DataSource dataSource = pool.getDataSource();
         System.out.println("Done.");
 

@@ -46,10 +46,13 @@ import org.geotoolkit.geometry.Envelope2D;
 public class Main {
     
     public static final String[] DBS;// = { "berlin_routing", "hamburg_routing", "london_routing" };
-    public static final Integer MIN_SCALE = 13;
-    public static final Integer MAX_SCALE = 17;
+    public static final String JDBC_URI;
+    public static final String JDBC_USERNAME;
+    public static final String JDBC_PASSWORD;
+    public static final Integer MIN_SCALE;
+    public static final Integer MAX_SCALE;
     public static final Integer POOL_SIZE = 3;
-    public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS = 20;
+    public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS;
     private final static Map<String, ConnectionPool> DATASOURCES = new HashMap<>();
     private final static ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
     private final static Map<String, TileSystem> TILE_SYSTEMS = new HashMap<>();
@@ -61,13 +64,19 @@ public class Main {
         try {
             PROPERTIES.loadFromXML(new FileInputStream("D:\\Workspace\\Netbeans\\Tesi\\config.xml"));
         } catch (Exception ex) {
-            logger.log(Level.SEVERE, null, ex);
-            System.exit(0);
+            logger.log(Level.SEVERE, "Cannot found the config file!", ex);
+            System.exit(1);
         }
+        JDBC_URI = PROPERTIES.getProperty("jdbc_uri", "jdbc:postgresql://localhost:5432/");
+        JDBC_USERNAME = PROPERTIES.getProperty("jdbc_username", "postgres");
+        JDBC_PASSWORD = PROPERTIES.getProperty("jdbc_password", "postgres");
+        MAX_ACTIVE_DATASOURCE_CONNECTIONS = Integer.valueOf(PROPERTIES.getProperty("jdbc_max_active", "10"));
         DBS = PROPERTIES.getProperty("jdbc_databases", "routing").split(" ");
+        MIN_SCALE = Integer.valueOf(PROPERTIES.getProperty("min_scale", "13"));
+        MAX_SCALE = Integer.valueOf(PROPERTIES.getProperty("max_scale", "17"));
         
         for(String db: DBS)
-            DATASOURCES.put(db, new ConnectionPool(db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
+            DATASOURCES.put(db, new ConnectionPool(JDBC_URI, JDBC_USERNAME, JDBC_PASSWORD, db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
         
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
@@ -81,8 +90,7 @@ public class Main {
     public static Connection getConnection(final String db) {
         try {
             if(TEST)
-                return DriverManager.getConnection(PROPERTIES.getProperty("jdbc_uri", "jdbc:postgresql://localhost:5432/") + db, 
-                        PROPERTIES.getProperty("jdbc_username", "postgres"), PROPERTIES.getProperty("jdbc_password", "postgres"));
+                return DriverManager.getConnection(JDBC_URI + db, JDBC_USERNAME, JDBC_PASSWORD);
             else
                 return DATASOURCES.get(db).getDataSource().getConnection();
         } catch (SQLException ex) {

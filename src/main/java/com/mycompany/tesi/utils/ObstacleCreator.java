@@ -298,7 +298,7 @@ class PreciseEstimator implements SpeedEstimator {
                 
                 int s = 0;
                 for(int k = i, l = j; k % 2 == 0 && l % 2 == 0 && i+(2<<s) <= ux+1 && j+(2<<s) <= uy+1; l /= 2, k /= 2) s ++;
-                if(scale - s < 13) s = scale - 13;
+                if(scale - s < Main.MIN_SCALE) s = scale - Main.MIN_SCALE;
                 int pow = 1 << s;
                 for(int k = 0; k < pow; k ++)
                     for(int l = 0; l < pow; l ++)
