@@ -128,7 +128,7 @@ class Task implements Runnable {
                         st.setNull(9, Types.INTEGER);
                     }
                     st.setInt(10, j);
-                    st.setInt(11, (int)(time2-time1)/1000);
+                    st.setInt(11, (int)((time2-time1)/1000));
                     st.addBatch();
                 }
             }
