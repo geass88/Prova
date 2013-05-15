@@ -68,6 +68,7 @@ public class ObstacleCreator {
             
             int stepX = Math.abs(startTileXY.getX() - endTileXY.getX()) > 1 ? 1: 0; 
             int stepY = Math.abs(startTileXY.getY() - endTileXY.getY()) > 1 ? 1: 0;
+            if(stepX == 0 && stepY == 0) return null;
             TileXY corner = rect.getLowerCorner();
             corner.setX(corner.getX()+stepX);
             corner.setY(corner.getY()+stepY);
@@ -177,6 +178,7 @@ public class ObstacleCreator {
     public Obstacle getObstacle(final Point start, final Point end, final int scale) {
         TileXYRectangle outerRect = findRect(start, end, scale, true);
         TileXYRectangle innerRect = findRect(start, end, scale, false);
+        if(innerRect == null) return null;
         List<TileXY> seeds = listSeeds(innerRect, start, end, scale);
         Set<TileXYRectangle> obstacles = new TreeSet<>();
         for(TileXY seed: seeds) {
@@ -259,7 +261,7 @@ public class ObstacleCreator {
             TileXYRectangle outerRect = findRect(start, end, scale, true);
             int W = outerRect.getWidth()+1;
             int H = outerRect.getHeight()+1;
-            if(W*H <= 36) break;
+            if(W*H <= 196) break;
         }
         if(scale < Main.MIN_SCALE) scale = Main.MIN_SCALE;
         return scale;
