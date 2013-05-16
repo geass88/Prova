@@ -47,6 +47,7 @@ public class ObstacleCreator {
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     private final static Logger logger = Logger.getLogger(ObstacleCreator.class.getName());
     private final SpeedEstimator estimator;
+    public final static Integer maxRectArea = 100;
     
     //public ObstacleCreator() {}
     
@@ -186,7 +187,7 @@ public class ObstacleCreator {
         }
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
-        double outsideSpeed = estimator.estimateSpeed(outerRect, scale);
+        double outsideSpeed = 130.;//estimator.estimateSpeed(outerRect, scale);
         double maxArea = (outerRect.getWidth()+1)*(outerRect.getHeight()+1)/100.;
         
         for(TileXYRectangle obstacle: obstacles) {
@@ -261,7 +262,7 @@ public class ObstacleCreator {
             TileXYRectangle outerRect = findRect(start, end, scale, true);
             int W = outerRect.getWidth()+1;
             int H = outerRect.getHeight()+1;
-            if(W*H <= 196) break;
+            if(W*H <= maxRectArea) break;
         }
         if(scale < Main.MIN_SCALE) scale = Main.MIN_SCALE;
         return scale;
