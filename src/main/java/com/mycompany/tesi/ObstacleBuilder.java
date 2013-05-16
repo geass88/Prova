@@ -94,7 +94,7 @@ class Task implements Runnable {
     @Override
     public void run() {
         try (Connection conn = Main.getConnection(db); 
-                PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
+                PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime, max_area) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
             ObstacleCreator[] creators = { new ObstacleCreator(tileSystem, true), new ObstacleCreator(tileSystem, false) };
             for(String s: queries) {
                 String[] tokens = s.split(",");
@@ -129,6 +129,7 @@ class Task implements Runnable {
                     }
                     st.setInt(10, j);
                     st.setInt(11, (int)((time2-time1)/1000));
+                    st.setInt(12, ObstacleCreator.maxRectArea);
                     st.addBatch();
                 }
             }
