@@ -127,11 +127,11 @@ public class ObstacleCreator {
      * @return 
      */
     private List<TileXYRectangle> buildRect(final TileXYRectangle rect, final TileXY obs) {
-        int N = rect.getWidth() + 1, 
+        /*int N = rect.getWidth() + 1, 
             M = rect.getHeight() + 1;
-        
+        */
         List<TileXYRectangle> list = new LinkedList<>();
-        int threshold = N*M/2;
+        //int threshold = N*M/2;
         for(int l_sx = rect.getLowerCorner().getX(); l_sx <= obs.getX(); l_sx ++)
             for(int l_dx = rect.getUpperCorner().getX(); l_dx >= obs.getX(); l_dx --)
                 for(int l_up = rect.getUpperCorner().getY(); l_up >= obs.getY(); l_up --)
