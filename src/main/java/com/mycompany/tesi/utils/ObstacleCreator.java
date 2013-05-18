@@ -35,9 +35,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.geotoolkit.geometry.DirectPosition2D;
@@ -200,7 +197,7 @@ public class ObstacleCreator {
         }
         //long time2 = System.nanoTime();
         //System.out.println((time2-time1)*1e-6);
-        //this.estimator = new FastEstimator(tileSystem, outerRect, scale);
+        
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
         double outsideSpeed = 130.;//estimator.estimateSpeed(outerRect, scale);
@@ -242,23 +239,27 @@ public class ObstacleCreator {
                 new DirectPosition2D(upperTile.getRect().getUpperCorner().x, lowerTile.getRect().getUpperCorner().y));
         return new Obstacle(envelope, alphaObstacle, scale);
     }
-    
+    /*
+    final int POOL_SIZE=10;
+    ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
     public Obstacle getObstacleParallel(final Point start, final Point end, final int scale) {
         final TileXYRectangle outerRect = findRect(start, end, scale, true);
         final TileXYRectangle innerRect = findRect(start, end, scale, false);
         if(innerRect == null) return null;
-        final List<TileXY> seeds = listSeeds(innerRect, start, end, scale);
-        final Set<TileXYRectangle> obstacles = new TreeSet<>();
         long time1 = System.nanoTime();
+        final List<TileXY> seeds = listSeeds(innerRect, start, end, scale);
+        long time2 = System.nanoTime();
+        final Set<TileXYRectangle> obstacles = new TreeSet<>();
+        //long time1 = System.nanoTime();
         for(TileXY seed: seeds) {
             obstacles.addAll(buildRect(innerRect, seed));
         }
-        long time2 = System.nanoTime();
-        System.out.println((time2-time1)*1e-6);
-        System.out.println(obstacles.size());
-        final int POOL_SIZE=50;
         
-        //this.estimator = new FastEstimator(tileSystem, outerRect, scale);
+        System.out.println((time2-time1)*1e-6);
+        //System.out.println(obstacles.size());
+        
+        
+        this.estimator = new FastSpeedEstimator(tileSystem, outerRect, scale);
         class Res implements Comparable<Res> {
             double quality;
             TileXYRectangle bestObstacle;
@@ -293,7 +294,7 @@ public class ObstacleCreator {
                 int end = start + div + (id<res? 1: 0);
                 for(int i = start; i < end; i++) {
                     obstacles.addAll(buildRect(innerRect, seeds.get(i)));
-                }*/
+                }* /
                 int div = obstacles.size() / POOL_SIZE;
                 int res = obstacles.size() % POOL_SIZE;
                 int start = id * div + (id<res? id: res);
@@ -325,7 +326,7 @@ public class ObstacleCreator {
             }
         }
         
-        ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
+        
         
         for(int i = 0; i< POOL_SIZE; i++)
             pool.execute(new Parallel(i));
@@ -351,7 +352,7 @@ public class ObstacleCreator {
         Point startPoint = geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
         Point endPoint = geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
         return getObstacleParallel(startPoint, endPoint, scale);
-    }
+    }*/
     
     public Obstacle getObstacle(final DirectPosition2D start, final DirectPosition2D end, final int scale) {
         Point startPoint = geometryFactory.createPoint(new Coordinate(start.getX(), start.getY()));
@@ -412,7 +413,7 @@ public class ObstacleCreator {
         int scale = obstacleCreator.findHeuristicScale(startP, endP);
         System.out.println("scale="+(scale));*/
         long time1 = System.nanoTime();
-        Obstacle obstacle = obstacleCreator.getObstacle(start, end,15);
+        Obstacle obstacle = obstacleCreator.getObstacle(start, end,13);
         long time2 = System.nanoTime();
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());
