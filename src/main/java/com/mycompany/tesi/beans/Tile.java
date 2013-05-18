@@ -28,9 +28,11 @@ public class Tile implements Serializable {
     
     private Envelope2D rect;
     private Object userObject;
-
+    private Polygon polygon;
+    
     public Tile(final Envelope2D rect) {
         this.rect = rect;
+        this.polygon = JTS.toGeometry(rect);
     }
 
     public Envelope2D getRect() {
@@ -42,7 +44,8 @@ public class Tile implements Serializable {
     }
     
     public Polygon getPolygon() {
-        return JTS.toGeometry(rect);
+        //return JTS.toGeometry(rect);
+        return polygon;
     }
 
     public Object getUserObject() {
