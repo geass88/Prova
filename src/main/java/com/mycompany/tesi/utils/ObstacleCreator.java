@@ -98,9 +98,10 @@ public class ObstacleCreator {
             
             for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
                 for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
-                    Polygon polygon = tileSystem.getTile(i, j, scale).getPolygon();
+                    TileXY tileXY = new TileXY(i, j);
+                    Polygon polygon = tileSystem.getTile(tileXY, scale).getPolygon();
                     if(segment.intersects(polygon))
-                        list.add(new TileXY(i, j));
+                        list.add(tileXY);
                 }
             return list;
         } catch (Exception ex) {
@@ -189,15 +190,15 @@ public class ObstacleCreator {
         TileXYRectangle innerRect = findRect(start, end, scale, false);
         if(innerRect == null) return null;
         ISpeedEstimator localEstimator = this.estimator == null? new FastSpeedEstimator(tileSystem, outerRect, scale): this.estimator;
-        List<TileXY> seeds = listSeeds(innerRect, start, end, scale);
-        Set<TileXYRectangle> obstacles = new TreeSet<>();
         //long time1 = System.nanoTime();
+        List<TileXY> seeds = listSeeds(innerRect, start, end, scale);
+        //long time2 = System.nanoTime();
+        //System.out.println((time2-time1)*1e-6);
+        Set<TileXYRectangle> obstacles = new TreeSet<>();
         for(TileXY seed: seeds) {
             obstacles.addAll(buildRect(innerRect, seed));
         }
-        //long time2 = System.nanoTime();
-        //System.out.println((time2-time1)*1e-6);
-        
+                
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
         double outsideSpeed = 130.;//estimator.estimateSpeed(outerRect, scale);
@@ -402,7 +403,7 @@ public class ObstacleCreator {
         //51.512749,-0.132136&point=51.516514,-0.12321
         TileSystem tileSystem = Main.getFullTileSystem("berlin_routing");
         //lon1=-0.132136&lat1=51.512749&lon2=-0.12321&lat2=51.516514
-        ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem, false);
+        ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem);
         //13.3068932;52.4289273
         //13.3294221;52.4325648
         //52.418335,13.259125&point=52.578854,13.510437
