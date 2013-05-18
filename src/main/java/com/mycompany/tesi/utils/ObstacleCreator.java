@@ -21,13 +21,16 @@ import com.mycompany.tesi.beans.Obstacle;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.beans.TileXYRectangle;
+import com.mycompany.tesi.estimators.ClimberSpeedEstimator;
+import com.mycompany.tesi.estimators.FastSpeedEstimator;
+import com.mycompany.tesi.estimators.ISpeedEstimator;
+import com.mycompany.tesi.estimators.RawSpeedEstimator;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.PrecisionModel;
-import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -49,18 +52,23 @@ public class ObstacleCreator {
     private final TileSystem tileSystem;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     private final static Logger logger = Logger.getLogger(ObstacleCreator.class.getName());
-    private  SpeedEstimator estimator;
+    private ISpeedEstimator estimator;
     public final static Integer maxRectArea = 100;
     
     //public ObstacleCreator() {}
     
     public ObstacleCreator(final TileSystem tileSystem) {
-        this(tileSystem, false);
+        this(tileSystem, null);
     }
     
     public ObstacleCreator(final TileSystem tileSystem, boolean climb) {
         this.tileSystem = tileSystem;
-        this.estimator = climb? new ClimberEstimator(tileSystem): new RawEstimator(tileSystem);
+        this.estimator = climb? new ClimberSpeedEstimator(tileSystem): new RawSpeedEstimator(tileSystem);
+    }
+    
+    public ObstacleCreator(final TileSystem tileSystem, final ISpeedEstimator estimator) {
+        this.tileSystem = tileSystem;
+        this.estimator = estimator;
     }
     
     private TileXYRectangle findRect(final Point start, final Point end, final int scale, boolean outer) {
@@ -183,6 +191,7 @@ public class ObstacleCreator {
         TileXYRectangle outerRect = findRect(start, end, scale, true);
         TileXYRectangle innerRect = findRect(start, end, scale, false);
         if(innerRect == null) return null;
+        ISpeedEstimator localEstimator = this.estimator == null? new FastSpeedEstimator(tileSystem, outerRect, scale): this.estimator;
         List<TileXY> seeds = listSeeds(innerRect, start, end, scale);
         Set<TileXYRectangle> obstacles = new TreeSet<>();
         //long time1 = System.nanoTime();
@@ -198,7 +207,7 @@ public class ObstacleCreator {
         double maxArea = (outerRect.getWidth()+1)*(outerRect.getHeight()+1)/100.;
         
         for(TileXYRectangle obstacle: obstacles) {
-            double insideSpeed = estimator.estimateSpeed(obstacle, scale);
+            double insideSpeed = localEstimator.estimateSpeed(obstacle, scale);
             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
             double alpha = insideSpeed/outsideSpeed;
             double ok = alpha < 0.7? 1: 0;
@@ -249,7 +258,7 @@ public class ObstacleCreator {
         System.out.println(obstacles.size());
         final int POOL_SIZE=50;
         
-        this.estimator = new FastEstimator(tileSystem, outerRect, scale);
+        //this.estimator = new FastEstimator(tileSystem, outerRect, scale);
         class Res implements Comparable<Res> {
             double quality;
             TileXYRectangle bestObstacle;
@@ -266,7 +275,7 @@ public class ObstacleCreator {
                 return quality > o.quality? 1: -1;
             }
             
-        };
+        }
         final java.util.concurrent.PriorityBlockingQueue<Res> q = new java.util.concurrent.PriorityBlockingQueue<>();
         class Parallel implements Runnable {
             final int id;
@@ -409,101 +418,4 @@ public class ObstacleCreator {
         System.out.println(obstacle.getAlpha());
         System.out.println((time2-time1)/1e6 + " ms");
     }
-}
-
-// Speed Estimation Strategy
-interface SpeedEstimator {
-    public abstract Double estimateSpeed(final TileXYRectangle obstacle, final int scale);
-}
-
-class RawEstimator implements SpeedEstimator {
-    private final TileSystem tileSystem;
-
-    public RawEstimator(final TileSystem tileSystem) {
-        this.tileSystem = tileSystem;
-    }
-    
-    @Override
-    public Double estimateSpeed(final TileXYRectangle rect, final int scale) {
-        double speed = 0.;
-        for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
-            for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
-                Tile tile = tileSystem.getTile(i, j, scale);
-                //if(tile == null) continue;
-                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
-                if(maxSpeed > speed)
-                    speed = maxSpeed;
-            }
-        return speed;
-    }
-}
-
-class FastEstimator implements SpeedEstimator {
-    private final TileXYRectangle outerRect;
-    private final double[][] speedMatrix;
-    
-    public FastEstimator(final TileSystem tileSystem, final TileXYRectangle outerRect, final int scale) {
-        this.outerRect = outerRect;
-        this.speedMatrix = new double[outerRect.getWidth()+1][outerRect.getHeight()+1];
-        for(int i = outerRect.getLowerCorner().getX(); i <= outerRect.getUpperCorner().getX(); i ++)
-            for(int j = outerRect.getLowerCorner().getY(); j <= outerRect.getUpperCorner().getY(); j ++) {
-                Tile tile = tileSystem.getTile(i, j, scale);
-                speedMatrix[i - outerRect.getLowerCorner().getX()][j - outerRect.getLowerCorner().getY()] = 
-                        tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject(); 
-            } 
-    }
-    
-    @Override
-    public Double estimateSpeed(final TileXYRectangle rect, final int scale) {
-        double speed = 0.;
-        for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
-            for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
-                double maxSpeed = speedMatrix[i - outerRect.getLowerCorner().getX()][j - outerRect.getLowerCorner().getY()];
-                if(maxSpeed > speed)
-                    speed = maxSpeed;
-            }
-        return speed;
-    }
-}
-
-// a speed estimator which pay attention to the opportunity of using upper level rectangle to increase speed
-class ClimberEstimator implements SpeedEstimator {
-    private final TileSystem tileSystem;
-    
-    public ClimberEstimator(final TileSystem tileSystem) {
-        this.tileSystem = tileSystem;
-    }
-    
-    @Override
-    public Double estimateSpeed(final TileXYRectangle obstacle, final int scale) {
-        double speed = 0.;
-        int lx = obstacle.getLowerCorner().getX();
-        int ly = obstacle.getLowerCorner().getY();
-        int ux = obstacle.getUpperCorner().getX();
-        int uy = obstacle.getUpperCorner().getY();
-        int w = ux-lx+1;
-        BitSet bitSet = new BitSet(w*(uy-ly+1));
-        
-        for(int i = lx; i <= ux; i ++)
-            for(int j = ly; j <= uy; j ++) {
-                if(bitSet.get((i-lx)*w+j-ly)) continue;
-                
-                int s = 0;
-                for(int k = i, l = j; k % 2 == 0 && l % 2 == 0 && i+(2<<s) <= ux+1 && j+(2<<s) <= uy+1; l /= 2, k /= 2) s ++;
-                if(scale - s < Main.MIN_SCALE) s = scale - Main.MIN_SCALE;
-                int pow = 1 << s;
-                for(int k = 0; k < pow; k ++)
-                    for(int l = 0; l < pow; l ++)
-                        bitSet.set((k+i-lx)*w+l+j-ly);
-                Tile tile = tileSystem.getTile(i/pow, j/pow, scale-s);
-                
-                //if(tile == null) continue;
-                double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
-                if(maxSpeed > speed)
-                    speed = maxSpeed;
-                //if(print)
-                    //System.out.println("rect: " + i/pow + " "+ j/pow +" "+ (scale-s));
-            }
-        return speed;
-    }    
 }
