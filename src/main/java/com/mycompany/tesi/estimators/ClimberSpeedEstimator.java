@@ -39,8 +39,8 @@ public class ClimberSpeedEstimator implements ISpeedEstimator {
         int ly = obstacle.getLowerCorner().getY();
         int ux = obstacle.getUpperCorner().getX();
         int uy = obstacle.getUpperCorner().getY();
-        int w = ux-lx+1;
-        BitSet bitSet = new BitSet(w*(uy-ly+1));
+        int w = obstacle.getWidth()+1;
+        BitSet bitSet = new BitSet(w*(obstacle.getHeight()+1));
         
         for(int i = lx; i <= ux; i ++)
             for(int j = ly; j <= uy; j ++) {
