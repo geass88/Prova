@@ -32,6 +32,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.geotoolkit.geometry.DirectPosition2D;
@@ -46,7 +49,7 @@ public class ObstacleCreator {
     private final TileSystem tileSystem;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     private final static Logger logger = Logger.getLogger(ObstacleCreator.class.getName());
-    private final SpeedEstimator estimator;
+    private  SpeedEstimator estimator;
     public final static Integer maxRectArea = 100;
     
     //public ObstacleCreator() {}
@@ -182,9 +185,13 @@ public class ObstacleCreator {
         if(innerRect == null) return null;
         List<TileXY> seeds = listSeeds(innerRect, start, end, scale);
         Set<TileXYRectangle> obstacles = new TreeSet<>();
+        //long time1 = System.nanoTime();
         for(TileXY seed: seeds) {
             obstacles.addAll(buildRect(innerRect, seed));
         }
+        //long time2 = System.nanoTime();
+        //System.out.println((time2-time1)*1e-6);
+        //this.estimator = new FastEstimator(tileSystem, outerRect, scale);
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
         double outsideSpeed = 130.;//estimator.estimateSpeed(outerRect, scale);
@@ -225,6 +232,116 @@ public class ObstacleCreator {
         Envelope2D envelope = new Envelope2D(new DirectPosition2D(lowerTile.getRect().getLowerCorner().x, upperTile.getRect().getLowerCorner().y),
                 new DirectPosition2D(upperTile.getRect().getUpperCorner().x, lowerTile.getRect().getUpperCorner().y));
         return new Obstacle(envelope, alphaObstacle, scale);
+    }
+    
+    public Obstacle getObstacleParallel(final Point start, final Point end, final int scale) {
+        final TileXYRectangle outerRect = findRect(start, end, scale, true);
+        final TileXYRectangle innerRect = findRect(start, end, scale, false);
+        if(innerRect == null) return null;
+        final List<TileXY> seeds = listSeeds(innerRect, start, end, scale);
+        final Set<TileXYRectangle> obstacles = new TreeSet<>();
+        long time1 = System.nanoTime();
+        for(TileXY seed: seeds) {
+            obstacles.addAll(buildRect(innerRect, seed));
+        }
+        long time2 = System.nanoTime();
+        System.out.println((time2-time1)*1e-6);
+        System.out.println(obstacles.size());
+        final int POOL_SIZE=50;
+        
+        this.estimator = new FastEstimator(tileSystem, outerRect, scale);
+        class Res implements Comparable<Res> {
+            double quality;
+            TileXYRectangle bestObstacle;
+            double alphaObstacle;
+
+            public Res(double quality, TileXYRectangle bestObstacle, double alphaObstacle) {
+                this.quality = quality;
+                this.bestObstacle = bestObstacle;
+                this.alphaObstacle = alphaObstacle;                
+            }
+            @Override
+            public int compareTo(Res o) {
+                if(quality == o.quality) return 0;
+                return quality > o.quality? 1: -1;
+            }
+            
+        };
+        final java.util.concurrent.PriorityBlockingQueue<Res> q = new java.util.concurrent.PriorityBlockingQueue<>();
+        class Parallel implements Runnable {
+            final int id;
+            
+            public Parallel(int id) {
+                this.id = id;
+            }
+            
+            @Override
+            public void run() {
+                /*Set<TileXYRectangle> obstacles = new TreeSet<>();
+                int div = seeds.size() / POOL_SIZE;
+                int res = seeds.size() % POOL_SIZE;
+                int start = id * div + (id<res? id: res);
+                int end = start + div + (id<res? 1: 0);
+                for(int i = start; i < end; i++) {
+                    obstacles.addAll(buildRect(innerRect, seeds.get(i)));
+                }*/
+                int div = obstacles.size() / POOL_SIZE;
+                int res = obstacles.size() % POOL_SIZE;
+                int start = id * div + (id<res? id: res);
+                int end = start + div + (id<res? 1: 0);
+                
+                double outsideSpeed = 130.;//estimator.estimateSpeed(outerRect, scale);
+                double maxArea = (outerRect.getWidth()+1)*(outerRect.getHeight()+1)/100.;
+                
+                TileXYRectangle bestObstacle = null;
+                double alphaObstacle = 0.;
+                double bestQ = 0.;
+                TileXYRectangle[] obs = obstacles.toArray(new TileXYRectangle[obstacles.size()]);
+                for(int i = start; i < end; i ++) {
+                    TileXYRectangle obstacle = obs[i];
+                    double insideSpeed = estimator.estimateSpeed(obstacle, scale);
+                    int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
+                    double alpha = insideSpeed/outsideSpeed;
+                    double ok = alpha < 0.7? 1: 0;
+                    double alphaInv = alpha == 0? 130: 1/alpha;
+                    double quality = ok * (W*H/maxArea + alphaInv/1.3); // ok * (W*H);
+                    //double quality = quality(outerRect, obstacle, scale);
+                    if(quality > bestQ) {
+                        bestObstacle = obstacle;
+                        bestQ = quality;
+                        alphaObstacle = alpha;
+                    }
+                }
+                q.add(new Res(bestQ, bestObstacle, alphaObstacle));
+            }
+        }
+        
+        ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
+        
+        for(int i = 0; i< POOL_SIZE; i++)
+            pool.execute(new Parallel(i));
+        pool.shutdown();
+        try {
+            pool.awaitTermination(1, TimeUnit.DAYS);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(ObstacleCreator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        Res o = q.peek();
+        
+        //quality1(bestObstacle, scale, outsideSpeed, true);
+        if(o.bestObstacle == null)
+            return null;
+        Tile lowerTile = tileSystem.getTile(o.bestObstacle.getLowerCorner(), scale);
+        Tile upperTile = tileSystem.getTile(o.bestObstacle.getUpperCorner(), scale);
+        
+        Envelope2D envelope = new Envelope2D(new DirectPosition2D(lowerTile.getRect().getLowerCorner().x, upperTile.getRect().getLowerCorner().y),
+                new DirectPosition2D(upperTile.getRect().getUpperCorner().x, lowerTile.getRect().getUpperCorner().y));
+        return new Obstacle(envelope, o.alphaObstacle, scale);
+    }
+    public Obstacle getObstacleParallel(final GHPlace start, final GHPlace end, final int scale) {
+        Point startPoint = geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
+        Point endPoint = geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
+        return getObstacleParallel(startPoint, endPoint, scale);
     }
     
     public Obstacle getObstacle(final DirectPosition2D start, final DirectPosition2D end, final int scale) {
@@ -275,17 +392,18 @@ public class ObstacleCreator {
         //51.512749,-0.132136&point=51.516514,-0.12321
         TileSystem tileSystem = Main.getFullTileSystem("berlin_routing");
         //lon1=-0.132136&lat1=51.512749&lon2=-0.12321&lat2=51.516514
-        ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem, true);
+        ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem, false);
         //13.3068932;52.4289273
         //13.3294221;52.4325648
-        GHPlace start = new GHPlace(52.4289273, 13.3068932);
-        GHPlace end = new GHPlace(52.4325648, 13.3294221);
+        //52.418335,13.259125&point=52.578854,13.510437
+        GHPlace start = new GHPlace(52.418335, 13.259125);
+        GHPlace end = new GHPlace(52.578854,13.510437);
         /*Point startP = obstacleCreator.geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
         Point endP = obstacleCreator.geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
         int scale = obstacleCreator.findHeuristicScale(startP, endP);
         System.out.println("scale="+(scale));*/
         long time1 = System.nanoTime();
-        Obstacle obstacle = obstacleCreator.getObstacle(start, end);
+        Obstacle obstacle = obstacleCreator.getObstacle(start, end,15);
         long time2 = System.nanoTime();
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());
@@ -306,13 +424,41 @@ class RawEstimator implements SpeedEstimator {
     }
     
     @Override
-    public Double estimateSpeed(TileXYRectangle rect, int scale) {
+    public Double estimateSpeed(final TileXYRectangle rect, final int scale) {
         double speed = 0.;
         for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
             for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
                 Tile tile = tileSystem.getTile(i, j, scale);
                 //if(tile == null) continue;
                 double maxSpeed = tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject();
+                if(maxSpeed > speed)
+                    speed = maxSpeed;
+            }
+        return speed;
+    }
+}
+
+class FastEstimator implements SpeedEstimator {
+    private final TileXYRectangle outerRect;
+    private final double[][] speedMatrix;
+    
+    public FastEstimator(final TileSystem tileSystem, final TileXYRectangle outerRect, final int scale) {
+        this.outerRect = outerRect;
+        this.speedMatrix = new double[outerRect.getWidth()+1][outerRect.getHeight()+1];
+        for(int i = outerRect.getLowerCorner().getX(); i <= outerRect.getUpperCorner().getX(); i ++)
+            for(int j = outerRect.getLowerCorner().getY(); j <= outerRect.getUpperCorner().getY(); j ++) {
+                Tile tile = tileSystem.getTile(i, j, scale);
+                speedMatrix[i - outerRect.getLowerCorner().getX()][j - outerRect.getLowerCorner().getY()] = 
+                        tile==null || tile.getUserObject()==null? 0: (double) tile.getUserObject(); 
+            } 
+    }
+    
+    @Override
+    public Double estimateSpeed(final TileXYRectangle rect, final int scale) {
+        double speed = 0.;
+        for(int i = rect.getLowerCorner().getX(); i <= rect.getUpperCorner().getX(); i ++)
+            for(int j = rect.getLowerCorner().getY(); j <= rect.getUpperCorner().getY(); j ++) {
+                double maxSpeed = speedMatrix[i - outerRect.getLowerCorner().getX()][j - outerRect.getLowerCorner().getY()];
                 if(maxSpeed > speed)
                     speed = maxSpeed;
             }
@@ -329,7 +475,7 @@ class ClimberEstimator implements SpeedEstimator {
     }
     
     @Override
-    public Double estimateSpeed(TileXYRectangle obstacle, int scale) {
+    public Double estimateSpeed(final TileXYRectangle obstacle, final int scale) {
         double speed = 0.;
         int lx = obstacle.getLowerCorner().getX();
         int ly = obstacle.getLowerCorner().getY();
