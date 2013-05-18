@@ -50,7 +50,7 @@ public class ObstacleCreator {
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     private final static Logger logger = Logger.getLogger(ObstacleCreator.class.getName());
     private ISpeedEstimator estimator;
-    public final static Integer maxRectArea = 49;
+    public final static Integer maxRectArea = 100;
     
     //public ObstacleCreator() {}
     
@@ -414,7 +414,7 @@ public class ObstacleCreator {
         int scale = obstacleCreator.findHeuristicScale(startP, endP);
         System.out.println("scale="+(scale));*/
         long time1 = System.nanoTime();
-        Obstacle obstacle = obstacleCreator.getObstacle(start, end,13);
+        Obstacle obstacle = obstacleCreator.getObstacle(start, end, 13);
         long time2 = System.nanoTime();
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());
