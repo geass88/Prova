@@ -50,7 +50,7 @@ public class ObstacleCreator {
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     private final static Logger logger = Logger.getLogger(ObstacleCreator.class.getName());
     private ISpeedEstimator estimator;
-    public final static Integer maxRectArea = 100;
+    public final static Integer maxRectArea = 49;
     
     //public ObstacleCreator() {}
     
