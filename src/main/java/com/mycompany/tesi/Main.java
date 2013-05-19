@@ -62,7 +62,7 @@ public class Main {
     
     static {
         try {
-            PROPERTIES.loadFromXML(new FileInputStream("F:\\Tommaso\\Workspace\\Tesi\\config.xml"));
+            PROPERTIES.loadFromXML(new FileInputStream("D:\\Workspace\\Netbeans\\Tesi\\config.xml"));
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Cannot found the config file!", ex);
             System.exit(1);
