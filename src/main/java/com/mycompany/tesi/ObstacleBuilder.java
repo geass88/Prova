@@ -44,6 +44,7 @@ public class ObstacleBuilder {
     private static final Logger logger = Logger.getLogger(ObstacleBuilder.class.getName());
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(5);
     public static final String[] FILES = { "BerlinSourceTarget", "HamburgSourceTarget", "London_Source_Target" };
+    // public static final String[] FILES = {"EnglandSourceTarget"};
     public static final String TABLE = "ways";    
     
     public static void main(String[] args) throws Exception {        
