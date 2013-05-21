@@ -67,7 +67,7 @@ public class TileXYRectangle implements Comparable<TileXYRectangle> {
 
     @Override
     public int compareTo(final TileXYRectangle o) {
-        return o!=null && o.getLowerCorner().compareTo(lowerCorner)==0 && o.getUpperCorner().compareTo(upperCorner)==0? 0: 1;
+        return o!=null && o.lowerCorner.compareTo(lowerCorner)==0 && o.upperCorner.compareTo(upperCorner)==0? 0: 1;
     }
     
 }
