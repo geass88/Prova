@@ -129,7 +129,7 @@ class Task implements Runnable {
                     }
                     st.setInt(10, j);
                     st.setInt(11, (int)((time2-time1)/1000));
-                    st.setInt(12, ObstacleCreator.maxRectArea);
+                    st.setInt(12, creators[j].getMaxRectArea());
                     st.addBatch();
                 }
             }
