@@ -16,7 +16,6 @@
 package com.mycompany.tesi.beans;
 
 import java.io.Serializable;
-import org.geotoolkit.geometry.Envelope2D;
 
 /**
  *
@@ -57,5 +56,5 @@ public class Obstacle implements Serializable {
 
     public void setAlpha(Double alpha) {
         this.alpha = alpha;
-    } 
+    }
 }
