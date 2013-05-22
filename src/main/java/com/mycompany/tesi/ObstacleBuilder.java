@@ -98,7 +98,7 @@ class Task implements Runnable {
     public void run() {
         try (Connection conn = Main.getConnection(db); 
                 PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime, max_area) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
-            ObstacleCreator[] creators = { /*new ObstacleCreatorNew(tileSystem, true, .7, 100, 13),*/ new ObstacleCreatorNew(tileSystem, null, .7, 100, db, 13) };
+            ObstacleCreator[] creators = { /*new ObstacleCreatorNew(tileSystem, true, .7, 100, 13),*/ new ObstacleCreatorNew(tileSystem, null, .7, 100, db, 12) };
             for(String s: queries) {
                 String[] tokens = s.split(",");
                 Integer obst_id = Integer.valueOf(tokens[0]);

@@ -89,9 +89,11 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                             double insideSpeed = localEstimator.estimateSpeed(obstacle, scale);
                             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             double alpha = insideSpeed/outsideSpeed;
-                            double ok = alpha < maxAlpha? 1: 0;
+                            //double ok = alpha < maxAlpha? 1: 0;
+                            if(alpha >= maxAlpha) continue;
                             double alphaInv = alpha == 0? 130: 1/alpha;
-                            double quality = ok * (W*H/maxArea + alphaInv/1.3); // ok * (W*H);
+                            double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
+                            //double quality = W * H * alphaInv;
                             //double quality = quality(outerRect, obstacle, scale);
                             if(quality > bestQ) {
                                 bestObstacle = obstacle;
@@ -103,7 +105,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                 
         return new Obstacle(bestObstacle, alphaObstacle, scale);
     }
-    
+        
     public Obstacle grow(final Obstacle seedObstacle, final double newMaxAlpha) {
         return grow(seedObstacle, limitRect, newMaxAlpha);
     }
@@ -124,9 +126,11 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                             double insideSpeed = this.estimator.estimateSpeed(obstacle, scale);
                             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             double alpha = insideSpeed/outsideSpeed;
-                            double ok = alpha < newMaxAlpha? 1: 0;
+                            //double ok = alpha < newMaxAlpha? 1: 0;
+                            if(alpha >= newMaxAlpha) continue;
                             double alphaInv = alpha == 0? 130: 1/alpha;
-                            double quality = ok * (W*H/maxArea + alphaInv/1.3); // ok * (W*H);
+                            double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
+                            //double quality = W * H * alphaInv;
                             //double quality = quality(outerRect, obstacle, scale);
                             if(quality > bestQ) {
                                 bestObstacle = obstacle;
