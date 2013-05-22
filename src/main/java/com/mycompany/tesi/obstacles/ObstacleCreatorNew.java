@@ -16,6 +16,7 @@
 package com.mycompany.tesi.obstacles;
 
 import com.graphhopper.util.shapes.GHPlace;
+import com.mycompany.tesi.Main;
 import com.mycompany.tesi.beans.Obstacle;
 import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.beans.TileXYRectangle;
@@ -24,9 +25,13 @@ import com.mycompany.tesi.estimators.ISpeedEstimator;
 import com.mycompany.tesi.utils.TileSystem;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Point;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.geotoolkit.geometry.Envelope2D;
 
 /**
  *
@@ -34,20 +39,22 @@ import java.util.TreeSet;
  */
 public class ObstacleCreatorNew extends ObstacleCreator {
     
-    public ObstacleCreatorNew(TileSystem tileSystem) {
-        super(tileSystem);
+    private TileXYRectangle limitRect;
+    private final int scale;
+    private final static Logger logger = Logger.getLogger(ObstacleCreatorNew.class.getName());
+        
+    public ObstacleCreatorNew(final TileSystem tileSystem, final ISpeedEstimator estimator, final double maxAlpha, final int maxRectArea, final int scale) {
+        super(tileSystem, estimator, maxAlpha, maxRectArea);
+        this.scale = scale;
+        Envelope2D limit = Main.getBound("england_routing");
+        Point lc = geometryFactory.createPoint(new Coordinate(limit.getLowerCorner().getX(), limit.getLowerCorner().getY()));
+        Point uc = geometryFactory.createPoint(new Coordinate(limit.getUpperCorner().getX(), limit.getUpperCorner().getY()));
+        limitRect = findRect(lc, uc, scale, true);
     }
     
     @Override
     public Obstacle getObstacle(final Point start, final Point end, final int scale) {
-        /*try {
-            Envelope2D limit = Main.getBound("england_routing");
-            Point lc = geometryFactory.createPoint(new Coordinate(limit.getLowerCorner().getX(), limit.getLowerCorner().getY()));
-            Point uc = geometryFactory.createPoint(new Coordinate(limit.getUpperCorner().getX(), limit.getUpperCorner().getY()));
-            TileXYRectangle limitRect = findRect(lc, uc, scale, true);
-        } catch (SQLException ex) {
-            Logger.getLogger(ObstacleCreator.class.getName()).log(Level.SEVERE, null, ex);
-        }*/
+        System.out.println("ok");
         TileXYRectangle outerRect = findRect(start, end, scale, true);
         TileXYRectangle innerRect = findRect(start, end, scale, false);
         if(innerRect == null) return null;
