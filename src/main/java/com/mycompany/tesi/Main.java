@@ -126,7 +126,7 @@ public class Main {
             ds.close();*/
     }
     
-    public static Envelope2D getBound(Connection conn) throws SQLException {
+    public static Envelope2D getBound(final Connection conn) throws SQLException {
         try (Statement st = conn.createStatement(); 
             ResultSet rs = st.executeQuery("SELECT MIN(x1), MIN(x2), MIN(y1), MIN(y2), MAX(x1), MAX(x2), MAX(y1), MAX(y2) FROM ways")) {
             rs.next();
@@ -138,14 +138,22 @@ public class Main {
         }
     }
     
-    public static void create_tiles(String dbName) throws SQLException {
+    public static Envelope2D getBound(final String dbName) throws SQLException {
+        try (Connection conn = getConnection(dbName)) {
+            return getBound(conn);
+        }
+    }
+    
+    public static void create_tiles(final String dbName) throws SQLException {
+        List<Pair<String, Polygon>> tiles = new LinkedList<>();
+        List<Pair<Integer, Geometry>> ways = new LinkedList<>();
         try (Connection conn = getConnection(dbName);
             Statement st = conn.createStatement();
             PreparedStatement pst = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
             TileSystem tileSystem = getTileSystem(dbName);
             Enumeration e = tileSystem.getTreeEnumeration();
             st.execute("TRUNCATE TABLE tiles; TRUNCATE TABLE ways_tiles;");
-            List<Pair<String, Polygon>> tiles = new LinkedList<>();
+            
             logger.log(Level.INFO, "Saving tiles ...");
             while(e.hasMoreElements()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
@@ -156,7 +164,8 @@ public class Main {
                 for(int i = 1; i < path.length; i ++)
                     qkey += path[i-1].getIndex(path[i]);
 
-                tiles.add(new Pair(qkey, tile.getPolygon()));
+                if(qkey.length() >= MIN_SCALE && qkey.length() <= MAX_SCALE)
+                    tiles.add(new Pair(qkey, tile.getPolygon()));
                 pst.clearParameters();
                 pst.setString(1, qkey);
                 pst.setDouble(2, tile.getRect().getMinX());
@@ -173,7 +182,7 @@ public class Main {
             //st.execute("DELETE FROM tiles WHERE qkey='';"); // removing the root node
             logger.log(Level.INFO, "Binding ways-tiles ...");
             
-            List<Pair<Integer, Geometry>> ways = new LinkedList<>();
+            
             WKTReader reader = new WKTReader();
             
             try(ResultSet rs = st.executeQuery("SELECT gid, st_astext(the_geom) AS geometry FROM ways;")) {
@@ -183,50 +192,49 @@ public class Main {
                 logger.log(Level.SEVERE, null, ex);
                 System.exit(0);
             }
-            
-            class Task implements Runnable {
-
-                private final List<Pair<String, Polygon>> tiles;
-                private final List<Pair<Integer, Geometry>> ways;
-                private final String dbName;
-                
-                public Task(String dbName, List<Pair<String, Polygon>> tiles, List<Pair<Integer, Geometry>> ways) {
-                    this.dbName = dbName;
-                    this.tiles = tiles;
-                    this.ways = ways;
-                }
-                
-                @Override
-                public void run() {
-                    try(Connection conn = Main.getConnection(dbName); 
-                        PreparedStatement st = conn.prepareStatement("INSERT INTO ways_tiles(tiles_qkey, ways_id) VALUES(?, ?);")) {
-                        
-                        for(Pair<String, Polygon> tile: tiles) 
-                            for(Pair<Integer, Geometry> way: ways)
-                                if(tile.getValue().intersects(way.getValue())) {
-                                    st.clearParameters();
-                                    st.setString(1, tile.getKey());
-                                    st.setInt(2, way.getKey());
-                                    st.addBatch();
-                                }
-                        st.executeBatch();
-                    } catch (SQLException ex) {
-                        logger.log(Level.SEVERE, null, ex);
-                    }
-                }
-                
-            }
-            
-            int start, amount = 1000;
-            for(start = 0; start+amount < tiles.size(); start += amount) {
-                Task task = new Task(dbName, tiles.subList(start, start+amount), ways);
-                pool.execute(task);
-            }
-            Task task = new Task(dbName, tiles.subList(start, tiles.size()), ways);
-            pool.execute(task);
-            
-            //st.execute("SELECT my_ways_tiles_fill();"); // call it to fill the relation between tiles and ways
         }
+        class Task implements Runnable {
+
+            private final List<Pair<String, Polygon>> tiles;
+            private final List<Pair<Integer, Geometry>> ways;
+            private final String dbName;
+
+            public Task(String dbName, List<Pair<String, Polygon>> tiles, List<Pair<Integer, Geometry>> ways) {
+                this.dbName = dbName;
+                this.tiles = tiles;
+                this.ways = ways;
+            }
+
+            @Override
+            public void run() {
+                try(Connection conn = Main.getConnection(dbName); 
+                    PreparedStatement st = conn.prepareStatement("INSERT INTO ways_tiles(tiles_qkey, ways_id) VALUES(?, ?);")) {
+
+                    for(Pair<String, Polygon> tile: tiles) 
+                        for(Pair<Integer, Geometry> way: ways)
+                            if(tile.getValue().intersects(way.getValue())) {
+                                st.clearParameters();
+                                st.setString(1, tile.getKey());
+                                st.setInt(2, way.getKey());
+                                st.addBatch();
+                            }
+                    st.executeBatch();
+                } catch (SQLException ex) {
+                    logger.log(Level.SEVERE, null, ex);
+                }
+            }
+
+        }
+
+        int start, amount = tiles.size() / pool.getPoolSize();
+        for(start = 0; start+amount < tiles.size(); start += amount) {
+            Task task = new Task(dbName, tiles.subList(start, start+amount), ways);
+            pool.execute(task);
+        }
+        Task task = new Task(dbName, tiles.subList(start, tiles.size()), ways);
+        pool.execute(task);
+
+        //st.execute("SELECT my_ways_tiles_fill();"); // call it to fill the relation between tiles and ways
     }
       
     public static void threadedSubgraph(final String db) throws Exception {
