@@ -193,6 +193,7 @@ public class Main {
                 System.exit(0);
             }
         }
+        
         class Task implements Runnable {
 
             private final List<Pair<String, Polygon>> tiles;
