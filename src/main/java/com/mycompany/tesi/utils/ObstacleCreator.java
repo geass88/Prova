@@ -204,7 +204,7 @@ public class ObstacleCreator {
                         }
         //quality1(bestObstacle, scale, outsideSpeed, true);
                 
-        return bestObstacle == null? null: new Obstacle(bestObstacle, alphaObstacle, scale);
+        return new Obstacle(bestObstacle, alphaObstacle, scale);
     }
     
     public Obstacle getObstacleNew(final GHPlace start, final GHPlace end, final int scale) {
@@ -220,7 +220,7 @@ public class ObstacleCreator {
         return getObstacleNew(start, end, scale);
     }
        
-    public TileXYRectangle grow(final TileXYRectangle seed, final TileXYRectangle limit, final double maxAlpha, 
+    public Obstacle grow(final TileXYRectangle seed, final TileXYRectangle limit, final double maxAlpha, 
             final ISpeedEstimator localEstimator, final int scale) {
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
@@ -244,7 +244,7 @@ public class ObstacleCreator {
                                 alphaObstacle = alpha;
                             }
                         }
-        return bestObstacle;
+        return new Obstacle(bestObstacle, alphaObstacle, scale);
     }
     
     public Envelope2D extractEnvelope(final Obstacle obstacle) {
@@ -289,12 +289,7 @@ public class ObstacleCreator {
                 alphaObstacle = alpha;
             }
         }
-        //quality1(bestObstacle, scale, outsideSpeed, true);
-        //Tile lowerTile = tileSystem.getTile(bestObstacle.getLowerCorner(), scale);
-        //Tile upperTile = tileSystem.getTile(bestObstacle.getUpperCorner(), scale);
-        //Envelope2D envelope = new Envelope2D(new DirectPosition2D(lowerTile.getRect().getLowerCorner().x, upperTile.getRect().getLowerCorner().y),
-          //      new DirectPosition2D(upperTile.getRect().getUpperCorner().x, lowerTile.getRect().getUpperCorner().y));
-        return bestObstacle == null? null: new Obstacle(bestObstacle, alphaObstacle, scale);
+        return new Obstacle(bestObstacle, alphaObstacle, scale);
     }
    
     public Obstacle getObstacle(final DirectPosition2D start, final DirectPosition2D end, final int scale) {
@@ -330,8 +325,8 @@ public class ObstacleCreator {
         int scale;
         for(scale = Main.MAX_SCALE; scale >= Main.MIN_SCALE; scale --) {
             TileXYRectangle outerRect = findRect(start, end, scale, true);
-            int W = outerRect.getWidth()+1;
-            int H = outerRect.getHeight()+1;
+            int W = outerRect.getWidth() + 1;
+            int H = outerRect.getHeight() + 1;
             if(W*H <= maxRectArea) break;
         }
         if(scale < Main.MIN_SCALE) scale = Main.MIN_SCALE;
@@ -378,7 +373,7 @@ public class ObstacleCreator {
     public void setMaxAlpha(double maxAlpha) {
         this.maxAlpha = maxAlpha;
     }
-
+}
     /*
     final int POOL_SIZE=10;
     ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
@@ -493,8 +488,6 @@ public class ObstacleCreator {
         Point endPoint = geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
         return getObstacleParallel(startPoint, endPoint, scale);
     }*/
-    
-}
 
     /*
     //old
