@@ -224,7 +224,7 @@ public class ObstacleCreator {
             final ISpeedEstimator localEstimator, final int scale) {
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
-        double outsideSpeed = 130.;//estimator.estimateSpeed(outerRect, scale);
+        double outsideSpeed = 130.; //estimator.estimateSpeed(outerRect, scale);
         double maxArea = (limit.getWidth()+1)*(limit.getHeight()+1)/100.;
         for(int l_sx = seed.getLowerCorner().getX(); l_sx >= limit.getLowerCorner().getX(); l_sx --)
                 for(int l_dx = seed.getUpperCorner().getX(); l_dx <= limit.getUpperCorner().getX(); l_dx ++)
