@@ -24,11 +24,12 @@ import org.geotoolkit.geometry.Envelope2D;
  */
 public class Obstacle implements Serializable {
     
-    private Envelope2D rect;
+    //private Envelope2D rect;
     private Double alpha;
     private int grainScale;
+    private TileXYRectangle rect;
 
-    public Obstacle(Envelope2D rect, Double alpha, int grainScale) {
+    public Obstacle(TileXYRectangle rect, Double alpha, int grainScale) {
         this.rect = rect;
         this.alpha = alpha;
         this.grainScale = grainScale;
@@ -42,11 +43,11 @@ public class Obstacle implements Serializable {
         this.grainScale = grainScale;
     }
 
-    public Envelope2D getRect() {
+    public TileXYRectangle getRect() {
         return rect;
     }
 
-    public void setRect(Envelope2D rect) {
+    public void setRect(TileXYRectangle rect) {
         this.rect = rect;
     }
 
