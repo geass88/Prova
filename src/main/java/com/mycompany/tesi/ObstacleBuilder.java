@@ -17,8 +17,9 @@ package com.mycompany.tesi;
 
 import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.beans.Obstacle;
+import com.mycompany.tesi.obstacles.ObstacleCreator;
 import com.mycompany.tesi.utils.GraphHelper;
-import com.mycompany.tesi.utils.ObstacleCreator;
+import com.mycompany.tesi.obstacles.ObstacleCreatorNew;
 import com.mycompany.tesi.utils.TileSystem;
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,6 +35,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.geotoolkit.geometry.Envelope2D;
 
 /**
  *
@@ -43,8 +45,8 @@ public class ObstacleBuilder {
     
     private static final Logger logger = Logger.getLogger(ObstacleBuilder.class.getName());
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(5);
-    public static final String[] FILES = { "BerlinSourceTarget", "HamburgSourceTarget", "London_Source_Target" };
-    // public static final String[] FILES = {"EnglandSourceTarget"};
+    //public static final String[] FILES = { "BerlinSourceTarget", "HamburgSourceTarget", "London_Source_Target" };
+    public static final String[] FILES = { "EnglandSourceTarget" };
     public static final String TABLE = "ways";    
     
     public static void main(String[] args) throws Exception {        
@@ -96,7 +98,7 @@ class Task implements Runnable {
     public void run() {
         try (Connection conn = Main.getConnection(db); 
                 PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime, max_area) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
-            ObstacleCreator[] creators = { new ObstacleCreator(tileSystem, true), new ObstacleCreator(tileSystem) };
+            ObstacleCreator[] creators = { /*new ObstacleCreatorNew(tileSystem, true, .7, 100, 13),*/ new ObstacleCreatorNew(tileSystem, null, .7, 100, db, 13) };
             for(String s: queries) {
                 String[] tokens = s.split(",");
                 Integer obst_id = Integer.valueOf(tokens[0]);
@@ -113,11 +115,12 @@ class Task implements Runnable {
                     st.setInt(1, source);
                     st.setInt(2, target);
                     st.setInt(3, obst_id);
-                    if(obstacle != null) {
-                        st.setDouble(4, obstacle.getRect().getLowerCorner().x);
-                        st.setDouble(5, obstacle.getRect().getLowerCorner().y);
-                        st.setDouble(6, obstacle.getRect().getUpperCorner().x);
-                        st.setDouble(7, obstacle.getRect().getUpperCorner().y);
+                    if(obstacle != null && obstacle.getRect() != null) {
+                        Envelope2D rect = creators[j].extractEnvelope(obstacle);
+                        st.setDouble(4, rect.getLowerCorner().x);
+                        st.setDouble(5, rect.getLowerCorner().y);
+                        st.setDouble(6, rect.getUpperCorner().x);
+                        st.setDouble(7, rect.getUpperCorner().y);
                         st.setDouble(8, obstacle.getAlpha());
                         st.setInt(9, obstacle.getGrainScale());
                     } else {

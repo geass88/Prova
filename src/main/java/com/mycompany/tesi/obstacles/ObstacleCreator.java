@@ -32,7 +32,6 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.PrecisionModel;
-import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -253,9 +252,10 @@ public class ObstacleCreator {
         //03131313111232211
         //point=51.51769,-0.128467&point=51.514885,-0.122437
         //51.512749,-0.132136&point=51.516514,-0.12321
-        TileSystem tileSystem = Main.getFullTileSystem("berlin_routing");
+        String db = "berlin_routing";
+        TileSystem tileSystem = Main.getFullTileSystem(db);
         //lon1=-0.132136&lat1=51.512749&lon2=-0.12321&lat2=51.516514
-        ObstacleCreatorNew obstacleCreator = new ObstacleCreatorNew(tileSystem, null, .7, 100, 13);
+        ObstacleCreatorNew obstacleCreator = new ObstacleCreatorNew(tileSystem, null, .7, 100, db, 15);
         //13.3068932;52.4289273
         //13.3294221;52.4325648
         //52.418335,13.259125&point=52.578854,13.510437
@@ -266,11 +266,24 @@ public class ObstacleCreator {
         int scale = obstacleCreator.findHeuristicScale(startP, endP);
         System.out.println("scale="+(scale));*/
         long time1 = System.nanoTime();
-        Obstacle obstacle = obstacleCreator.getObstacle(start, end, 13);
+        Obstacle obstacle = obstacleCreator.getObstacle(start, end, 15);
         long time2 = System.nanoTime();
+        
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());
-        System.out.println((time2-time1)/1e6 + " ms");
+        System.out.println((time2-time1)*1e-6 + " ms");
+        time1 = System.nanoTime();
+        obstacle = obstacleCreator.grow(obstacle, .8);
+        time2 = System.nanoTime();
+        System.out.println(obstacle.getRect());
+        System.out.println(obstacle.getAlpha());
+        System.out.println((time2-time1)*1e-6 + " ms");
+        time1 = System.nanoTime();
+        obstacle = obstacleCreator.grow(obstacle, 1);
+        time2 = System.nanoTime();
+        System.out.println(obstacle.getRect());
+        System.out.println(obstacle.getAlpha());
+        System.out.println((time2-time1)*1e-6 + " ms");
     }
     
     public int getMaxRectArea() {

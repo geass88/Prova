@@ -76,7 +76,8 @@ public class TileSystem {
         if(key == null) return null;
         TreeNode node = (TreeNode) this.tree.getRoot();
         for(int i = 0; i < key.length(); i++)
-            node = node.getChildAt(key.charAt(i) - '0');
+            if(node.isLeaf()) return null;
+            else node = node.getChildAt(key.charAt(i) - '0');
         
         return (Tile) ((DefaultMutableTreeNode) node).getUserObject();
     }

@@ -43,10 +43,10 @@ public class ObstacleCreatorNew extends ObstacleCreator {
     private final int scale;
     private final static Logger logger = Logger.getLogger(ObstacleCreatorNew.class.getName());
         
-    public ObstacleCreatorNew(final TileSystem tileSystem, final ISpeedEstimator estimator, final double maxAlpha, final int maxRectArea, final int scale) {
+    public ObstacleCreatorNew(final TileSystem tileSystem, final ISpeedEstimator estimator, final double maxAlpha, final int maxRectArea, final String dbName, final int scale) {
         super(tileSystem, estimator, maxAlpha, maxRectArea);
         this.scale = scale;
-        Envelope2D limit = Main.getBound("england_routing");
+        Envelope2D limit = Main.getBound(dbName);
         Point lc = geometryFactory.createPoint(new Coordinate(limit.getLowerCorner().getX(), limit.getLowerCorner().getY()));
         Point uc = geometryFactory.createPoint(new Coordinate(limit.getUpperCorner().getX(), limit.getUpperCorner().getY()));
         limitRect = findRect(lc, uc, scale, true);
@@ -54,8 +54,13 @@ public class ObstacleCreatorNew extends ObstacleCreator {
     }
     
     @Override
+    public Obstacle getObstacle(final Point start, final Point end) {
+        return getObstacle(start, end, scale);
+    }            
+    
+    @Override
     public Obstacle getObstacle(final Point start, final Point end, final int scale) {
-        TileXYRectangle outerRect = findRect(start, end, scale, true);
+        TileXYRectangle outerRect = limitRect; //findRect(start, end, scale, true);
         TileXYRectangle innerRect = findRect(start, end, scale, false);
         if(innerRect == null) return null;
         ISpeedEstimator localEstimator = this.estimator == null? new FastSpeedEstimator(tileSystem, outerRect, scale): this.estimator;

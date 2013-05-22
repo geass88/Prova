@@ -30,13 +30,13 @@ import java.util.List;
  */
 public class P2PQueryGenerator {
     
-    private final static int POINTS_COUNT = 500;
+    private final static int POINTS_COUNT = 50;
     
     public static void main(String[] args) throws Exception {
-        String[] qkey_ll = { "03131313213", "03131313212", "03131313230", "03131313231" };
-        String[] qkey_ur = { "1202020030" };
-        String[] qkey_ul = { "0313131121"};
-        String[] qkey_lr = { "12020202302", "12020202303", "12020202320", "12020202321" };
+        String[] qkey_ll = { "0313131330" }; //"03131313213", "03131313212", "03131313230", "03131313231" };
+        String[] qkey_ur = { "1202020023" }; //"1202020030" };
+        String[] qkey_ul = { "0313131123" }; //"0313131121"};
+        String[] qkey_lr = { "1202020221" }; //"12020202302", "12020202303", "12020202320", "12020202321" };
         
         List<Integer> ll = helper(qkey_ll);
         List<Integer> ur = helper(qkey_ur);

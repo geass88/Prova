@@ -138,10 +138,13 @@ public class Main {
         }
     }
     
-    public static Envelope2D getBound(final String dbName) throws SQLException {
+    public static Envelope2D getBound(final String dbName) {
         try (Connection conn = getConnection(dbName)) {
             return getBound(conn);
+        } catch(SQLException ex) {
+            logger.log(Level.SEVERE, null, ex);
         }
+        return null;
     }
     
     public static void create_tiles(final String dbName) throws SQLException {
