@@ -50,11 +50,11 @@ public class ObstacleCreatorNew extends ObstacleCreator {
         Point lc = geometryFactory.createPoint(new Coordinate(limit.getLowerCorner().getX(), limit.getLowerCorner().getY()));
         Point uc = geometryFactory.createPoint(new Coordinate(limit.getUpperCorner().getX(), limit.getUpperCorner().getY()));
         limitRect = findRect(lc, uc, scale, true);
+        this.estimator = new FastSpeedEstimator(tileSystem, limitRect, scale);
     }
     
     @Override
     public Obstacle getObstacle(final Point start, final Point end, final int scale) {
-        System.out.println("ok");
         TileXYRectangle outerRect = findRect(start, end, scale, true);
         TileXYRectangle innerRect = findRect(start, end, scale, false);
         if(innerRect == null) return null;
@@ -99,8 +99,14 @@ public class ObstacleCreatorNew extends ObstacleCreator {
         return new Obstacle(bestObstacle, alphaObstacle, scale);
     }
     
-    public Obstacle grow(final TileXYRectangle seed, final TileXYRectangle limit, final double maxAlpha, 
-            final ISpeedEstimator localEstimator, final int scale) {
+    public Obstacle grow(final Obstacle seedObstacle, final double newMaxAlpha) {
+        return grow(seedObstacle, limitRect, newMaxAlpha);
+    }
+    
+    public Obstacle grow(final Obstacle seedObstacle, final TileXYRectangle limit, final double newMaxAlpha) {
+        final TileXYRectangle seed = seedObstacle.getRect();
+        int scale = seedObstacle.getGrainScale();
+        
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
         double outsideSpeed = 130.; //estimator.estimateSpeed(outerRect, scale);
@@ -110,10 +116,10 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                     for(int l_up = seed.getUpperCorner().getY(); l_up <= limit.getUpperCorner().getY(); l_up ++)
                         for(int l_dw = seed.getLowerCorner().getY(); l_dw >= limit.getLowerCorner().getY(); l_dw --) {
                             TileXYRectangle obstacle = new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, l_up - l_dw);
-                            double insideSpeed = localEstimator.estimateSpeed(obstacle, scale);
+                            double insideSpeed = this.estimator.estimateSpeed(obstacle, scale);
                             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             double alpha = insideSpeed/outsideSpeed;
-                            double ok = alpha < maxAlpha? 1: 0;
+                            double ok = alpha < newMaxAlpha? 1: 0;
                             double alphaInv = alpha == 0? 130: 1/alpha;
                             double quality = ok * (W*H/maxArea + alphaInv/1.3); // ok * (W*H);
                             //double quality = quality(outerRect, obstacle, scale);
