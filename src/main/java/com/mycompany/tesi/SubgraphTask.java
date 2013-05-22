@@ -529,7 +529,90 @@ public class SubgraphTask implements Runnable {
             st3.addBatch();
         }
     }
-    
+    /*
+    private void computeCliqueParallel(final String qkey, final boolean exterior) throws Exception {
+        Cell cell = exterior? buildExteriorSubgraph(qkey): buildSubgraph(qkey, false);
+        BoundaryNode[] nodesArray = cell.boundaryNodes.toArray(new BoundaryNode[cell.boundaryNodes.size()]);
+        
+        class Task implements Runnable {
+
+            double max_speed = 0.;
+            boolean exterior;
+            Cell cell;
+            BoundaryNode[] nodesArray;
+
+            public Task(boolean exterior, Cell cell, BoundaryNode[] nodesArray) {
+                this.exterior = exterior;
+                this.cell = cell;
+                this.nodesArray = nodesArray;
+            }
+            
+            @Override
+            public void run() {
+                final Graph graph = cell.graph;
+                final RawEncoder vehicle = cell.encoder;
+                try {
+                    for(int i = 0; i < nodesArray.length; i ++) {
+                        for(int j = i+1; j < nodesArray.length; j ++) {
+                            //if(i == j) continue;
+                            RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
+                            Path path = algo.calcPath(nodesArray[i].getNodeId(), nodesArray[j].getNodeId());
+                            Metrics m = null, rm = null;
+                            if(path.found()) {
+                                m = new Metrics(path.distance(), new TimeCalculation(vehicle).calcTime(path));
+                                double speed = m.getDistance()*3.6/m.getTime();
+                                if(speed > max_speed) max_speed = speed;
+                            }
+                            RoutingAlgorithm ralgo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
+                            Path rpath = ralgo.calcPath(nodesArray[j].getNodeId(), nodesArray[i].getNodeId());
+                            if(rpath.found()) {
+                                rm = new Metrics(rpath.distance(), new TimeCalculation(vehicle).calcTime(rpath));
+                                double speed = rm.getDistance()*3.6/rm.getTime();
+                                if(speed > max_speed) max_speed = speed;
+                            }
+
+                            if(! exterior) { // store the clique edge
+                                if(m != null && rm != null && m.compareTo(rm) == 0)
+                                    storeOverlayEdge(nodesArray[i], nodesArray[j], m, true);
+                                else {
+                                    if(m != null)
+                                        storeOverlayEdge(nodesArray[i], nodesArray[j], m, false);
+                                    if(rm != null)
+                                        storeOverlayEdge(nodesArray[j], nodesArray[i], rm, false);
+                                }
+                            }
+                        }
+                    }
+                } catch(SQLException e) {
+                    System.err.println(e);
+                }
+            }
+            
+        }
+        ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(5);
+        Task[] list = new Task[1];
+        Task t = new Task(exterior, cell, nodesArray);
+        list[0] = t;
+        pool.execute(t);
+        pool.shutdown();
+        pool.awaitTermination(1, TimeUnit.DAYS);
+        double max_speed = 0.;
+        for(Task item: list) {
+            if(item.max_speed > max_speed)
+                max_speed = item.max_speed;
+        }
+        if(exterior) { // store the interior speed
+            st3.clearParameters();
+            if(Double.isInfinite(max_speed) || Double.isNaN(max_speed))
+                st3.setNull(1, Types.DOUBLE);
+            else
+                st3.setDouble(1, max_speed);
+            st3.setString(2, qkey);
+            //st3.executeUpdate();
+            st3.addBatch();
+        }
+    }
+    */
     private void storeOverlayEdge(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
         st2.clearParameters();
         st2.setInt(1, source.getRoadNodeId());
