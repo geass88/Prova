@@ -162,8 +162,6 @@ public class ObstacleCreator {
         return list;
     }
     
-    
-    
     public Envelope2D extractEnvelope(final Obstacle obstacle) {
         Tile lowerTile = tileSystem.getTile(obstacle.getRect().getLowerCorner(), obstacle.getGrainScale());
         Tile upperTile = tileSystem.getTile(obstacle.getRect().getUpperCorner(), obstacle.getGrainScale());
@@ -257,7 +255,7 @@ public class ObstacleCreator {
         //51.512749,-0.132136&point=51.516514,-0.12321
         TileSystem tileSystem = Main.getFullTileSystem("berlin_routing");
         //lon1=-0.132136&lat1=51.512749&lon2=-0.12321&lat2=51.516514
-        ObstacleCreator obstacleCreator = new ObstacleCreator(tileSystem, null, .7, 100);
+        ObstacleCreatorNew obstacleCreator = new ObstacleCreatorNew(tileSystem, null, .7, 100, 13);
         //13.3068932;52.4289273
         //13.3294221;52.4325648
         //52.418335,13.259125&point=52.578854,13.510437
