@@ -160,7 +160,7 @@ public class ObstacleCreator {
         return list;
     }
     
-    private Obstacle getObstacleNew(final Point start, final Point end, final int scale) {
+    public Obstacle getObstacleNew(final Point start, final Point end, final int scale) {
         //Point lc = geometryFactory.createPoint(new Coordinate(-1.0876443, 50.8024708));//-1.0876443,50.8024708,1.1480601,52.0558592
         //Point uc = geometryFactory.createPoint(new Coordinate(1.1480601, 52.0558592));
         TileXYRectangle outerRect = findRect(start, end, scale, true);
@@ -217,7 +217,7 @@ public class ObstacleCreator {
         Point startPoint = geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
         Point endPoint = geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
         int scale = findHeuristicScale(startPoint, endPoint);
-        return getObstacleNew(start, end, scale);
+        return getObstacleNew(startPoint, endPoint, scale);
     }
        
     public Obstacle grow(final TileXYRectangle seed, final TileXYRectangle limit, final double maxAlpha, 
