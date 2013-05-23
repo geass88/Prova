@@ -529,10 +529,11 @@ public class SubgraphTask implements Runnable {
             st3.addBatch();
         }
     }
-    /*
+    
     private void computeCliqueParallel(final String qkey, final boolean exterior) throws Exception {
         Cell cell = exterior? buildExteriorSubgraph(qkey): buildSubgraph(qkey, false);
         BoundaryNode[] nodesArray = cell.boundaryNodes.toArray(new BoundaryNode[cell.boundaryNodes.size()]);
+        final int POOL_SIZE = 5;
         
         class Task implements Runnable {
 
@@ -540,11 +541,13 @@ public class SubgraphTask implements Runnable {
             boolean exterior;
             Cell cell;
             BoundaryNode[] nodesArray;
+            int tid;
 
-            public Task(boolean exterior, Cell cell, BoundaryNode[] nodesArray) {
+            public Task(boolean exterior, Cell cell, BoundaryNode[] nodesArray, int tid) {
                 this.exterior = exterior;
                 this.cell = cell;
                 this.nodesArray = nodesArray;
+                this.tid = tid;
             }
             
             @Override
@@ -552,8 +555,16 @@ public class SubgraphTask implements Runnable {
                 final Graph graph = cell.graph;
                 final RawEncoder vehicle = cell.encoder;
                 try {
-                    for(int i = 0; i < nodesArray.length; i ++) {
-                        for(int j = i+1; j < nodesArray.length; j ++) {
+                    int counter = 0;
+                    int N = nodesArray.length;
+                    int count = N*(N-1)/2;
+                    int step = count / POOL_SIZE;
+                    int start = tid * step;
+                    int end = tid == POOL_SIZE-1? count: (tid+1)*step;
+                    for(int i = 0; i < N; i ++) {
+                        for(int j = i+1; j < N; j ++, counter++) {
+                            if(counter < start) continue;
+                            if(counter >= end) return;
                             //if(i == j) continue;
                             RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
                             Path path = algo.calcPath(nodesArray[i].getNodeId(), nodesArray[j].getNodeId());
@@ -589,19 +600,20 @@ public class SubgraphTask implements Runnable {
             }
             
         }
-        ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(5);
-        Task[] list = new Task[1];
-        Task t = new Task(exterior, cell, nodesArray);
-        list[0] = t;
-        pool.execute(t);
+        
+        ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
+        Task[] list = new Task[POOL_SIZE];
+        for(int i = 0; i < POOL_SIZE; i ++) {
+            list[i] = new Task(exterior, cell, nodesArray, i);
+            pool.execute(list[i]);
+        }
         pool.shutdown();
         pool.awaitTermination(1, TimeUnit.DAYS);
-        double max_speed = 0.;
-        for(Task item: list) {
-            if(item.max_speed > max_speed)
-                max_speed = item.max_speed;
-        }
         if(exterior) { // store the interior speed
+            double max_speed = 0.;
+            for(Task item: list)
+                if(item.max_speed > max_speed)
+                    max_speed = item.max_speed;
             st3.clearParameters();
             if(Double.isInfinite(max_speed) || Double.isNaN(max_speed))
                 st3.setNull(1, Types.DOUBLE);
@@ -612,7 +624,7 @@ public class SubgraphTask implements Runnable {
             st3.addBatch();
         }
     }
-    */
+    
     private void storeOverlayEdge(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
         st2.clearParameters();
         st2.setInt(1, source.getRoadNodeId());
