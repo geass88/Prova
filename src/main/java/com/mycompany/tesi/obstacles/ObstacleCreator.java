@@ -191,11 +191,11 @@ public class ObstacleCreator {
         
         for(TileXYRectangle obstacle: obstacles) {
             double insideSpeed = localEstimator.estimateSpeed(obstacle, scale);
-            int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
             double alpha = insideSpeed/outsideSpeed;
             //double ok = alpha < maxAlpha? 1: 0;
             if(alpha >= maxAlpha) continue;
             double alphaInv = alpha == 0? 130: 1/alpha;
+            int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
             double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
             //double quality = quality(outerRect, obstacle, scale);
             if(quality > bestQ) {
@@ -256,7 +256,7 @@ public class ObstacleCreator {
         String db = "berlin_routing";
         TileSystem tileSystem = Main.getFullTileSystem(db);
         //lon1=-0.132136&lat1=51.512749&lon2=-0.12321&lat2=51.516514
-        ObstacleCreatorNew obstacleCreator = new ObstacleCreatorNew(tileSystem, null, .7, 100, db, 15);
+        ObstacleCreator obstacleCreator = new ObstacleCreatorNew(tileSystem, null, .7, 100, db, 13);
         //13.3068932;52.4289273
         //13.3294221;52.4325648
         //52.418335,13.259125&point=52.578854,13.510437
@@ -267,13 +267,13 @@ public class ObstacleCreator {
         int scale = obstacleCreator.findHeuristicScale(startP, endP);
         System.out.println("scale="+(scale));*/
         long time1 = System.nanoTime();
-        Obstacle obstacle = obstacleCreator.getObstacle(start, end, 15);
+        Obstacle obstacle = obstacleCreator.getObstacle(start, end, 13);
         long time2 = System.nanoTime();
         
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());
         System.out.println((time2-time1)*1e-6 + " ms");
-        time1 = System.nanoTime();
+        /*time1 = System.nanoTime();
         obstacle = obstacleCreator.grow(obstacle, .8);
         time2 = System.nanoTime();
         System.out.println(obstacle.getRect());
@@ -284,7 +284,7 @@ public class ObstacleCreator {
         time2 = System.nanoTime();
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());
-        System.out.println((time2-time1)*1e-6 + " ms");
+        System.out.println((time2-time1)*1e-6 + " ms");*/
     }
     
     public int getMaxRectArea() {
@@ -301,6 +301,13 @@ public class ObstacleCreator {
 
     public void setMaxAlpha(double maxAlpha) {
         this.maxAlpha = maxAlpha;
+    }
+    
+    public Obstacle grow(final Obstacle seedObstacle, final double newMaxAlpha) {
+        return null;
+    }
+    public Obstacle grow(final Obstacle seedObstacle, final TileXYRectangle limit, final double newMaxAlpha) {
+        return null;
     }
 }
     /*

@@ -15,7 +15,6 @@
  */
 package com.mycompany.tesi.obstacles;
 
-import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.Main;
 import com.mycompany.tesi.beans.Obstacle;
 import com.mycompany.tesi.beans.TileXY;
@@ -25,11 +24,9 @@ import com.mycompany.tesi.estimators.ISpeedEstimator;
 import com.mycompany.tesi.utils.TileSystem;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Point;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.geotoolkit.geometry.Envelope2D;
 
@@ -59,7 +56,8 @@ public class ObstacleCreatorNew extends ObstacleCreator {
     }            
     
     @Override
-    public Obstacle getObstacle(final Point start, final Point end, final int scale) {
+    public Obstacle getObstacle(final Point start, final Point end, int scale) {
+        scale = this.scale;
         TileXYRectangle outerRect = limitRect; //findRect(start, end, scale, true);
         TileXYRectangle innerRect = findRect(start, end, scale, false);
         if(innerRect == null) return null;
@@ -87,11 +85,11 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                             if(obstacles.contains(obstacle)) continue;
                             obstacles.add(obstacle);
                             double insideSpeed = localEstimator.estimateSpeed(obstacle, scale);
-                            int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             double alpha = insideSpeed/outsideSpeed;
                             //double ok = alpha < maxAlpha? 1: 0;
                             if(alpha >= maxAlpha) continue;
                             double alphaInv = alpha == 0? 130: 1/alpha;
+                            int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
                             //double quality = W * H * alphaInv;
                             //double quality = quality(outerRect, obstacle, scale);
@@ -106,10 +104,12 @@ public class ObstacleCreatorNew extends ObstacleCreator {
         return new Obstacle(bestObstacle, alphaObstacle, scale);
     }
         
+    @Override
     public Obstacle grow(final Obstacle seedObstacle, final double newMaxAlpha) {
         return grow(seedObstacle, limitRect, newMaxAlpha);
     }
     
+    @Override
     public Obstacle grow(final Obstacle seedObstacle, final TileXYRectangle limit, final double newMaxAlpha) {
         final TileXYRectangle seed = seedObstacle.getRect();
         int scale = seedObstacle.getGrainScale();
@@ -124,11 +124,11 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                         for(int l_dw = seed.getLowerCorner().getY(); l_dw >= limit.getLowerCorner().getY(); l_dw --) {
                             TileXYRectangle obstacle = new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, l_up - l_dw);
                             double insideSpeed = this.estimator.estimateSpeed(obstacle, scale);
-                            int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             double alpha = insideSpeed/outsideSpeed;
                             //double ok = alpha < newMaxAlpha? 1: 0;
                             if(alpha >= newMaxAlpha) continue;
                             double alphaInv = alpha == 0? 130: 1/alpha;
+                            int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
                             //double quality = W * H * alphaInv;
                             //double quality = quality(outerRect, obstacle, scale);

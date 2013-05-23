@@ -47,7 +47,9 @@ public class ObstacleBuilder {
     private static final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(5);
     //public static final String[] FILES = { "BerlinSourceTarget", "HamburgSourceTarget", "London_Source_Target" };
     public static final String[] FILES = { "EnglandSourceTarget" };
-    public static final String TABLE = "ways";    
+    public static final String TABLE = "ways";  
+    public static final int FIXED_SCALE = 12;
+    public static final double MAX_ALPHA = .7;
     
     public static void main(String[] args) throws Exception {        
         for(int i = 0; i < Main.DBS.length; i ++) {
@@ -97,8 +99,8 @@ class Task implements Runnable {
     @Override
     public void run() {
         try (Connection conn = Main.getConnection(db); 
-                PreparedStatement st = conn.prepareStatement("INSERT INTO obstacles(source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime, max_area) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
-            ObstacleCreator[] creators = { /*new ObstacleCreatorNew(tileSystem, true, .7, 100, 13),*/ new ObstacleCreatorNew(tileSystem, null, .7, 100, db, 12) };
+                PreparedStatement st = conn.prepareStatement("INSERT INTO instances(source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime, max_area, max_alpha) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
+            ObstacleCreator[] creators = { /*new ObstacleCreatorNew(tileSystem, true, .7, 100, 13),*/ new ObstacleCreatorNew(tileSystem, null, ObstacleBuilder.MAX_ALPHA, 100, db, ObstacleBuilder.FIXED_SCALE) };
             for(String s: queries) {
                 String[] tokens = s.split(",");
                 Integer obst_id = Integer.valueOf(tokens[0]);
@@ -110,37 +112,51 @@ class Task implements Runnable {
                     long time1 = System.nanoTime();
                     Obstacle obstacle = creators[j].getObstacle(start, end);
                     long time2 = System.nanoTime();
-
-                    st.clearParameters();
-                    st.setInt(1, source);
-                    st.setInt(2, target);
-                    st.setInt(3, obst_id);
-                    if(obstacle != null && obstacle.getRect() != null) {
-                        Envelope2D rect = creators[j].extractEnvelope(obstacle);
-                        st.setDouble(4, rect.getLowerCorner().x);
-                        st.setDouble(5, rect.getLowerCorner().y);
-                        st.setDouble(6, rect.getUpperCorner().x);
-                        st.setDouble(7, rect.getUpperCorner().y);
-                        st.setDouble(8, obstacle.getAlpha());
-                        st.setInt(9, obstacle.getGrainScale());
-                    } else {
-                        st.setNull(4, Types.DOUBLE);
-                        st.setNull(5, Types.DOUBLE);
-                        st.setNull(6, Types.DOUBLE);
-                        st.setNull(7, Types.DOUBLE);
-                        st.setNull(8, Types.DOUBLE);
-                        st.setNull(9, Types.INTEGER);
+                    
+                    save(st, source, target, obst_id, obstacle, j+1, (int)((time2-time1)/1000), creators[j].getMaxAlpha(), creators[j]);
+                    
+                    int step = 5;
+                    for(int i = 75; i <= 90; i += step) {
+                        double ma = i / 100.;
+                        time1 = System.nanoTime();
+                        obstacle = creators[j].grow(obstacle, ma);
+                        time2 = System.nanoTime();
+                        save(st, source, target, obst_id, obstacle, j+1, (int)((time2-time1)/1000), ma, creators[j]);
                     }
-                    st.setInt(10, j);
-                    st.setInt(11, (int)((time2-time1)/1000));
-                    st.setInt(12, creators[j].getMaxRectArea());
-                    st.addBatch();
                 }
             }
             st.executeBatch();
         } catch (SQLException ex) {
             Logger.getLogger(Task.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    
+    private void save(PreparedStatement st, int source, int target, int obst_id, Obstacle obstacle, int obst_type, int etime, double max_alpha, ObstacleCreator creator) throws SQLException {
+        st.clearParameters();
+        st.setInt(1, source);
+        st.setInt(2, target);
+        st.setInt(3, obst_id);
+        if(obstacle != null && obstacle.getRect() != null) {
+            Envelope2D rect = creator.extractEnvelope(obstacle);
+            st.setDouble(4, rect.getLowerCorner().x);
+            st.setDouble(5, rect.getLowerCorner().y);
+            st.setDouble(6, rect.getUpperCorner().x);
+            st.setDouble(7, rect.getUpperCorner().y);
+            st.setDouble(8, obstacle.getAlpha());
+            st.setInt(9, obstacle.getGrainScale());
+        } else {
+            st.setNull(4, Types.DOUBLE);
+            st.setNull(5, Types.DOUBLE);
+            st.setNull(6, Types.DOUBLE);
+            st.setNull(7, Types.DOUBLE);
+            st.setNull(8, Types.DOUBLE);
+            st.setNull(9, Types.INTEGER);
+        }
+        st.setInt(10, obst_type);
+        st.setInt(11, etime);
+        st.setInt(12, creator.getMaxRectArea());
+        st.setDouble(13, max_alpha);
+        st.addBatch();
     }
 
 }
