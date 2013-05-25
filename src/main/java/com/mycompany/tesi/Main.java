@@ -51,16 +51,18 @@ public class Main {
     public static final String JDBC_PASSWORD;
     public static final Integer MIN_SCALE;
     public static final Integer MAX_SCALE;
-    public static final Integer POOL_SIZE = 3;
+    public static final Integer POOL_SIZE;
     public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS;
     private final static Map<String, ConnectionPool> DATASOURCES = new HashMap<>();
-    private final static ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
+    private final static ThreadPoolExecutor pool;
     private final static Map<String, TileSystem> TILE_SYSTEMS = new HashMap<>();
     private final static Logger logger = Logger.getLogger(Main.class.getName());
     public final static Properties PROPERTIES = new Properties();
     public static boolean TEST = false;
+    private final static boolean GOAL_TILES = true;
     
     static {
+        pool = new ScheduledThreadPoolExecutor(POOL_SIZE=(GOAL_TILES? 6: 3));
         try {
             PROPERTIES.loadFromXML(new FileInputStream("F:\\Tommaso\\Workspace\\Tesi\\config.xml"));
         } catch (Exception ex) {
@@ -116,8 +118,10 @@ public class Main {
         System.in.read();
         for(String dbName: DBS) {
             logger.log(Level.INFO, "Processing db {0} ...", dbName);
-            //create_tiles(dbName);
-            threadedSubgraph(dbName);
+            if(GOAL_TILES)
+                create_tiles(dbName);
+            else
+                threadedSubgraph(dbName);
         }
         pool.shutdown();
         /*pool.awaitTermination(1l, TimeUnit.DAYS);
@@ -230,7 +234,7 @@ public class Main {
 
         }
 
-        int start, amount = tiles.size() / pool.getPoolSize();
+        int start, amount = tiles.size() / POOL_SIZE;
         for(start = 0; start+amount < tiles.size(); start += amount) {
             Task task = new Task(dbName, tiles.subList(start, start+amount), ways);
             pool.execute(task);
