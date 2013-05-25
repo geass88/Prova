@@ -21,14 +21,20 @@ import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.beans.TileXYRectangle;
 import com.mycompany.tesi.estimators.FastSpeedEstimator;
 import com.mycompany.tesi.estimators.ISpeedEstimator;
+import com.mycompany.tesi.utils.DefaultCRS;
 import com.mycompany.tesi.utils.TileSystem;
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.geotoolkit.geometry.Envelope2D;
+import org.geotoolkit.geometry.jts.JTS;
+import org.opengis.geometry.MismatchedDimensionException;
+import org.opengis.referencing.operation.TransformException;
 
 /**
  *
@@ -75,12 +81,18 @@ public class ObstacleCreatorNew extends ObstacleCreator {
         double bestQ = 0., alphaObstacle = 0.;
         double outsideSpeed = 130.;//estimator.estimateSpeed(outerRect, scale);
         double maxArea = (outerRect.getWidth()+1)*(outerRect.getHeight()+1)/100.;
-        
+        /*Geometry startPoint = null;
+        try {
+            startPoint = JTS.transform(start, DefaultCRS.geographicToProjectedTr);
+        } catch (MismatchedDimensionException | TransformException ex) {
+            logger.log(Level.SEVERE, null, ex);
+            return null;
+        }*/
         for(TileXY obs: seeds)
-            for(int l_sx = obs.getX(); l_sx >= innerRect.getLowerCorner().getX(); l_sx --)
-                for(int l_dx = obs.getX(); l_dx <= innerRect.getUpperCorner().getX(); l_dx ++)
-                    for(int l_up = obs.getY(); l_up <= innerRect.getUpperCorner().getY(); l_up ++)
-                        for(int l_dw = obs.getY(); l_dw >= innerRect.getLowerCorner().getY(); l_dw --) {
+            for(int l_sx = obs.getX(); l_sx >= limitRect.getLowerCorner().getX(); l_sx --)
+                for(int l_dx = obs.getX(); l_dx <= limitRect.getUpperCorner().getX(); l_dx ++)
+                    for(int l_up = obs.getY(); l_up <= limitRect.getUpperCorner().getY(); l_up ++)
+                        for(int l_dw = obs.getY(); l_dw >= limitRect.getLowerCorner().getY(); l_dw --) {
                             TileXYRectangle obstacle = new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, l_up - l_dw);
                             if(obstacles.contains(obstacle)) continue;
                             obstacles.add(obstacle);
@@ -90,6 +102,14 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                             if(alpha >= maxAlpha) continue;
                             double alphaInv = alpha == 0? 130: 1/alpha;
                             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
+                            /*double distance=0.;
+                            try {
+                                distance = startPoint.distance(JTS.transform(extractGeometricRect(obstacle, scale), DefaultCRS.geographicToProjectedTr));
+                            } catch (MismatchedDimensionException | TransformException ex) {
+                                logger.log(Level.SEVERE, null, ex);
+                            }
+                            if(distance == 0) distance = 1.;
+                            double quality = W*H/maxArea + alphaInv/1.3 +100./distance;*/ 
                             double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
                             //double quality = W * H * alphaInv;
                             //double quality = quality(outerRect, obstacle, scale);
@@ -97,6 +117,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                                 bestObstacle = obstacle;
                                 bestQ = quality;
                                 alphaObstacle = alpha;
+                                //System.out.println(distance);
                             }
                         }
         //quality1(bestObstacle, scale, outsideSpeed, true);

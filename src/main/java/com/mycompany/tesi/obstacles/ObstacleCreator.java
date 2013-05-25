@@ -25,6 +25,7 @@ import com.mycompany.tesi.estimators.ClimberSpeedEstimator;
 import com.mycompany.tesi.estimators.FastSpeedEstimator;
 import com.mycompany.tesi.estimators.ISpeedEstimator;
 import com.mycompany.tesi.estimators.RawSpeedEstimator;
+import com.mycompany.tesi.utils.DefaultCRS;
 import com.mycompany.tesi.utils.TileSystem;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -40,6 +41,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.geotoolkit.geometry.DirectPosition2D;
 import org.geotoolkit.geometry.Envelope2D;
+import org.geotoolkit.geometry.jts.JTS;
 
 /**
  *
@@ -168,6 +170,16 @@ public class ObstacleCreator {
         Envelope2D envelope = new Envelope2D(new DirectPosition2D(lowerTile.getRect().getLowerCorner().x, upperTile.getRect().getLowerCorner().y),
                 new DirectPosition2D(upperTile.getRect().getUpperCorner().x, lowerTile.getRect().getUpperCorner().y));
         return envelope;
+    }
+    
+    public Polygon extractGeometricRect(final TileXYRectangle rect, int scale) {
+        Tile lowerTile = tileSystem.getTile(rect.getLowerCorner(), scale);
+        Tile upperTile = tileSystem.getTile(rect.getUpperCorner(), scale);
+        
+        Envelope2D envelope = new Envelope2D(new DirectPosition2D(lowerTile.getRect().getLowerCorner().x, upperTile.getRect().getLowerCorner().y),
+                new DirectPosition2D(upperTile.getRect().getUpperCorner().x, lowerTile.getRect().getUpperCorner().y));
+        
+        return JTS.toGeometry(envelope);
     }
     
     public Obstacle getObstacle(final Point start, final Point end, final int scale) {

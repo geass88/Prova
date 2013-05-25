@@ -30,7 +30,7 @@ import java.util.List;
  */
 public class P2PQueryGenerator {
     
-    private final static int POINTS_COUNT = 50;
+    private final static int POINTS_COUNT = 5;
     
     public static void main(String[] args) throws Exception {
         String[] qkey_ll = { "0313131330" }; //"03131313213", "03131313212", "03131313230", "03131313231" };
