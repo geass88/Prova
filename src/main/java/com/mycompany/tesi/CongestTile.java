@@ -69,11 +69,11 @@ public class CongestTile {
                 rs.close();
             }
             List<String> updatableQkeys = new LinkedList<>();
-            sql = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE ways_id=ANY(?);";
-            //sql = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE ways_id=ANY(?) AND length(tiles_qkey)=?;";
+            //sql = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE ways_id=ANY(?);";
+            sql = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE ways_id=ANY(?) AND length(tiles_qkey)=?;";
             try(PreparedStatement pst = conn.prepareStatement(sql)) {
                 pst.setArray(1, conn.createArrayOf("int", waysIds.toArray(new Integer[waysIds.size()])));
-                //pst.setInt(2, scale);
+                pst.setInt(2, scale);
                 ResultSet rs; rs = pst.executeQuery();
                 while(rs.next()) {
                     updatableQkeys.add(rs.getString(1));
@@ -92,7 +92,7 @@ public class CongestTile {
             for(String qkey: updatableQkeys) 
                 fout.println(qkey);
             fout.close();
-            /*
+            
             System.out.println("Congesting ...");
             sql = "UPDATE ways SET freeflow_speed = ? WHERE gid=ANY(?);";
             try(PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -100,7 +100,7 @@ public class CongestTile {
                 pst.setArray(2, conn.createArrayOf("int", waysIds.toArray(new Integer[waysIds.size()])));
                 pst.executeUpdate();
             }
-            update(updatableQkeys);*/
+            update(updatableQkeys);
         } catch(SQLException ex) {
             logger.log(Level.SEVERE, null, ex);
         }        
