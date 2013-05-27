@@ -79,9 +79,70 @@ public class RecursiveObstacleCreator extends ObstacleCreator {
         }
         return false;
     }
-    
+    /*
+    protected Double evaluate(TileXYRectangle partialRect, TileXYRectangle rect, double newMaxAlpha, double oldMaxSpeed) {
+        double speed = Math.max(oldMaxSpeed, this.estimator.estimateSpeed(partialRect, scale));
+        double alpha = speed / 130.;
+        if(alpha < newMaxAlpha) {
+            double alphaInv = alpha == 0? 130: 1/alpha;
+            int W = rect.getWidth() + 1, H = rect.getHeight() + 1;
+            double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
+            //double quality = W * H * alphaInv;
+            //double quality = quality(outerRect, obstacle, scale);
+            if(quality > bestQ) {
+                bestObstacle = rect;
+                bestQ = quality;
+                alphaObstacle = alpha;
+            }
+            return speed;
+        }
+        return null;
+    }
+    protected void growRecursiveNew(final TileXY seed, double maxAlpha){
+        growRecursiveNew(seed.getX(), seed.getY(), seed.getX(), seed.getY(), maxAlpha,
+                    this.estimator.estimateSpeed(new TileXYRectangle(seed.getX(), seed.getY(), 0, 0), scale));
+    }
+    protected void growRecursiveNew(int l_sx, int l_dw, int l_dx, int l_up, final double newMaxAlpha, double oldSpeed) {
+        //System.out.println(l_sx + " "+ l_dx + " " + l_up + " " + l_dw);
+        l_sx --;
+        if(l_sx >= this.limitRect.getLowerCorner().getX()) {
+            TileXYRectangle rect = new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, l_up - l_dw);
+            Double speed;
+            if((speed=evaluate(new TileXYRectangle(l_sx, l_dw, 1, l_up - l_dw), rect, newMaxAlpha, oldSpeed)) != null)
+                growRecursiveNew(l_sx, l_dw, l_dx, l_up, newMaxAlpha, speed);
+        }
+        l_sx ++;
+        
+        l_dx ++;
+        if(l_dx <= this.limitRect.getUpperCorner().getX()) {
+            TileXYRectangle rect = new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, l_up - l_dw);
+            Double speed;
+            if((speed=evaluate(new TileXYRectangle(l_dx-1, l_dw, 1, l_up - l_dw), rect, newMaxAlpha, oldSpeed)) != null)
+                growRecursiveNew(l_sx, l_dw, l_dx, l_up, newMaxAlpha, speed);
+        }        
+        l_dx --;
+        
+        l_up ++;
+        if(l_up <= this.limitRect.getUpperCorner().getY()) {
+            TileXYRectangle rect = new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, l_up - l_dw);
+            Double speed;
+            if((speed=evaluate(new TileXYRectangle(l_sx, l_up-1, l_dx - l_sx, 1), rect, newMaxAlpha, oldSpeed)) != null)
+                growRecursiveNew(l_sx, l_dw, l_dx, l_up, newMaxAlpha, speed);
+        }
+        l_up --;
+        
+        l_dw --;
+        if(l_dw >= this.limitRect.getLowerCorner().getY()) {
+            TileXYRectangle rect = new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, l_up - l_dw);
+            Double speed;
+            if((speed=evaluate(new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, 1), rect, newMaxAlpha, oldSpeed)) != null)
+                growRecursiveNew(l_sx, l_dw, l_dx, l_up, newMaxAlpha, speed);
+        }
+        l_dw ++;
+    }
+    */
     protected void growRecursive(int l_sx, int l_dw, int l_dx, int l_up, final double newMaxAlpha) {
-        System.out.println(l_sx + " "+ l_dx + " " + l_up + " " + l_dw);
+        //System.out.println(l_sx + " "+ l_dx + " " + l_up + " " + l_dw);
         l_sx --;
         if(l_sx >= this.limitRect.getLowerCorner().getX()) {
             TileXYRectangle rect = new TileXYRectangle(l_sx, l_dw, l_dx - l_sx, l_up - l_dw);
@@ -130,6 +191,7 @@ public class RecursiveObstacleCreator extends ObstacleCreator {
         /*for(TileXY seed: seeds) {
             obstacles.addAll(buildRect(innerRect, seed));
         }*/
+        //limitRect = innerRect;
         bestQ = 0.;
         bestObstacle = null;
         for(TileXY obs: seeds)
