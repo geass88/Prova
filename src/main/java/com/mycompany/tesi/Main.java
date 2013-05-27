@@ -59,16 +59,17 @@ public class Main {
     private final static Logger logger = Logger.getLogger(Main.class.getName());
     public final static Properties PROPERTIES = new Properties();
     public static boolean TEST = false;
-    private final static boolean GOAL_TILES = true;
+    private final static boolean GOAL_TILES;
     
-    static {
-        pool = new ScheduledThreadPoolExecutor(POOL_SIZE=(GOAL_TILES? 6: 3));
+    static {        
         try {
             PROPERTIES.loadFromXML(new FileInputStream("F:\\Tommaso\\Workspace\\Tesi\\config.xml"));
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Cannot found the config file!", ex);
             System.exit(1);
         }
+        GOAL_TILES = Boolean.parseBoolean(PROPERTIES.getProperty("goal_tiles", "true"));
+        pool = new ScheduledThreadPoolExecutor(POOL_SIZE=(GOAL_TILES? 6: 3));
         JDBC_URI = PROPERTIES.getProperty("jdbc_uri", "jdbc:postgresql://localhost:5432/");
         JDBC_USERNAME = PROPERTIES.getProperty("jdbc_username", "postgres");
         JDBC_PASSWORD = PROPERTIES.getProperty("jdbc_password", "postgres");
@@ -114,6 +115,7 @@ public class Main {
     }
     
     public static void main(String[] args) throws Exception {
+        System.out.println(GOAL_TILES? "Creating tiles ...": "Creating overlays ...");
         System.out.println("Sure?");
         System.in.read();
         for(String dbName: DBS) {
@@ -188,7 +190,6 @@ public class Main {
             pst.executeBatch();
             //st.execute("DELETE FROM tiles WHERE qkey='';"); // removing the root node
             logger.log(Level.INFO, "Binding ways-tiles ...");
-            
             
             WKTReader reader = new WKTReader();
             
