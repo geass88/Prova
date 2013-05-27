@@ -104,10 +104,10 @@ public class SubgraphTask implements Runnable {
             logger.log(Level.INFO, "Thread run ...");
             
             for(String qkey: qkeys) {
-                //computeClique(qkey, false); // compute and store the clique
+                //computeClique(qkey, false); // compute and store the clique // UNLOCK ME FOR OVERLAY GENERATION
                 computeCliqueParallel(qkey, true); // compute and store the cell max speed using the porcupine
             }
-            //st2.executeBatch(); // store the clique edges
+            //st2.executeBatch(); // store the clique edges // UNLOCK ME FOR OVERLAY GENERATION
             // unlock also cut-edges
             
             st3.executeBatch(); // update the cell max speed
@@ -725,7 +725,7 @@ class TasksHelper implements Runnable {
             for(SubgraphTask t: tasks) {
                 cutEdges.addAll(t.getCutEdges());
             }
-            /*
+            /* // UNLOCK ME FOR OVERLAY GENERATION
             try (Connection conn = Main.getConnection(dbName);
                     PreparedStatement st = conn.prepareStatement(sql2)) {
                 st.setInt(1, scale);
