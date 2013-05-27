@@ -108,6 +108,8 @@ public class SubgraphTask implements Runnable {
                 computeCliqueParallel(qkey, true); // compute and store the cell max speed using the porcupine
             }
             //st2.executeBatch(); // store the clique edges
+            // unlock also cut-edges
+            
             st3.executeBatch(); // update the cell max speed
         } catch(Exception e) {
             logger.log(Level.SEVERE, null, e);
