@@ -16,11 +16,15 @@
 package com.mycompany.tesi;
 
 import com.mycompany.tesi.utils.TileSystem;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,17 +39,25 @@ import java.util.logging.Logger;
  */
 public class CongestTile {
     
-    private final static String[] qkeys = {};
-    private final static int maxSpeed = 90;
     private final static String dbName = "england_routing";
-    private static Logger logger = Logger.getLogger(CongestTile.class.getName());
+    private final static String[] qkeys = { "031313131130" };
+    private final static int maxSpeed = 50;
+    private final static int scale = 12;
+    private final static String fileName = "";
+    private final static boolean CONGEST = true;
+    private final static Logger logger = Logger.getLogger(CongestTile.class.getName());
     
-    public static void main(String[] args) throws Exception {        
+    public static void main(String[] args) throws Exception {
+        if(CONGEST) congest();
+        else restore();
+    }
+    
+    private static void congest() throws Exception {
         try(Connection conn = Main.getConnection(dbName)) {
             System.out.println("Preparing ...");
             List<Integer> waysIds = new LinkedList<>();
             List<Integer> oldSpeeds = new LinkedList<>();
-            String sql = "SELECT DISTINCT ways_id, freeflow_speed FROM ways_tiles JOIN ways ON gid=ways_id WHERE tiles_qkey=ANY(?) AND freeflow_speed >= ?;";
+            String sql = "SELECT DISTINCT ways_id, freeflow_speed FROM ways_tiles JOIN ways ON gid=ways_id WHERE tiles_qkey=ANY(?) AND freeflow_speed > ?;";
             try(PreparedStatement pst = conn.prepareStatement(sql)) {
                 pst.setArray(1, conn.createArrayOf("varchar", qkeys));
                 pst.setInt(2, maxSpeed);
@@ -73,10 +85,12 @@ public class CongestTile {
                     c.get(Calendar.DAY_OF_MONTH), c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND)));
             sql = "UPDATE ways SET freeflow_speed = %d WHERE gid=%d;";
             for(int i = 0; i < waysIds.size(); i ++)
-                fout.println(String.format(sql, oldSpeeds.get(i), waysIds.get(i)));                
+                fout.println(String.format(sql, oldSpeeds.get(i), waysIds.get(i)));
+            fout.println("qkey");
+            for(String qkey: updatableQkeys) 
+                fout.println(qkey);
             fout.close();
             
-            /*
             System.out.println("Congesting ...");
             sql = "UPDATE ways SET freeflow_speed = ? WHERE gid=ANY(?);";
             try(PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -84,13 +98,36 @@ public class CongestTile {
                 pst.setArray(2, conn.createArrayOf("int", waysIds.toArray(new Integer[waysIds.size()])));
                 pst.executeUpdate();
             }
-            TileSystem tileSystem = Main.getTileSystem(dbName);
-            SubgraphTask task = new SubgraphTask(tileSystem, dbName, 12, updatableQkeys);
-            ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(1);
-            pool.execute(task);
-            pool.shutdown(); */
+            update(updatableQkeys);
         } catch(SQLException ex) {
             logger.log(Level.SEVERE, null, ex);
         }        
+    }
+    
+    private static void update(List<String> updatableQkeys) {
+        TileSystem tileSystem = Main.getTileSystem(dbName);
+        SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale, updatableQkeys);
+        ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(1);
+        pool.execute(task);
+        pool.shutdown();
+    }
+    
+    private static void restore() throws Exception {
+        File file = new File(fileName);
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        String s;
+        try(Connection conn = Main.getConnection(dbName); Statement st = conn.createStatement()) {
+            while((s=reader.readLine())!=null) {
+                if(s.equals("qkey")) break;
+                st.addBatch(s);
+            }
+            st.executeBatch();
+        }
+        List<String> updatableQkeys = new LinkedList<>();
+        while((s=reader.readLine())!=null) {
+            updatableQkeys.add(s);
+        }
+        reader.close();
+        update(updatableQkeys);
     }
 }
