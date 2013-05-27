@@ -12,4 +12,5 @@
 	
 	<entry key="min_scale">11</entry>
 	<entry key="max_scale">13</entry>
+	<entry key="goal_tiles">false</entry>
 </properties>

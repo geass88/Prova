@@ -104,11 +104,11 @@ public class SubgraphTask implements Runnable {
             logger.log(Level.INFO, "Thread run ...");
             
             for(String qkey: qkeys) {
-                computeClique(qkey, false); // compute and store the clique
-                computeClique(qkey, true); // compute and store the cell max speed using the porcupine
+                //computeClique(qkey, false); // compute and store the clique
+                computeCliqueParallel(qkey, true); // compute and store the cell max speed using the porcupine
             }
-            st2.executeBatch();
-            st3.executeBatch();
+            //st2.executeBatch(); // store the clique edges
+            st3.executeBatch(); // update the cell max speed
         } catch(Exception e) {
             logger.log(Level.SEVERE, null, e);
         } finally {
@@ -676,7 +676,7 @@ class AlgorithmPreparation extends NoOpAlgorithmPreparation {
 class TasksHelper implements Runnable {
     public static final String sql1 = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE length(tiles_qkey)=? ORDER BY tiles_qkey";
     public static final String sql2 = "SELECT my_add_cut_edges(?, ?);";
-    public static final Integer POOL_SIZE = 8;
+    public static final Integer POOL_SIZE = 4;
     private final TileSystem tileSystem;
     private final int scale;
     private String dbName;
@@ -723,12 +723,13 @@ class TasksHelper implements Runnable {
             for(SubgraphTask t: tasks) {
                 cutEdges.addAll(t.getCutEdges());
             }
+            /*
             try (Connection conn = Main.getConnection(dbName);
                     PreparedStatement st = conn.prepareStatement(sql2)) {
                 st.setInt(1, scale);
                 st.setArray(2, conn.createArrayOf("integer", cutEdges.toArray()));
                 st.executeQuery();
-            }
+            }*/
         } catch (SQLException | InterruptedException ex) {
             logger.log(Level.SEVERE, null, ex);
         }
