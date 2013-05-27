@@ -70,8 +70,10 @@ public class CongestTile {
             }
             List<String> updatableQkeys = new LinkedList<>();
             sql = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE ways_id=ANY(?);";
+            //sql = "SELECT DISTINCT tiles_qkey FROM ways_tiles WHERE ways_id=ANY(?) AND length(tiles_qkey)=?;";
             try(PreparedStatement pst = conn.prepareStatement(sql)) {
                 pst.setArray(1, conn.createArrayOf("int", waysIds.toArray(new Integer[waysIds.size()])));
+                //pst.setInt(2, scale);
                 ResultSet rs; rs = pst.executeQuery();
                 while(rs.next()) {
                     updatableQkeys.add(rs.getString(1));
@@ -90,7 +92,7 @@ public class CongestTile {
             for(String qkey: updatableQkeys) 
                 fout.println(qkey);
             fout.close();
-            
+            /*
             System.out.println("Congesting ...");
             sql = "UPDATE ways SET freeflow_speed = ? WHERE gid=ANY(?);";
             try(PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -98,7 +100,7 @@ public class CongestTile {
                 pst.setArray(2, conn.createArrayOf("int", waysIds.toArray(new Integer[waysIds.size()])));
                 pst.executeUpdate();
             }
-            update(updatableQkeys);
+            update(updatableQkeys);*/
         } catch(SQLException ex) {
             logger.log(Level.SEVERE, null, ex);
         }        
@@ -114,20 +116,21 @@ public class CongestTile {
     
     private static void restore() throws Exception {
         File file = new File(fileName);
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        String s;
-        try(Connection conn = Main.getConnection(dbName); Statement st = conn.createStatement()) {
-            while((s=reader.readLine())!=null) {
-                if(s.equals("qkey")) break;
-                st.addBatch(s);
+        List<String> updatableQkeys;
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String s;
+            try(Connection conn = Main.getConnection(dbName); Statement st = conn.createStatement()) {
+                while((s=reader.readLine())!=null) {
+                    if("qkey".equals(s)) break;
+                    st.addBatch(s);
+                }
+                st.executeBatch();
             }
-            st.executeBatch();
+            updatableQkeys = new LinkedList<>();
+            while((s=reader.readLine())!=null) {
+                updatableQkeys.add(s);
+            }
         }
-        List<String> updatableQkeys = new LinkedList<>();
-        while((s=reader.readLine())!=null) {
-            updatableQkeys.add(s);
-        }
-        reader.close();
         update(updatableQkeys);
     }
 }
