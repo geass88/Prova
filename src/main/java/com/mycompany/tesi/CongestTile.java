@@ -100,7 +100,7 @@ public class CongestTile {
                 fout.println(qkey);
             fout.close();
             fout1.close();
-            /*
+            
             System.out.println("Congesting ...");
             sql = "UPDATE ways SET freeflow_speed = ? WHERE gid=ANY(?);";
             try(PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -108,7 +108,7 @@ public class CongestTile {
                 pst.setArray(2, conn.createArrayOf("int", waysIds.toArray(new Integer[waysIds.size()])));
                 pst.executeUpdate();
             }
-            update(updatableQkeys);*/
+            update(updatableQkeys);
         } catch(SQLException ex) {
             logger.log(Level.SEVERE, null, ex);
         }        
@@ -129,7 +129,7 @@ public class CongestTile {
             String s;
             try(Connection conn = Main.getConnection(dbName); Statement st = conn.createStatement()) {
                 while((s=reader.readLine())!=null) {
-          //          if("qkey".equals(s)) break;
+                    if("qkey".equals(s)) break;
                     st.addBatch(s);
                 }
                 st.executeBatch();
