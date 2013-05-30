@@ -59,6 +59,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
 /**
  *
  * @author Tommaso
@@ -93,9 +94,25 @@ public class SubgraphTask implements Runnable {
     }
     
     private PreparedStatement st1, st2, st3;
+    private boolean overlayGen = false;
+
+    public boolean isOverlayGen() {
+        return overlayGen;
+    }
+
+    public void setOverlayGen(boolean overlayGen) {
+        this.overlayGen = overlayGen;
+    }
     
     @Override
     public void run() {
+        if(overlayGen)
+            run2();
+        else 
+            run1();
+    }
+    
+    public void run1() {
         Connection conn = Main.getConnection(this.dbName);
         try {
             st1 = conn.prepareStatement(sql1); 
@@ -104,10 +121,40 @@ public class SubgraphTask implements Runnable {
             logger.log(Level.INFO, "Thread run ...");
             
             for(String qkey: qkeys) {
-                //computeClique(qkey, false); // compute and store the clique // UNLOCK ME FOR OVERLAY GENERATION
+            //    computeCliqueParallel(qkey, false); // compute and store the clique // UNLOCK ME FOR OVERLAY GENERATION
                 computeCliqueParallel(qkey, true); // compute and store the cell max speed using the porcupine
             }
             //st2.executeBatch(); // store the clique edges // UNLOCK ME FOR OVERLAY GENERATION
+            // unlock also cut-edges
+            
+            st3.executeBatch(); // update the cell max speed
+        } catch(Exception e) {
+            logger.log(Level.SEVERE, null, e);
+        } finally {
+            try {
+                st1.close();
+                st2.close();
+                st3.close();
+                conn.close();
+            } catch (SQLException ex) {
+                logger.log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+        
+    public void run2() {
+        Connection conn = Main.getConnection(this.dbName);
+        try {
+            st1 = conn.prepareStatement(sql1); 
+            st2 = conn.prepareStatement(String.format(sql2, this.scale));
+            st3 = conn.prepareStatement(sql3);
+            logger.log(Level.INFO, "Thread run ...");
+            
+            for(String qkey: qkeys) {
+                computeCliqueParallel(qkey, false); // compute and store the clique // UNLOCK ME FOR OVERLAY GENERATION
+                computeCliqueParallel(qkey, true); // compute and store the cell max speed using the porcupine
+            }
+            st2.executeBatch(); // store the clique edges // UNLOCK ME FOR OVERLAY GENERATION
             // unlock also cut-edges
             
             st3.executeBatch(); // update the cell max speed
@@ -645,7 +692,7 @@ public class SubgraphTask implements Runnable {
         //st2.executeUpdate();
     }
     
-    public class Cell {
+    public static class Cell {
         public final Graph graph;
         public final Set<BoundaryNode> boundaryNodes;
         public final RawEncoder encoder;
@@ -659,7 +706,6 @@ public class SubgraphTask implements Runnable {
         }
     }
 }
-
 class AlgorithmPreparation extends NoOpAlgorithmPreparation {
 
     private final RawEncoder vehicle;
@@ -684,54 +730,76 @@ class TasksHelper implements Runnable {
     private String dbName;
     private final ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(POOL_SIZE);
     private final static Logger logger = Logger.getLogger(TasksHelper.class.getName());
+    private List<String> list;
+    private boolean overlayGen = false;
+
+    public boolean isOverlayGen() {
+        return overlayGen;
+    }
+
+    public void setOverlayGen(boolean overlayGen) {
+        this.overlayGen = overlayGen;
+    }
     
     public TasksHelper(final TileSystem tileSystem, final String dbName, final int scale) {
         this.tileSystem = tileSystem;
         this.scale = scale;
         this.dbName = dbName;
     }
+    
+    public TasksHelper(final TileSystem tileSystem, final String dbName, final int scale, List<String> list) {
+        this.tileSystem = tileSystem;
+        this.scale = scale;
+        this.dbName = dbName;
+        this.list = list;
+    }
 
     @Override
     public void run() {
         try {
-            List<String> list = new LinkedList<>();
-            try(Connection conn = Main.getConnection(this.dbName); 
-                    PreparedStatement st = conn.prepareStatement(sql1)) {
-                st.setInt(1, scale);
-                logger.log(Level.INFO, String.format("Computing cliques for %s and scale=%d", dbName, scale));
-
-                try (ResultSet rs1 = st.executeQuery()) {
-                    while(rs1.next()) { // for each tiles
-                        list.add(rs1.getString(1));
+            if(list == null) {
+                list = new LinkedList<>();
+                try(Connection conn = Main.getConnection(this.dbName); 
+                        PreparedStatement st = conn.prepareStatement(sql1)) {
+                    st.setInt(1, scale);
+                    
+                    try (ResultSet rs1 = st.executeQuery()) {
+                        while(rs1.next()) { // for each tiles
+                            list.add(rs1.getString(1));
+                        }
                     }
                 }
             }
-            
+            logger.log(Level.INFO, String.format("Computing cliques for %s and scale=%d", dbName, scale));
             int amount = scale>6? 1<<(scale-7): 1;
             int start;
             List<SubgraphTask> tasks = new LinkedList<>();
             for(start = 0; start+amount < list.size(); start += amount) {
                 SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale, list.subList(start, start+amount));
+                task.setOverlayGen(overlayGen);
                 tasks.add(task);
                 pool.execute(task);
             }
             SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale, list.subList(start, list.size()));
+            task.setOverlayGen(overlayGen);
             pool.execute(task);
             tasks.add(task);
             pool.shutdown();
             pool.awaitTermination(1l, TimeUnit.DAYS);
-            logger.log(Level.INFO, String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
-            Set<Integer> cutEdges = new TreeSet<>();
-            for(SubgraphTask t: tasks) {
-                cutEdges.addAll(t.getCutEdges());
+            if(overlayGen) {
+                logger.log(Level.INFO, String.format("Adding cut-edges for %s and scale=%d", dbName, scale));
+                Set<Integer> cutEdges = new TreeSet<>();
+                for(SubgraphTask t: tasks) {
+                    cutEdges.addAll(t.getCutEdges());
+                }
+                
+                try (Connection conn = Main.getConnection(dbName);
+                        PreparedStatement st = conn.prepareStatement(sql2)) {
+                    st.setInt(1, scale);
+                    st.setArray(2, conn.createArrayOf("integer", cutEdges.toArray()));
+                    st.executeQuery();
+                }
             }
-            /* // UNLOCK ME FOR OVERLAY GENERATION
-            try (Connection conn = Main.getConnection(dbName);
-                    PreparedStatement st = conn.prepareStatement(sql2)) {
-                st.setInt(1, scale);
-                st.setArray(2, conn.createArrayOf("integer", cutEdges.toArray()));
-                st.executeQuery();
-            }*/
         } catch (SQLException | InterruptedException ex) {
             logger.log(Level.SEVERE, null, ex);
         }
