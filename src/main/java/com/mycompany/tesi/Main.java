@@ -173,7 +173,7 @@ public class Main {
             PreparedStatement pst = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
             TileSystem tileSystem = getTileSystem(dbName);
             Enumeration e = tileSystem.getTreeEnumeration();
-            //st.execute("TRUNCATE TABLE tiles; TRUNCATE TABLE ways_tiles;");
+            st.execute("TRUNCATE TABLE tiles; TRUNCATE TABLE ways_tiles;");
             
             logger.log(Level.INFO, "Saving tiles ...");
             while(e.hasMoreElements()) {
@@ -249,6 +249,7 @@ public class Main {
         }
 
         int start, amount = tiles.size() / POOL_SIZE;
+        if(amount == 0) amount = 1;
         for(start = 0; start+amount < tiles.size(); start += amount) {
             Task task = new Task(dbName, tiles.subList(start, start+amount), ways);
             pool.execute(task);
