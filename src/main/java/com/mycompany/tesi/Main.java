@@ -22,6 +22,7 @@ import com.mycompany.tesi.utils.ConnectionPool;
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.sql.*;
 import java.util.Enumeration;
@@ -63,7 +64,11 @@ public class Main {
     
     static {        
         try {
-            PROPERTIES.loadFromXML(new FileInputStream("F:\\Tommaso\\Workspace\\Tesi\\config.xml"));
+            File file = new File("D:\\Workspace\\Netbeans\\Tesi\\config.xml");
+            if(file.exists())
+                PROPERTIES.loadFromXML(new FileInputStream(file));
+            else 
+                PROPERTIES.loadFromXML(new FileInputStream("F:\\Tommaso\\Workspace\\Tesi\\config.xml"));
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Cannot found the config file!", ex);
             System.exit(1);
@@ -152,7 +157,14 @@ public class Main {
         }
         return null;
     }
-    
+    /*
+    public static Envelope2D getBound(final Connection conn) {
+        return new Envelope2D(new DirectPosition2D(-0.565796, 51.246444), new DirectPosition2D(0.302124, 51.718521));
+    }
+    public static Envelope2D getBound(final String dbName) {
+        return new Envelope2D(new DirectPosition2D(-0.565796, 51.246444), new DirectPosition2D(0.302124, 51.718521));
+    }
+    */
     public static void create_tiles(final String dbName) throws SQLException {
         List<Pair<String, Polygon>> tiles = new LinkedList<>();
         List<Pair<Integer, Geometry>> ways = new LinkedList<>();
@@ -161,7 +173,7 @@ public class Main {
             PreparedStatement pst = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
             TileSystem tileSystem = getTileSystem(dbName);
             Enumeration e = tileSystem.getTreeEnumeration();
-            st.execute("TRUNCATE TABLE tiles; TRUNCATE TABLE ways_tiles;");
+            //st.execute("TRUNCATE TABLE tiles; TRUNCATE TABLE ways_tiles;");
             
             logger.log(Level.INFO, "Saving tiles ...");
             while(e.hasMoreElements()) {
@@ -185,6 +197,7 @@ public class Main {
                 pst.setDouble(7, tile.getRect().getMinY());
                 pst.setDouble(8, tile.getRect().getMaxX());
                 pst.setDouble(9, tile.getRect().getMaxY());
+                //if(qkey.length() > 13)
                 pst.addBatch();
             }
             pst.executeBatch();
@@ -269,7 +282,8 @@ public class Main {
                 while(rs.next()) {
                     Tile tile = tileSystem.getTile(rs.getString("qkey"));
                     double maxSpeed = rs.getDouble("max_speed");
-                    tile.setUserObject(maxSpeed);
+                    if(tile != null)
+                        tile.setUserObject(maxSpeed);
                 }
             }
             return tileSystem;
