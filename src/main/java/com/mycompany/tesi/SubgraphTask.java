@@ -674,7 +674,7 @@ public class SubgraphTask implements Runnable {
         }
     }
     
-    private void storeOverlayEdge(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
+    private synchronized void storeOverlayEdge(BoundaryNode source, BoundaryNode target, Metrics metrics, boolean bothDir) throws SQLException {
         st2.clearParameters();
         st2.setInt(1, source.getRoadNodeId());
         st2.setInt(2, target.getRoadNodeId());
@@ -692,7 +692,7 @@ public class SubgraphTask implements Runnable {
         //st2.executeUpdate();
     }
     
-    public static class Cell {
+    public class Cell {
         public final Graph graph;
         public final Set<BoundaryNode> boundaryNodes;
         public final RawEncoder encoder;
