@@ -51,6 +51,7 @@ public class CellOverlay {
     
     };
     private int scale = 12;
+    private static final Logger logger = Logger.getLogger(CellOverlay.class.getName());
     
     public CellOverlay() {}
     
@@ -81,7 +82,7 @@ public class CellOverlay {
                     if(!node.getPoint().intersects(p))
                         nodes.add(node);
                 }
-                SubgraphTask.Cell cell1= t.getSubgraph(qkey, false);
+                SubgraphTask.Cell cell1 = t.getSubgraph(qkey, false);
                 double max_speed = computeCliqueParallel(cell1);
                 Envelope2D rect = tile.getRect();
                 
@@ -91,6 +92,7 @@ public class CellOverlay {
                     System.exit(0);
                 }
                 double vG = rs.getDouble(1);
+                pst.clearParameters();
                 pst.setDouble(1, rect.getLowerCorner().getX());
                 pst.setDouble(2, rect.getLowerCorner().getY());
                 pst.setDouble(3, rect.getUpperCorner().getX());
@@ -113,7 +115,7 @@ public class CellOverlay {
             
            // System.out.println(cell.boundaryNodes.size());
         } catch (Exception ex) {
-            Logger.getLogger(CellSubgraph.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+            logger.log(Level.SEVERE, ex.getMessage(), ex);
         }
     }
     
