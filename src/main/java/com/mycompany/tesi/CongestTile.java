@@ -116,10 +116,13 @@ public class CongestTile {
     
     private static void update(List<String> updatableQkeys) {
         TileSystem tileSystem = Main.getTileSystem(dbName);
-        SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale, updatableQkeys);
+        /* SubgraphTask task = new SubgraphTask(tileSystem, dbName, scale, updatableQkeys);
         ThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(1);
         pool.execute(task);
-        pool.shutdown();
+        pool.shutdown(); */
+        TasksHelper task = new TasksHelper(tileSystem, dbName, scale, updatableQkeys);
+        task.setOverlayGen(false);
+        task.run();
     }
     
     private static void restore() throws Exception {
