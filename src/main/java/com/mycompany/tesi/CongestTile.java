@@ -45,7 +45,7 @@ public class CongestTile {
     };
     private final static int maxSpeed = 30;
     private final static int scale = 13;
-    private final static String fileName = "restore_2013_5_30_12_3_31.sql";
+    private final static String fileName = ".sql";
     private final static boolean CONGEST = true;
     private final static Logger logger = Logger.getLogger(CongestTile.class.getName());
     
