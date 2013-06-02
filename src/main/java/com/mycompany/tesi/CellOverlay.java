@@ -24,8 +24,11 @@ import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.hooks.RawEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
 import com.mycompany.tesi.utils.TileSystem;
+import com.vividsolutions.jts.geom.Geometry;
 import java.sql.*;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -40,12 +43,14 @@ import org.geotoolkit.geometry.Envelope2D;
 public class CellOverlay {
     
     private final static String dbName = Main.DBS[0];
-    private final static String[] qkeys = { 
-    "0313131311121", "0313131311130", "0313131311131", "0313131311123", "0313131311132", "0313131311133", "0313131311301", "0313131311310", "0313131311311"    
+    public final static String[] QKEYS = { 
+    //"0313131311121", "0313131311130", "0313131311131", "0313131311123", "0313131311132", "0313131311133", "0313131311301", "0313131311310", "0313131311311"    
         //"0313131311310", "0313131311311" 
+        "031313131011", "031313131100", "031313131101", "031313131110", "031313131111", "120202020000", "031313131013", "031313131102", "031313131103", "031313131112", "031313131113", "120202020002", "031313131031", "031313131120", "031313131121", "031313131130", "031313131131", "120202020020", "031313131033", "031313131122", "031313131123", "031313131132", "031313131133", "120202020022", "031313131211", "031313131300", "031313131301", "031313131310", "031313131311", "120202020200", "120202020001", "120202020003", "120202020021", "120202020023", "120202020201" , // box grande
+        "031313113233", "031313113322", "031313113323", "031313113332", "031313113333", "120202002222", "120202002223",// aggiunta sopra
     
     };
-    private int scale = 13;
+    private int scale = 12;
     
     public CellOverlay() {}
     
@@ -56,24 +61,28 @@ public class CellOverlay {
         try(Connection conn = Main.getConnection(dbName);
                 Statement st = conn.createStatement();
                 PreparedStatement pst = conn.prepareStatement(sql)) {
-            st.executeUpdate("TRUNCATE TABLE ostacoli; TRUNCATE TABLE overlay_" + scale);
+            st.executeUpdate("TRUNCATE TABLE boundary_nodes; TRUNCATE TABLE ostacoli; TRUNCATE TABLE overlay_" + scale);
             //cell = new CellSubgraph().buildSubgraph(qkey, false);
             
-            TasksHelper task = new TasksHelper(tileSystem, dbName, scale, Arrays.asList(qkeys));
+            TasksHelper task = new TasksHelper(tileSystem, dbName, scale, Arrays.asList(QKEYS));
             task.setOverlayGen(true);
             task.run();
             SubgraphTask t = new SubgraphTask(tileSystem, dbName, scale);
-            //Set<Integer> nodes = new TreeSet<>(); 
-            for(String qkey: qkeys) {
+            Set<BoundaryNode> nodes = new TreeSet<>(); 
+            Geometry p = tileSystem.getTile(QKEYS[0]).getPolygon();
+            for(int i = 1; i < QKEYS.length; i ++) {
+                Tile tile = tileSystem.getTile(QKEYS[i]);
+                p = p.union(tile.getPolygon());
+            }
+            for(String qkey: QKEYS) {
                 Tile tile = tileSystem.getTile(qkey);
-                /*SubgraphTask.Cell cell = t.getSubgraph(qkey, true);                
-                for(BoundaryNode node : cell.boundaryNodes) {
-                    if(!node.getPoint().intersects(tile.getPolygon()))
-                        nodes.add(node.getRoadNodeId());
-                    
-                }*/
-                SubgraphTask.Cell cell = t.getSubgraph(qkey, false);
-                double max_speed = computeCliqueParallel(cell);
+                SubgraphTask.Cell cell = t.getSubgraph(qkey, true);                
+                for(BoundaryNode node : cell.boundaryNodes.toArray(new BoundaryNode[cell.boundaryNodes.size()])) {
+                    if(!node.getPoint().intersects(p))
+                        nodes.add(node);
+                }
+                SubgraphTask.Cell cell1= t.getSubgraph(qkey, false);
+                double max_speed = computeCliqueParallel(cell1);
                 Envelope2D rect = tile.getRect();
                 
                 ResultSet rs = st.executeQuery("SELECT MAX(freeflow_speed) FROM overlay_"+scale+ ";");
@@ -91,11 +100,20 @@ public class CellOverlay {
                 pst.setDouble(7, 0);
                 pst.executeUpdate();
             }
-            //cell = task.getSubgraph(qkey, true);
+            try(PreparedStatement pst1 = conn.prepareStatement("INSERT INTO boundary_nodes(id, lon, lat) VALUES(?, ?, ?);")) {
+                BoundaryNode[] boundaryNodes = nodes.toArray(new BoundaryNode[nodes.size()]);
+                for(BoundaryNode node: boundaryNodes) {
+                    pst1.clearParameters();
+                    pst1.setInt(1, node.getRoadNodeId());
+                    pst1.setDouble(2, node.getPoint().getX());
+                    pst1.setDouble(3, node.getPoint().getY());
+                    pst1.executeUpdate();
+                }
+            }
             
            // System.out.println(cell.boundaryNodes.size());
         } catch (Exception ex) {
-            Logger.getLogger(CellSubgraph.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(CellSubgraph.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
         }
     }
     
@@ -172,7 +190,8 @@ public class CellOverlay {
         for(Task item: list)
             if(item.max_speed > max_speed)
                 max_speed = item.max_speed;
-
+        if(Double.isInfinite(max_speed) || Double.isNaN(max_speed))
+            return 0.;
         return max_speed;
     }    
 }
