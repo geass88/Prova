@@ -757,6 +757,7 @@ class TasksHelper implements Runnable {
     @Override
     public void run() {
         try {
+            int amount;
             if(list == null) {
                 list = new LinkedList<>();
                 try(Connection conn = Main.getConnection(this.dbName); 
@@ -769,9 +770,11 @@ class TasksHelper implements Runnable {
                         }
                     }
                 }
+                amount = list.size() / POOL_SIZE;
+            } else {
+                amount = scale>6? 1<<(scale-7): 1;
             }
             logger.log(Level.INFO, String.format("Computing cliques for %s and scale=%d", dbName, scale));
-            int amount = list.size() / POOL_SIZE;
             int start;
             List<SubgraphTask> tasks = new LinkedList<>();
             for(start = 0; start+amount < list.size(); start += amount) {
