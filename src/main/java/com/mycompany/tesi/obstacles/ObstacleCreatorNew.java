@@ -65,7 +65,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
     public Obstacle getObstacle(final Point start, final Point end, int scale) {
         scale = this.scale;
         TileXYRectangle outerRect = limitRect; //findRect(start, end, scale, true);
-        TileXYRectangle innerRect = findRect(start, end, scale, false);
+        TileXYRectangle innerRect = findRect(start, end, scale, true);
         if(innerRect == null) return null;
         ISpeedEstimator localEstimator = this.estimator == null? new FastSpeedEstimator(tileSystem, outerRect, scale): this.estimator;
         //long time1 = System.nanoTime();

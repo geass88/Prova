@@ -48,8 +48,8 @@ public class ObstacleBuilder {
     //public static final String[] FILES = { "BerlinSourceTarget", "HamburgSourceTarget", "London_Source_Target" };
     public static final String[] FILES = { "EnglandSourceTarget" };
     public static final String TABLE = "ways";  
-    public static final int FIXED_SCALE = 12;
-    public static final double MAX_ALPHA = .7;
+    public static final int FIXED_SCALE = 13;
+    public static final double MAX_ALPHA = .4;
     
     public static void main(String[] args) throws Exception {        
         for(int i = 0; i < Main.DBS.length; i ++) {
@@ -114,7 +114,7 @@ class Task implements Runnable {
                     long time2 = System.nanoTime();
                     
                     save(st, source, target, obst_id, obstacle, j+1, (int)((time2-time1)/1000), creators[j].getMaxAlpha(), creators[j]);
-                    
+                    /*
                     int step = 5;
                     for(int i = 75; i <= 90; i += step) {
                         double ma = i / 100.;
@@ -122,7 +122,7 @@ class Task implements Runnable {
                         obstacle = creators[j].grow(obstacle, ma);
                         time2 = System.nanoTime();
                         save(st, source, target, obst_id, obstacle, j+1, (int)((time2-time1)/1000), ma, creators[j]);
-                    }
+                    }*/
                 }
             }
             st.executeBatch();

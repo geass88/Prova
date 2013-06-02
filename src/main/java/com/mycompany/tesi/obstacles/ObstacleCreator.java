@@ -25,7 +25,6 @@ import com.mycompany.tesi.estimators.ClimberSpeedEstimator;
 import com.mycompany.tesi.estimators.FastSpeedEstimator;
 import com.mycompany.tesi.estimators.ISpeedEstimator;
 import com.mycompany.tesi.estimators.RawSpeedEstimator;
-import com.mycompany.tesi.utils.DefaultCRS;
 import com.mycompany.tesi.utils.TileSystem;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
