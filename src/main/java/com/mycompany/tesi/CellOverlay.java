@@ -24,9 +24,14 @@ import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.hooks.RawEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
 import com.mycompany.tesi.utils.TileSystem;
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import java.sql.*;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -34,6 +39,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeNode;
 import org.geotoolkit.geometry.Envelope2D;
 
 /**
@@ -43,14 +50,14 @@ import org.geotoolkit.geometry.Envelope2D;
 public class CellOverlay {
     
     private final static String dbName = Main.DBS[0];
-    public final static String[] QKEYS = { 
+    public static String[] QKEYS = { 
     //"0313131311121", "0313131311130", "0313131311131", "0313131311123", "0313131311132", "0313131311133", "0313131311301", "0313131311310", "0313131311311"    
         //"0313131311310", "0313131311311" 
         "031313131011", "031313131100", "031313131101", "031313131110", "031313131111", "120202020000", "031313131013", "031313131102", "031313131103", "031313131112", "031313131113", "120202020002", "031313131031", "031313131120", "031313131121", "031313131130", "031313131131", "120202020020", "031313131033", "031313131122", "031313131123", "031313131132", "031313131133", "120202020022", "031313131211", "031313131300", "031313131301", "031313131310", "031313131311", "120202020200", "120202020001", "120202020003", "120202020021", "120202020023", "120202020201" , // box grande
-        "031313113233", "031313113322", "031313113323", "031313113332", "031313113333", "120202002222", "120202002223",// aggiunta sopra
+        "031313113233", "031313113322", "031313113323", "031313113332", "031313113333", "120202002222", "120202002223"// aggiunta sopra
     
     };
-    private int scale = 12;
+    private static int scale = 12;
     private static final Logger logger = Logger.getLogger(CellOverlay.class.getName());
     
     public CellOverlay() {}
@@ -118,10 +125,43 @@ public class CellOverlay {
             logger.log(Level.SEVERE, ex.getMessage(), ex);
         }
     }
+
+    private void sublevel() {        
+        TileSystem system = Main.getTileSystem(Main.DBS[0]);
+        GeometryFactory factory = new GeometryFactory();
+        Coordinate[] coordinates = { 
+            new Coordinate(-0.4855275, 51.3321433),
+            new Coordinate(-0.4855275, 51.6904132),
+            new Coordinate(0.190887, 51.6904132),
+            new Coordinate(0.190887, 51.3321433),
+            new Coordinate(-0.4855275, 51.3321433)
+        };
+        //[-0.4855275,51.3321433,0.190887,51.6904132]
+        Geometry g = factory.createPolygon(coordinates);
+        List<String> qkeys = new LinkedList<>();
+        Enumeration e = system.getTreeEnumeration();
+        while(e.hasMoreElements()) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
+            Tile t = ((Tile)node.getUserObject());
+            if(t == null) continue;
+            Geometry p = t.getPolygon();
+            TreeNode[] path = node.getPath();
+            String qkey = "";
+            for(int i = 1; i < path.length; i ++)
+                qkey += path[i-1].getIndex(path[i]);
+            if(qkey.length() == scale && g.intersects(p))
+                qkeys.add(qkey);
+        }
+        QKEYS = qkeys.toArray(new String[qkeys.size()]);
+    }
+    
     
     public static void main(String[] args) {
-        CellOverlay i = new CellOverlay();
-        i.doAll();
+        CellOverlay instance = new CellOverlay();
+        scale = 14;  instance.sublevel();
+        instance.doAll();
+
+        //System.out.println(qkeys.size());
     }
         
     private double computeCliqueParallel(final SubgraphTask.Cell cell) throws Exception {
