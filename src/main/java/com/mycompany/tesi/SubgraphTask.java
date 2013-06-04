@@ -112,6 +112,7 @@ public class SubgraphTask implements Runnable {
             run1();
     }
     
+    // compute only the cell max speed
     public void run1() {
         Connection conn = Main.getConnection(this.dbName);
         try {
@@ -142,6 +143,7 @@ public class SubgraphTask implements Runnable {
         }
     }
         
+    // compute only the overlay graph
     public void run2() {
         Connection conn = Main.getConnection(this.dbName);
         try {
@@ -152,12 +154,12 @@ public class SubgraphTask implements Runnable {
             
             for(String qkey: qkeys) {
                 computeCliqueParallel(qkey, false); // compute and store the clique // UNLOCK ME FOR OVERLAY GENERATION
-                computeCliqueParallel(qkey, true); // compute and store the cell max speed using the porcupine
+                // computeCliqueParallel(qkey, true); // compute and store the cell max speed using the porcupine
             }
             st2.executeBatch(); // store the clique edges // UNLOCK ME FOR OVERLAY GENERATION
             // unlock also cut-edges
             
-            st3.executeBatch(); // update the cell max speed
+            // st3.executeBatch(); // update the cell max speed
         } catch(Exception e) {
             logger.log(Level.SEVERE, null, e);
         } finally {
