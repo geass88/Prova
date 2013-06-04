@@ -26,6 +26,7 @@ import java.util.logging.Logger;
 public class P2PQueryOverlay {
  
     private static final String db = Main.DBS[0];
+    private static final String table = "overlay_14";
     private final static Logger logger = Logger.getLogger(P2PQueryOverlay.class.getName());
     
     public static void main(String[] args) {
@@ -33,7 +34,7 @@ public class P2PQueryOverlay {
         Connection conn = Main.getConnection(db); 
         try(Statement st = conn.createStatement()) {
             st.executeUpdate("TRUNCATE TABLE pair;");
-            ResultSet rs; rs = st.executeQuery("SELECT DISTINCT source FROM overlay_12 UNION SELECT DISTINCT target FROM overlay_12;");
+            ResultSet rs; rs = st.executeQuery("SELECT DISTINCT source FROM " + table + " UNION SELECT DISTINCT target FROM " + table + ";");
             while(rs.next())
                 nodes.add(rs.getInt(1));
             rs.close();
