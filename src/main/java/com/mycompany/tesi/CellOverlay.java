@@ -21,8 +21,10 @@ import com.graphhopper.storage.Graph;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.beans.Metrics;
 import com.mycompany.tesi.beans.Tile;
+import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.hooks.RawEncoder;
 import com.mycompany.tesi.hooks.TimeCalculation;
+import com.mycompany.tesi.utils.QuadKeyManager;
 import com.mycompany.tesi.utils.TileSystem;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -161,6 +163,27 @@ public class CellOverlay {
         };
     }
     
+    private void listQkeys() {
+        String start_qkey = "";
+        String end_qkey = "";
+        TileSystem tileSystem = Main.getTileSystem(dbName);
+        TileXY start_xy;
+        TileXY end_xy;
+        try {
+            start_xy = QuadKeyManager.toTileXY(start_qkey);
+            end_xy = QuadKeyManager.toTileXY(end_qkey);
+        } catch (Exception ex) {
+            System.err.println("conversion problem\n" + ex);
+            return;
+        }        
+        List<String> qkeys = new LinkedList<>();
+        for(int i = start_xy.getX(); i <= end_xy.getX(); i++)
+            for(int j = start_xy.getY(); j <= end_xy.getY(); j++) {
+                String qkey = QuadKeyManager.fromTileXY(new TileXY(i, j), start_qkey.length());
+                qkeys.add(qkey);
+            }
+        QKEYS = qkeys.toArray(new String[qkeys.size()]);
+    }
     
     public static void main(String[] args) {
         CellOverlay instance = new CellOverlay();
