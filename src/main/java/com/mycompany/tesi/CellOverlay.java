@@ -166,7 +166,6 @@ public class CellOverlay {
     private void listQkeys() {
         String start_qkey = "";
         String end_qkey = "";
-        TileSystem tileSystem = Main.getTileSystem(dbName);
         TileXY start_xy;
         TileXY end_xy;
         try {
