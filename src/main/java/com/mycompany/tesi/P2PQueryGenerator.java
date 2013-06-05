@@ -1,13 +1,3 @@
-package com.mycompany.tesi;
-
-import java.io.File;
-import java.io.PrintStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.LinkedList;
-import java.util.List;
-
 /*
  * Copyright 2013 Tommaso.
  *
@@ -23,64 +13,70 @@ import java.util.List;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.mycompany.tesi;
+import java.sql.*;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Tommaso
  */
 public class P2PQueryGenerator {
+ 
+    private static final String db = Main.DBS[0];
+    private static final String table = "overlay_14";
+    private final static Logger logger = Logger.getLogger(P2PQueryGenerator.class.getName());
     
-    private final static int POINTS_COUNT = 5;
-    
-    public static void main(String[] args) throws Exception {
-        String[] qkey_ll = { "0313131330" }; //"03131313213", "03131313212", "03131313230", "03131313231" };
-        String[] qkey_ur = { "1202020023" }; //"1202020030" };
-        String[] qkey_ul = { "0313131123" }; //"0313131121"};
-        String[] qkey_lr = { "1202020221" }; //"12020202302", "12020202303", "12020202320", "12020202321" };
-        
-        List<Integer> ll = helper(qkey_ll);
-        List<Integer> ur = helper(qkey_ur);
-        List<Integer> ul = helper(qkey_ul);
-        List<Integer> lr = helper(qkey_lr);
-        
-        if(ll.size() < POINTS_COUNT || ur.size() < POINTS_COUNT || ul.size() < POINTS_COUNT || lr.size() < POINTS_COUNT) {
-            System.out.println("Problem!");
-            System.exit(1);
-        }
-        
-        for(List<Integer> list : new List[]{ll, ur, ul, lr})
-            while(list.size() > POINTS_COUNT) {
-                int value = (int)Math.round(Math.random()*(list.size()-1));
-                list.remove(value);
-            }
-        
-        File file = new File("data/EnglandSourceTarget");
-        try (PrintStream fout = new PrintStream(file)) {
-            fout.println("source,target");
-            int i;
-            for(i = 0; i < POINTS_COUNT/2; i++)
-                fout.println(ll.get(i) + ","+ ur.get(i));
-            for(; i < POINTS_COUNT; i ++)
-                fout.println(ur.get(i) + ","+ ll.get(i));
-            for(i = 0; i < POINTS_COUNT/2; i++)
-                fout.println(ul.get(i) + ","+ lr.get(i));
-            for(; i < POINTS_COUNT; i ++)
-                fout.println(lr.get(i) + ","+ ul.get(i));
-        }
-    }
-    
-    private static List<Integer> helper(String[] qkeys) throws Exception {
-        List<Integer> list = new LinkedList<>();
-        try(Connection conn = Main.getConnection("england_routing");
-                PreparedStatement st = conn.prepareStatement("select distinct source from ways, tiles where qkey = ANY(?) and " +
-                "st_contains(shape, st_setsrid(st_point(x1, y1), 4326))")) {
-            st.setArray(1, conn.createArrayOf("varchar", qkeys));
-            ResultSet rs;
-            rs = st.executeQuery();
-            while(rs.next()) 
-                list.add(rs.getInt(1));
+    public static void main(String[] args) {
+        final List<Integer> nodes = new ArrayList<>();
+        Connection conn = Main.getConnection(db); 
+        try(Statement st = conn.createStatement()) {
+            st.executeUpdate("TRUNCATE TABLE pair;");
+            ResultSet rs; rs = st.executeQuery("SELECT DISTINCT source FROM " + table + " UNION SELECT DISTINCT target FROM " + table + ";");
+            while(rs.next())
+                nodes.add(rs.getInt(1));
             rs.close();
-            return list;
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+       // RawEncoder vehicle = new MyCarFlagEncoder(SubgraphTask.MAX_SPEED);
+        //Graph graph = GraphHelper.readGraph(db, "overlay_12", vehicle);
+        
+        int POINTS_COUNT = 1000;
+        for(int i = 0; i < POINTS_COUNT; ) {
+            int source = (int)Math.round(Math.random()*(nodes.size()-1));
+            int target = (int)Math.round(Math.random()*(nodes.size()-1));
+            
+            if(source == target) continue;
+            
+            try(PreparedStatement st = conn.prepareStatement("INSERT INTO pair(source, target) VALUES(?, ?);")) {
+                st.setInt(1, nodes.get(source));
+                st.setInt(2, nodes.get(target));
+                st.executeUpdate();
+                /*RoutingAlgorithm algo = new AlgorithmPreparation(vehicle).graph(graph).createAlgo();
+                Path path = algo.calcPath(source, target);
+                if(! path.found()) {
+                    PreparedStatement st1 = conn.prepareStatement("DELETE FROM pair WHERE source = ? and target = ?");
+                    st1.setInt(1, source);
+                    st1.setInt(2, target);
+                    st1.executeUpdate();
+                    st1.close();
+                    continue;
+                }*/
+                i ++;
+            } catch(SQLException ex) {
+                logger.log(Level.SEVERE, null, ex);
+            }
+            
+                //ids.add(a.get(value));
+        }
+        try {
+            conn.close();
+        } catch (SQLException ex) {
+            logger.log(Level.SEVERE, null, ex);
         }
     }
+    
 }
