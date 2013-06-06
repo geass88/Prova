@@ -16,6 +16,7 @@
 package com.mycompany.tesi.obstacles;
 
 import com.mycompany.tesi.Main;
+import com.mycompany.tesi.SubgraphTask;
 import com.mycompany.tesi.beans.Obstacle;
 import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.beans.TileXYRectangle;
@@ -79,7 +80,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                 
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
-        double outsideSpeed = 130.;//estimator.estimateSpeed(outerRect, scale);
+        double outsideSpeed = SubgraphTask.MAX_SPEED;//estimator.estimateSpeed(outerRect, scale);
         double maxArea = (outerRect.getWidth()+1)*(outerRect.getHeight()+1)/100.;
         /*Geometry startPoint = null;
         try {
@@ -100,7 +101,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                             double alpha = insideSpeed/outsideSpeed;
                             //double ok = alpha < maxAlpha? 1: 0;
                             if(alpha >= maxAlpha) continue;
-                            double alphaInv = alpha == 0? 130: 1/alpha;
+                            double alphaInv = alpha == 0? SubgraphTask.MAX_SPEED: 1/alpha;
                             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             /*double distance=0.;
                             try {
@@ -137,7 +138,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
         
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
-        double outsideSpeed = 130.; //estimator.estimateSpeed(outerRect, scale);
+        double outsideSpeed = SubgraphTask.MAX_SPEED; //estimator.estimateSpeed(outerRect, scale);
         double maxArea = (limit.getWidth()+1)*(limit.getHeight()+1)/100.;
         for(int l_sx = seed.getLowerCorner().getX(); l_sx >= limit.getLowerCorner().getX(); l_sx --)
                 for(int l_dx = seed.getUpperCorner().getX(); l_dx <= limit.getUpperCorner().getX(); l_dx ++)
@@ -148,7 +149,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                             double alpha = insideSpeed/outsideSpeed;
                             //double ok = alpha < newMaxAlpha? 1: 0;
                             if(alpha >= newMaxAlpha) continue;
-                            double alphaInv = alpha == 0? 130: 1/alpha;
+                            double alphaInv = alpha == 0? SubgraphTask.MAX_SPEED: 1/alpha;
                             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
                             //double quality = W * H * alphaInv;
