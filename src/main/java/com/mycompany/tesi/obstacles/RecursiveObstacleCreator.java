@@ -16,6 +16,7 @@
 package com.mycompany.tesi.obstacles;
 
 import com.mycompany.tesi.Main;
+import com.mycompany.tesi.SubgraphTask;
 import com.mycompany.tesi.beans.Obstacle;
 import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.beans.TileXYRectangle;
@@ -63,9 +64,9 @@ public class RecursiveObstacleCreator extends ObstacleCreator {
     
     protected boolean evaluate(TileXYRectangle rect, double newMaxAlpha) {
         double speed = this.estimator.estimateSpeed(rect, scale);
-        double alpha = speed / 130.;
+        double alpha = speed / SubgraphTask.MAX_SPEED;
         if(alpha < newMaxAlpha) {
-            double alphaInv = alpha == 0? 130: 1/alpha;
+            double alphaInv = alpha == 0? SubgraphTask.MAX_SPEED: 1/alpha;
             int W = rect.getWidth() + 1, H = rect.getHeight() + 1;
             double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
             //double quality = W * H * alphaInv;
@@ -82,9 +83,9 @@ public class RecursiveObstacleCreator extends ObstacleCreator {
     /*
     protected Double evaluate(TileXYRectangle partialRect, TileXYRectangle rect, double newMaxAlpha, double oldMaxSpeed) {
         double speed = Math.max(oldMaxSpeed, this.estimator.estimateSpeed(partialRect, scale));
-        double alpha = speed / 130.;
+        double alpha = speed / SubgraphTask.MAX_SPEED;
         if(alpha < newMaxAlpha) {
-            double alphaInv = alpha == 0? 130: 1/alpha;
+            double alphaInv = alpha == 0? SubgraphTask.MAX_SPEED: 1/alpha;
             int W = rect.getWidth() + 1, H = rect.getHeight() + 1;
             double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
             //double quality = W * H * alphaInv;
