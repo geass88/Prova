@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -69,7 +70,7 @@ public class P2PQueryInTilesGenerator {
         }
     }
     
-    public static List<Integer> helper(String[] qkeys) throws Exception {
+    public static List<Integer> helper(String[] qkeys) {
         List<Integer> list = new LinkedList<>();
         try(Connection conn = Main.getConnection(Main.DBS[0]);
                 PreparedStatement st = conn.prepareStatement("select distinct source from ways, tiles where qkey = ANY(?) and " +
@@ -81,6 +82,9 @@ public class P2PQueryInTilesGenerator {
                 list.add(rs.getInt(1));
             rs.close();
             return list;
+        } catch(SQLException ex) {
+            System.err.println(ex);
+            return null;
         }
     }
 }
