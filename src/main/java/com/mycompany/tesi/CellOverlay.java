@@ -31,7 +31,6 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import java.sql.*;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -163,7 +162,7 @@ public class CellOverlay {
         };
     }
     
-    private void listQkeys() {
+    private static String[] listQkeys() {
         String start_qkey = "";
         String end_qkey = "";
         TileXY start_xy;
@@ -173,15 +172,16 @@ public class CellOverlay {
             end_xy = QuadKeyManager.toTileXY(end_qkey);
         } catch (Exception ex) {
             System.err.println("conversion problem\n" + ex);
-            return;
+            return null;
         }        
         List<String> qkeys = new LinkedList<>();
-        for(int i = start_xy.getX(); i <= end_xy.getX(); i++)
-            for(int j = start_xy.getY(); j <= end_xy.getY(); j++) {
+        int lx = Math.min(start_xy.getX(), end_xy.getX()), ly = Math.min(start_xy.getY(), end_xy.getY()), ux = Math.max(start_xy.getX(), end_xy.getX()), uy = Math.max(start_xy.getY(), end_xy.getY());
+        for(int i = lx; i <= ux; i++)
+            for(int j = ly; j <= uy; j++) {
                 String qkey = QuadKeyManager.fromTileXY(new TileXY(i, j), start_qkey.length());
                 qkeys.add(qkey);
             }
-        QKEYS = qkeys.toArray(new String[qkeys.size()]);
+        return qkeys.toArray(new String[qkeys.size()]);
     }
     
     public static void main(String[] args) {
