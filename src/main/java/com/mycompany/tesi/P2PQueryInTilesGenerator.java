@@ -69,7 +69,7 @@ public class P2PQueryInTilesGenerator {
         }
     }
     
-    private static List<Integer> helper(String[] qkeys) throws Exception {
+    public static List<Integer> helper(String[] qkeys) throws Exception {
         List<Integer> list = new LinkedList<>();
         try(Connection conn = Main.getConnection(Main.DBS[0]);
                 PreparedStatement st = conn.prepareStatement("select distinct source from ways, tiles where qkey = ANY(?) and " +
