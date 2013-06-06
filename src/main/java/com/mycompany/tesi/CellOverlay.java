@@ -162,9 +162,7 @@ public class CellOverlay {
         };
     }
     
-    private static String[] listQkeys() {
-        String start_qkey = "";
-        String end_qkey = "";
+    public static String[] listQkeys(final String start_qkey, final String end_qkey) {
         TileXY start_xy;
         TileXY end_xy;
         try {
