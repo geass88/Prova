@@ -259,7 +259,7 @@ public class ObstacleCreator {
         if(scale < Main.MIN_SCALE) scale = Main.MIN_SCALE;
         return scale;
     }
-    
+    /*
     public static void main(String []args) throws Exception {
         //03131313111232021
         //03131313111232211
@@ -277,7 +277,7 @@ public class ObstacleCreator {
         /*Point startP = obstacleCreator.geometryFactory.createPoint(new Coordinate(start.lon, start.lat));
         Point endP = obstacleCreator.geometryFactory.createPoint(new Coordinate(end.lon, end.lat));
         int scale = obstacleCreator.findHeuristicScale(startP, endP);
-        System.out.println("scale="+(scale));*/
+        System.out.println("scale="+(scale));/
         long time1 = System.nanoTime();
         Obstacle obstacle = obstacleCreator.getObstacle(start, end, 13);
         long time2 = System.nanoTime();
@@ -296,8 +296,8 @@ public class ObstacleCreator {
         time2 = System.nanoTime();
         System.out.println(obstacle.getRect());
         System.out.println(obstacle.getAlpha());
-        System.out.println((time2-time1)*1e-6 + " ms");*/
-    }
+        System.out.println((time2-time1)*1e-6 + " ms");/
+    }*/
     
     public int getMaxRectArea() {
         return maxRectArea;

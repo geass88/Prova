@@ -18,24 +18,21 @@ package com.mycompany.tesi.obstacles;
 import com.mycompany.tesi.Main;
 import com.mycompany.tesi.SubgraphTask;
 import com.mycompany.tesi.beans.Obstacle;
+import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.beans.TileXY;
 import com.mycompany.tesi.beans.TileXYRectangle;
 import com.mycompany.tesi.estimators.FastSpeedEstimator;
 import com.mycompany.tesi.estimators.ISpeedEstimator;
-import com.mycompany.tesi.utils.DefaultCRS;
 import com.mycompany.tesi.utils.TileSystem;
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;
+import java.sql.*;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.geotoolkit.geometry.Envelope2D;
-import org.geotoolkit.geometry.jts.JTS;
-import org.opengis.geometry.MismatchedDimensionException;
-import org.opengis.referencing.operation.TransformException;
 
 /**
  *
@@ -161,5 +158,54 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                             }
                         }
         return new Obstacle(bestObstacle, alphaObstacle, scale);
+    }
+    
+    public static void main(String []args) {
+        int scale=14;
+        double alpha = 0.4;
+        List<Obstacle> set = new LinkedList<>();
+        Set<TileXYRectangle> set1 = new TreeSet<>();
+        ObstacleCreatorNew creator = null;
+        try {
+            TileSystem system= Main.getFullTileSystem(Main.DBS[0]);
+            creator = new ObstacleCreatorNew(system, null, alpha, 100, Main.DBS[0], scale);
+            for(Tile t : system.visit(scale)) {
+                if(t == null || t.getUserObject() == null) continue;
+                double vR = (Double)t.getUserObject();
+                TileXY seed = system.pointToTileXY((t.getRect().getUpperCorner().getX() + t.getRect().getLowerCorner().getX())/2., (t.getRect().getUpperCorner().getY() + t.getRect().getLowerCorner().getY())/2., scale);
+                if(vR/130. <= alpha) {
+                    TileXYRectangle seedR=new TileXYRectangle(seed.getX(), seed.getY(), 0,0);
+                    Obstacle o = creator.grow(new Obstacle(seedR, vR/130., scale), alpha);
+                    if(o!=null && o.getRect()!=null && !set1.contains(o.getRect())) {
+                        set1.add(o.getRect());
+                        set.add(o);
+                    }
+                    if(o!=null && o.getRect()==null && !set1.contains(seedR)) {
+                        set1.add(seedR);
+                        set.add(new Obstacle(seedR, vR/130., scale));
+                    }
+                }
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        try(Connection conn = Main.getConnection(Main.DBS[0]); Statement s = conn.createStatement(); PreparedStatement st = conn.prepareStatement("insert into ostacoli(x1,y1,x2,y2,alpha,scale_grain) values(?, ?, ?, ?,?,?)")) {
+            s.executeUpdate("truncate table ostacoli;");
+            for(Obstacle o: set) {
+                st.clearParameters();
+                Envelope2D p = creator.extractEnvelope(o);
+                st.setDouble(1, p.getLowerCorner().getX());
+                st.setDouble(2, p.getLowerCorner().getY());
+                st.setDouble(3, p.getUpperCorner().getX());
+                st.setDouble(4, p.getUpperCorner().getY());
+                st.setDouble(5, o.getAlpha());
+                st.setInt(6, o.getGrainScale());
+                st.executeUpdate();
+                System.out.println(o.getRect());
+                
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 }

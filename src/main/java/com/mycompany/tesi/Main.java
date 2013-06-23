@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -126,11 +127,21 @@ public class Main {
         for(String dbName: DBS) {
             logger.log(Level.INFO, "Processing db {0} ...", dbName);
             if(GOAL_TILES)
+                //doSpeed(dbName);
                 create_tiles(dbName);
             else
                 threadedSubgraph(dbName);
         }
         pool.shutdown();
+        if(GOAL_TILES) {
+            try {
+                pool.awaitTermination(1, TimeUnit.DAYS);
+            } catch (InterruptedException ex) {
+                logger.log(Level.SEVERE, null, ex);
+            }
+            for(String dbName: DBS)
+                doSpeed(dbName);
+        }
         /*pool.awaitTermination(1l, TimeUnit.DAYS);
         System.out.println("Exiting ...");
         for(ConnectionPool ds: DATASOURCES.values())
@@ -164,7 +175,7 @@ public class Main {
     public static Envelope2D getBound(final String dbName) {
         return new Envelope2D(new DirectPosition2D(-0.565796, 51.246444), new DirectPosition2D(0.302124, 51.718521));
     }
-    */
+    */   
     public static void create_tiles(final String dbName) throws SQLException {
         List<Pair<String, Polygon>> tiles = new LinkedList<>();
         List<Pair<Integer, Geometry>> ways = new LinkedList<>();
@@ -256,10 +267,145 @@ public class Main {
         }
         Task task = new Task(dbName, tiles.subList(start, tiles.size()), ways);
         pool.execute(task);
+        
+        //pool.shutdown();
+        /*try {
+            pool.awaitTermination(1, TimeUnit.DAYS);
+        } catch (InterruptedException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
+        doSpeed(dbName);*/
+    }
+    
+    public static void doSpeed(final String dbName) {
+        try (Connection conn = getConnection(dbName);
+            Statement st = conn.createStatement(); PreparedStatement pst = conn.prepareStatement("update tiles set max_speed=? where qkey=?")) {
+                ResultSet rs; rs = st.executeQuery("select max(freeflow_speed), tiles_qkey from ways_tiles join ways on gid = ways_id group by tiles_qkey;");
+            while(rs.next()) {
+                pst.clearParameters();
+                pst.setDouble(1, rs.getInt(1));
+                pst.setString(2, rs.getString(2));
+                pst.addBatch();
+            }
+            rs.close();
+            pst.executeBatch();
+        } catch(SQLException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
+    }
+     
+    /*
+    public static void create_tiles1(final String dbName) throws SQLException {
+        List<Pair<String, Polygon>> tiles = new LinkedList<>();
+        List<Pair<Integer, Geometry>> ways = new LinkedList<>();
+        List<Integer> speeds = new ArrayList<>();
+        try (Connection conn = getConnection(dbName);
+            Statement st = conn.createStatement();
+            PreparedStatement pst = conn.prepareStatement("INSERT INTO tiles(qkey, lon1, lat1, lon2, lat2, shape) VALUES(?, ?, ?, ?, ?, ST_SetSRID(ST_MakeBox2D(ST_Point(?, ?), ST_Point(?, ?)), 4326));")) {
+            TileSystem tileSystem = getTileSystem(dbName);
+            Enumeration e = tileSystem.getTreeEnumeration();
+            st.execute("TRUNCATE TABLE tiles; TRUNCATE TABLE ways_tiles;");
+            
+            logger.log(Level.INFO, "Saving tiles ...");
+            while(e.hasMoreElements()) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
+                Tile tile = (Tile) node.getUserObject();
+                if(tile == null || node.isRoot()) continue;
+                TreeNode[] path = node.getPath();
+                String qkey = "";
+                for(int i = 1; i < path.length; i ++)
+                    qkey += path[i-1].getIndex(path[i]);
+
+                if(qkey.length() >= MIN_SCALE && qkey.length() <= MAX_SCALE)
+                    tiles.add(new Pair(qkey, tile.getPolygon()));
+                pst.clearParameters();
+                pst.setString(1, qkey);
+                pst.setDouble(2, tile.getRect().getMinX());
+                pst.setDouble(3, tile.getRect().getMinY());
+                pst.setDouble(4, tile.getRect().getMaxX());
+                pst.setDouble(5, tile.getRect().getMaxY());
+                pst.setDouble(6, tile.getRect().getMinX());
+                pst.setDouble(7, tile.getRect().getMinY());
+                pst.setDouble(8, tile.getRect().getMaxX());
+                pst.setDouble(9, tile.getRect().getMaxY());
+                //if(qkey.length() > 13)
+                pst.addBatch();
+            }
+            pst.executeBatch();
+            //st.execute("DELETE FROM tiles WHERE qkey='';"); // removing the root node
+            logger.log(Level.INFO, "Binding ways-tiles ...");
+            
+            WKTReader reader = new WKTReader();
+            
+            try(ResultSet rs = st.executeQuery("SELECT gid, st_astext(the_geom) AS geometry, freeflow_speed FROM ways;")) {
+                while(rs.next()) {
+                    ways.add(new Pair(rs.getInt("gid"), reader.read(rs.getString("geometry"))));
+                    speeds.add(rs.getInt("freeflow_speed"));
+                }
+            } catch (ParseException ex) {
+                logger.log(Level.SEVERE, null, ex);
+                System.exit(0);
+            }
+        }
+        
+        class Task implements Runnable {
+
+            private final List<Pair<String, Polygon>> tiles;
+            private final List<Pair<Integer, Geometry>> ways;
+            private final Integer[] speeds;
+            private final String dbName;
+
+            public Task(String dbName, List<Pair<String, Polygon>> tiles, List<Pair<Integer, Geometry>> ways, Integer[] speeds) {
+                this.dbName = dbName;
+                this.tiles = tiles;
+                this.ways = ways;
+                this.speeds = speeds;
+            }
+
+            @Override
+            public void run() {
+                try(Connection conn = Main.getConnection(dbName); 
+                    PreparedStatement st = conn.prepareStatement("INSERT INTO ways_tiles(tiles_qkey, ways_id) VALUES(?, ?);");
+                        PreparedStatement st1 = conn.prepareStatement("UPDATE tiles SET max_speed = ? WHERE qkey = ?;")
+                        ) {
+                    for(Pair<String, Polygon> tile: tiles) {
+                        int maxSpeed = 0;
+                        for(int i = 0; i < ways.size(); i ++) {
+                            Pair<Integer, Geometry> way = ways.get(i);
+                            if(tile.getValue().intersects(way.getValue())) {
+                                st.clearParameters();
+                                st.setString(1, tile.getKey());
+                                st.setInt(2, way.getKey());
+                                st.addBatch();
+                                if(speeds[i] > maxSpeed) maxSpeed = speeds[i];
+                            }
+                        }
+                        st1.clearParameters();
+                        st1.setInt(1, maxSpeed);
+                        st1.setString(2, tile.getKey());
+                        st1.addBatch();
+                    }
+                    st.executeBatch();
+                    st1.executeBatch();
+                } catch (SQLException ex) {
+                    logger.log(Level.SEVERE, null, ex);
+                }
+            }
+
+        }
+
+        int start, amount = tiles.size() / POOL_SIZE;
+        if(amount == 0) amount = 1;
+        for(start = 0; start+amount < tiles.size(); start += amount) {
+            Task task = new Task(dbName, tiles.subList(start, start+amount), ways, speeds.toArray(new Integer[speeds.size()]));
+            pool.execute(task);
+        }
+        Task task = new Task(dbName, tiles.subList(start, tiles.size()), ways, speeds.toArray(new Integer[speeds.size()]));
+        pool.execute(task);
 
         //st.execute("SELECT my_ways_tiles_fill();"); // call it to fill the relation between tiles and ways
     }
-      
+      */
     public static void threadedSubgraph(final String db) throws Exception {
         TileSystem tileSystem = getTileSystem(db);
         

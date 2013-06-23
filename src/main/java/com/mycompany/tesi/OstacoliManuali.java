@@ -18,7 +18,6 @@ package com.mycompany.tesi;
 import java.sql.*;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -30,11 +29,29 @@ import java.util.logging.Logger;
  */
 public class OstacoliManuali {
  
-    private static final String start[] = { "122011003112123",  "122011003112211", "122011003112300", "122011003112303" };
-    private static final String end[] = { "122011003113000", "122011003112123", "122011003112121", "122011003112312"  } ;
+    private static final String start[];
+    private static final String end[];
+    private static final String obstacles[] = {
+        //"12023222112103", "12023222111220", "12023222112131", "12023222113102", "12023222113200", "12023222113013", "12023222112122", "12023222112121", "12023222113202", "12023222111223", "12023222113100", "12023222113101", "12023222111231", "12023222111320", "12023222111212", "12023222111213", "12023222111201", "12023222111210", "12023222110301", "12023222110310" // roma
+        //"12020213220302", "12020213220312", "12020213220332", "12020213220331", "12020213222013", "12020213220322", "12020213222120", "12020213222110", "12020213222301", "12020213222113", "12020213223202", "12020213223023", "12020213222302", "12020213222310" // brussel
+        "12022001101202", "12022001101122", "12022001101230", "12022001101031", "12022001103013", "12022001103101", "12022001101330", "12022001101311", "12022001102113", "12022001103001", "12022001102113", "12022001101222" //parigi
+        
+        ,"12022001100313", "12022001101100", "12022001102130", "12022001101023" // 90km/h parigi
+    };
     private static final String db = Main.DBS[0];
     private static final Logger logger = Logger.getLogger(OstacoliManuali.class.getName());
 
+    static {
+        start = new String[obstacles.length/2];
+        end = new String[obstacles.length/2];
+        for(int i = 0; i < obstacles.length; i ++) {
+            if(i % 2 == 0)
+                start[i/2] = obstacles[i];
+            else 
+                end[i/2] = obstacles[i];
+        }
+    }
+    
     public void obstacles() {
         try (Connection conn = Main.getConnection(db);
                 Statement s = conn.createStatement();
@@ -57,8 +74,8 @@ public class OstacoliManuali {
                     st.setDouble(2, rs1.getDouble(2));
                     st.setDouble(3, rs2.getDouble(1));
                     st.setDouble(4, rs2.getDouble(2));
-                    st.setDouble(5, 0.5555);
-                    st.setInt(6, 15);
+                    st.setDouble(5, 50./130.);
+                    st.setInt(6, 14);
                     st.setInt(7, 0);
                 }
                 st.executeUpdate();
@@ -74,7 +91,7 @@ public class OstacoliManuali {
             qkeys.addAll(Arrays.asList(CellOverlay.listQkeys(start[i], end[i])));
         System.out.println("selected cells number: "+qkeys.size());
         List<Integer> nodes = P2PQueryInTilesGenerator.helper(qkeys.toArray(new String[qkeys.size()]));
-        int POINTS_COUNT = 200;
+        int POINTS_COUNT = 1000;
         try (Connection conn = Main.getConnection(db); Statement stm = conn.createStatement()) {
             stm.executeUpdate("TRUNCATE TABLE pair;");
             for(int i = 0; i < POINTS_COUNT; ) {
@@ -109,7 +126,7 @@ public class OstacoliManuali {
     
     
     public static void main(String[] args) {
-        //new OstacoliLecce().obstacles();
+        //new OstacoliManuali().obstacles();
         new OstacoliManuali().pair();
     }
     
