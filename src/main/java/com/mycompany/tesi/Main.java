@@ -146,7 +146,7 @@ public class Main {
         for(String dbName: DBS) {
             logger.log(Level.INFO, "Processing db {0} ...", dbName);
             if(GOAL_TILES)
-                create_tiles(dbName);
+                createTiles(dbName);
             else
                 threadedSubgraph(dbName);
         }
@@ -194,7 +194,7 @@ public class Main {
         return new Envelope2D(new DirectPosition2D(-0.565796, 51.246444), new DirectPosition2D(0.302124, 51.718521));
     }
     */   
-    public static void create_tiles(final String dbName) throws SQLException {
+    public static void createTiles(final String dbName) throws SQLException {
         List<Pair<String, Polygon>> tiles = new LinkedList<>();
         List<Pair<Integer, Geometry>> ways = new LinkedList<>();
         try (Connection conn = getConnection(dbName);
