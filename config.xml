@@ -7,7 +7,7 @@
 	<entry key="jdbc_username">postgres</entry>
 	<entry key="jdbc_password">postgres</entry>
 	<!-- <entry key="jdbc_databases">berlin_routing hamburg_routing london_routing</entry> -->
-	<entry key="jdbc_databases">roma brussel parigi</entry>
+	<entry key="jdbc_databases">madrid</entry>
 	<entry key="jdbc_max_active">25</entry>
 	
 	<entry key="min_scale">13</entry>
