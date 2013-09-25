@@ -15,6 +15,7 @@
  */
 package com.mycompany.tesi;
 
+import com.mycompany.tesi.beans.DBData;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.utils.TileSystem;
 import com.mycompany.tesi.beans.Pair;
@@ -55,13 +56,15 @@ public class Main {
     public static final Integer MAX_SCALE;
     public static final Integer POOL_SIZE;
     public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS;
-    private final static Map<String, ConnectionPool> DATASOURCES = new HashMap<>();
+    //private final static Map<String, ConnectionPool> DATASOURCES = new HashMap<>();
     private final static ThreadPoolExecutor pool;
-    private final static Map<String, TileSystem> TILE_SYSTEMS = new HashMap<>();
+    //private final static Map<String, TileSystem> TILE_SYSTEMS = new HashMap<>();
     private final static Logger logger = Logger.getLogger(Main.class.getName());
     public final static Properties PROPERTIES = new Properties();
     public static boolean TEST = false;
     private final static boolean GOAL_TILES;
+    
+    private final static Map<String, DBData> DBDataMap = new HashMap<>();
     
     static {        
         try {
@@ -84,14 +87,29 @@ public class Main {
         MIN_SCALE = Integer.valueOf(PROPERTIES.getProperty("min_scale", "13"));
         MAX_SCALE = Integer.valueOf(PROPERTIES.getProperty("max_scale", "17"));
         
-        for(String db: DBS)
-            DATASOURCES.put(db, new ConnectionPool(JDBC_URI, JDBC_USERNAME, JDBC_PASSWORD, db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
+        
+        for(String db: DBS) {
+            //DATASOURCES.put(db, new ConnectionPool(JDBC_URI, JDBC_USERNAME, JDBC_PASSWORD, db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
+            DBData dbData = new DBData();
+            ConnectionPool cp = new ConnectionPool(JDBC_URI, JDBC_USERNAME, JDBC_PASSWORD, db, MAX_ACTIVE_DATASOURCE_CONNECTIONS);
+            try(Connection conn = cp.getDataSource().getConnection();
+                    Statement st = conn.createStatement();
+                    ResultSet rs = st.executeQuery("select MAX(freeflow_speed) as max_speed from ways;")
+                    ) {
+                if(rs.next())
+                    dbData.setMaxSpeed(rs.getInt("max_speed"));
+            } catch(Exception ex) {
+                logger.log(Level.SEVERE, null, ex);
+            }
+            dbData.setConnectionPool(cp);
+            DBDataMap.put(db, dbData);
+        }
         
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
-                for(ConnectionPool ds: DATASOURCES.values())
-                    ds.close();
+                for(DBData dbData: DBDataMap.values())
+                    dbData.getConnectionPool().close();
             }
         }));
     }
@@ -101,23 +119,23 @@ public class Main {
             if(TEST)
                 return DriverManager.getConnection(JDBC_URI + db, JDBC_USERNAME, JDBC_PASSWORD);
             else
-                return DATASOURCES.get(db).getDataSource().getConnection();
+                return DBDataMap.get(db).getConnectionPool().getDataSource().getConnection();
         } catch (SQLException ex) {
             logger.log(Level.SEVERE, null, ex);
         }
         return null;
     }
     
-    public static TileSystem getTileSystem(final String db) {
-        if(!TILE_SYSTEMS.containsKey(db))
+    public static synchronized TileSystem getTileSystem(final String db) {
+        if(DBDataMap.get(db).getTileSystem() == null)
             try(Connection conn = Main.getConnection(db)) {
                 TileSystem tileSystem = new TileSystem(Main.getBound(conn), MAX_SCALE);
                 tileSystem.computeTree();
-                TILE_SYSTEMS.put(db, tileSystem);
+                DBDataMap.get(db).setTileSystem(tileSystem);
             } catch(SQLException ex) {
                 logger.log(Level.SEVERE, null, ex);
             }
-        return TILE_SYSTEMS.get(db);
+        return DBDataMap.get(db).getTileSystem();
     }
     
     public static void main(String[] args) throws Exception {
@@ -127,7 +145,6 @@ public class Main {
         for(String dbName: DBS) {
             logger.log(Level.INFO, "Processing db {0} ...", dbName);
             if(GOAL_TILES)
-                //doSpeed(dbName);
                 create_tiles(dbName);
             else
                 threadedSubgraph(dbName);
@@ -277,6 +294,9 @@ public class Main {
         doSpeed(dbName);*/
     }
     
+    /**
+     * Determina la velocità max all'interno di ciascun tile come max delle strade che lo intersecano
+     */
     public static void doSpeed(final String dbName) {
         try (Connection conn = getConnection(dbName);
             Statement st = conn.createStatement(); PreparedStatement pst = conn.prepareStatement("update tiles set max_speed=? where qkey=?")) {
