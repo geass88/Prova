@@ -95,7 +95,7 @@ public class Main {
                     ) {
                 if(rs.next())
                     dbData.setMaxSpeed(rs.getInt("max_speed"));
-            } catch(Exception ex) {
+            } catch(SQLException ex) {
                 logger.log(Level.SEVERE, null, ex);
             }
             dbData.setConnectionPool(cp);
