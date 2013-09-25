@@ -135,6 +135,10 @@ public class Main {
         return DBDataMap.get(db).getTileSystem();
     }
     
+    public static int getMaxSpeed(final String db) {
+        return DBDataMap.get(db).getMaxSpeed();
+    }
+    
     public static void main(String[] args) throws Exception {
         System.out.println(GOAL_TILES? "Creating tiles ...": "Creating overlays ...");
         System.out.println("Sure?");
