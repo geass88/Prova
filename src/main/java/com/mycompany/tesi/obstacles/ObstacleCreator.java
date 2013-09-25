@@ -17,7 +17,6 @@ package com.mycompany.tesi.obstacles;
 
 import com.graphhopper.util.shapes.GHPlace;
 import com.mycompany.tesi.Main;
-import com.mycompany.tesi.SubgraphTask;
 import com.mycompany.tesi.beans.Obstacle;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.beans.TileXY;
@@ -55,30 +54,33 @@ public class ObstacleCreator {
     protected ISpeedEstimator estimator;
     protected int maxRectArea = 100;
     protected double maxAlpha = 0.7; 
+    protected final int MAX_SPEED;
 
     //public ObstacleCreator() {}
     
-    public ObstacleCreator(final TileSystem tileSystem) {
-        this(tileSystem, null);
+    public ObstacleCreator(int maxSpeed, final TileSystem tileSystem) {
+        this(maxSpeed, tileSystem, null);
     }
     
-    public ObstacleCreator(final TileSystem tileSystem, boolean climb) {
-        this(tileSystem, climb? new ClimberSpeedEstimator(tileSystem): new RawSpeedEstimator(tileSystem));
+    public ObstacleCreator(int maxSpeed, final TileSystem tileSystem, boolean climb) {
+        this(maxSpeed, tileSystem, climb? new ClimberSpeedEstimator(tileSystem): new RawSpeedEstimator(tileSystem));
     }
         
-    public ObstacleCreator(final TileSystem tileSystem, final ISpeedEstimator estimator) {
+    public ObstacleCreator(int maxSpeed, final TileSystem tileSystem, final ISpeedEstimator estimator) {
         this.tileSystem = tileSystem;
         this.estimator = estimator;
+        this.MAX_SPEED = maxSpeed;
     }
     
-    public ObstacleCreator(final TileSystem tileSystem, final boolean climb, final double maxAlpha, final int maxRectArea) {
-        this(tileSystem, climb? new ClimberSpeedEstimator(tileSystem): new RawSpeedEstimator(tileSystem), maxAlpha, maxRectArea);
+    public ObstacleCreator(int maxSpeed, final TileSystem tileSystem, final boolean climb, final double maxAlpha, final int maxRectArea) {
+        this(maxSpeed, tileSystem, climb? new ClimberSpeedEstimator(tileSystem): new RawSpeedEstimator(tileSystem), maxAlpha, maxRectArea);
     }
     
-    public ObstacleCreator(final TileSystem tileSystem, final ISpeedEstimator estimator, final double maxAlpha, final int maxRectArea) {
+    public ObstacleCreator(int maxSpeed, final TileSystem tileSystem, final ISpeedEstimator estimator, final double maxAlpha, final int maxRectArea) {
         this.tileSystem = tileSystem;
         this.estimator = estimator;
         this.maxAlpha = maxAlpha;
+        this.MAX_SPEED = maxSpeed;
         this.maxRectArea = maxRectArea;
     }
     
@@ -198,7 +200,7 @@ public class ObstacleCreator {
                 
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
-        double outsideSpeed = SubgraphTask.MAX_SPEED;//estimator.estimateSpeed(outerRect, scale);
+        double outsideSpeed = MAX_SPEED;//estimator.estimateSpeed(outerRect, scale);
         double maxArea = (outerRect.getWidth()+1)*(outerRect.getHeight()+1)/100.;
         
         for(TileXYRectangle obstacle: obstacles) {
@@ -206,7 +208,7 @@ public class ObstacleCreator {
             double alpha = insideSpeed/outsideSpeed;
             //double ok = alpha < maxAlpha? 1: 0;
             if(alpha >= maxAlpha) continue;
-            double alphaInv = alpha == 0? SubgraphTask.MAX_SPEED: 1/alpha;
+            double alphaInv = alpha == 0? MAX_SPEED: 1/alpha;
             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
             double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
             //double quality = quality(outerRect, obstacle, scale);

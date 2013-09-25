@@ -63,8 +63,10 @@ public class OverlayTest extends TestCase {
     public void setUp() throws Exception {
         super.setUp();
         Main.TEST = true;
-        Connection conn = Main.getConnection(dbName);
-        Statement st = conn.createStatement();
+        Connection conn;
+        conn = Main.getConnection(dbName);
+        Statement st;
+        st = conn.createStatement();
         
         /*List<Integer> a = new ArrayList<>();
         ResultSet rs = st.executeQuery("select distinct source from (select source from overlay_13 union select target from overlay_13) n");
@@ -231,13 +233,13 @@ public class OverlayTest extends TestCase {
     public void testPath() throws Exception {
         PointList[] expected = new PointList[POINTS_COUNT]; 
         {
-            RawEncoder vehicleRoad = new MyCarFlagEncoder(SubgraphTask.MAX_SPEED);
+            RawEncoder vehicleRoad = new MyCarFlagEncoder(Main.getMaxSpeed(dbName));
             Graph roadGraph = GraphHelper.readGraph(dbName, "ways", vehicleRoad);        
             for(int i = 0; i < POINTS_COUNT; i++)
                 expected[i] = getPath2(roadGraph, vehicleRoad, fromNodes[i], toNodes[i]);
         }
         for(int j = Main.MIN_SCALE; j <= Main.MAX_SCALE; j ++) {
-            RawEncoder vehicle = new MyCarFlagEncoder(SubgraphTask.MAX_SPEED);
+            RawEncoder vehicle = new MyCarFlagEncoder(Main.getMaxSpeed(dbName));
             Graph graph = GraphHelper.readGraph(dbName, "overlay_" + j, vehicle);
             for(int i = 0; i < POINTS_COUNT; i++) {
                 System.out.println("FROM: "+ids.get(i) + " TO: " + ids.get(i+POINTS_COUNT) + " scale="+j);

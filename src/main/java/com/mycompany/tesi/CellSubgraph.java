@@ -21,7 +21,6 @@ import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.GraphBuilder;
 import com.graphhopper.storage.GraphStorage;
 import com.graphhopper.util.EdgeIterator;
-import static com.mycompany.tesi.SubgraphTask.MAX_SPEED;
 import com.mycompany.tesi.beans.BoundaryNode;
 import com.mycompany.tesi.beans.Metrics;
 import com.mycompany.tesi.beans.Tile;
@@ -124,7 +123,7 @@ public class CellSubgraph {
         Set<BoundaryNode> boundaryNodes = new TreeSet<>();
         GraphStorage graph = new GraphBuilder().create();
         graph.combinedEncoder(RawEncoder.COMBINED_ENCODER);
-        RawEncoder vehicle = new MyCarFlagEncoder(MAX_SPEED);
+        RawEncoder vehicle = new MyCarFlagEncoder(Main.getMaxSpeed(dbName));
         Map<Integer, Integer> nodes = new HashMap<>(); // graph to subgraph nodes
         int count = 0;
         st1.clearParameters();

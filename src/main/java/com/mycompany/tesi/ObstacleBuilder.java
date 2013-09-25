@@ -100,7 +100,7 @@ class Task implements Runnable {
     public void run() {
         try (Connection conn = Main.getConnection(db); 
                 PreparedStatement st = conn.prepareStatement("INSERT INTO instances(source, target, obst_id, x1, y1, x2, y2, alpha, scale_grain, obst_type, etime, max_area, max_alpha) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")) {
-            ObstacleCreator[] creators = { /*new ObstacleCreatorNew(tileSystem, true, .7, 100, 13),*/ new ObstacleCreatorNew(tileSystem, null, ObstacleBuilder.MAX_ALPHA, 100, db, ObstacleBuilder.FIXED_SCALE) };
+            ObstacleCreator[] creators = { /*new ObstacleCreatorNew(tileSystem, true, .7, 100, 13),*/ new ObstacleCreatorNew(Main.getMaxSpeed(db), tileSystem, null, ObstacleBuilder.MAX_ALPHA, 100, db, ObstacleBuilder.FIXED_SCALE) };
             for(String s: queries) {
                 String[] tokens = s.split(",");
                 Integer obst_id = Integer.valueOf(tokens[0]);

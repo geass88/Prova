@@ -16,7 +16,6 @@
 package com.mycompany.tesi.obstacles;
 
 import com.mycompany.tesi.Main;
-import com.mycompany.tesi.SubgraphTask;
 import com.mycompany.tesi.beans.Obstacle;
 import com.mycompany.tesi.beans.Tile;
 import com.mycompany.tesi.beans.TileXY;
@@ -44,8 +43,8 @@ public class ObstacleCreatorNew extends ObstacleCreator {
     private final int scale;
     private final static Logger logger = Logger.getLogger(ObstacleCreatorNew.class.getName());
         
-    public ObstacleCreatorNew(final TileSystem tileSystem, final ISpeedEstimator estimator, final double maxAlpha, final int maxRectArea, final String dbName, final int scale) {
-        super(tileSystem, estimator, maxAlpha, maxRectArea);
+    public ObstacleCreatorNew(int maxSpeed, final TileSystem tileSystem, final ISpeedEstimator estimator, final double maxAlpha, final int maxRectArea, final String dbName, final int scale) {
+        super(maxSpeed, tileSystem, estimator, maxAlpha, maxRectArea);
         this.scale = scale;
         Envelope2D limit = Main.getBound(dbName);
         Point lc = geometryFactory.createPoint(new Coordinate(limit.getLowerCorner().getX(), limit.getLowerCorner().getY()));
@@ -77,7 +76,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                 
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
-        double outsideSpeed = SubgraphTask.MAX_SPEED;//estimator.estimateSpeed(outerRect, scale);
+        double outsideSpeed = MAX_SPEED;//estimator.estimateSpeed(outerRect, scale);
         double maxArea = (outerRect.getWidth()+1)*(outerRect.getHeight()+1)/100.;
         /*Geometry startPoint = null;
         try {
@@ -98,7 +97,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                             double alpha = insideSpeed/outsideSpeed;
                             //double ok = alpha < maxAlpha? 1: 0;
                             if(alpha >= maxAlpha) continue;
-                            double alphaInv = alpha == 0? SubgraphTask.MAX_SPEED: 1/alpha;
+                            double alphaInv = alpha == 0? MAX_SPEED: 1/alpha;
                             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             /*double distance=0.;
                             try {
@@ -135,7 +134,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
         
         TileXYRectangle bestObstacle = null;
         double bestQ = 0., alphaObstacle = 0.;
-        double outsideSpeed = SubgraphTask.MAX_SPEED; //estimator.estimateSpeed(outerRect, scale);
+        double outsideSpeed = MAX_SPEED; //estimator.estimateSpeed(outerRect, scale);
         double maxArea = (limit.getWidth()+1)*(limit.getHeight()+1)/100.;
         for(int l_sx = seed.getLowerCorner().getX(); l_sx >= limit.getLowerCorner().getX(); l_sx --)
                 for(int l_dx = seed.getUpperCorner().getX(); l_dx <= limit.getUpperCorner().getX(); l_dx ++)
@@ -146,7 +145,7 @@ public class ObstacleCreatorNew extends ObstacleCreator {
                             double alpha = insideSpeed/outsideSpeed;
                             //double ok = alpha < newMaxAlpha? 1: 0;
                             if(alpha >= newMaxAlpha) continue;
-                            double alphaInv = alpha == 0? SubgraphTask.MAX_SPEED: 1/alpha;
+                            double alphaInv = alpha == 0? MAX_SPEED: 1/alpha;
                             int W = obstacle.getWidth() + 1, H = obstacle.getHeight() + 1;
                             double quality = W*H/maxArea + alphaInv/1.3; // ok * (W*H);
                             //double quality = W * H * alphaInv;
@@ -167,8 +166,9 @@ public class ObstacleCreatorNew extends ObstacleCreator {
         Set<TileXYRectangle> set1 = new TreeSet<>();
         ObstacleCreatorNew creator = null;
         try {
-            TileSystem system= Main.getFullTileSystem(Main.DBS[0]);
-            creator = new ObstacleCreatorNew(system, null, alpha, 100, Main.DBS[0], scale);
+            String db = Main.DBS[0];
+            TileSystem system = Main.getFullTileSystem(db);
+            creator = new ObstacleCreatorNew(Main.getMaxSpeed(db), system, null, alpha, 100, Main.DBS[0], scale);
             for(Tile t : system.visit(scale)) {
                 if(t == null || t.getUserObject() == null) continue;
                 double vR = (Double)t.getUserObject();
