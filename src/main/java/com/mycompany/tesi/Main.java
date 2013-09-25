@@ -56,9 +56,7 @@ public class Main {
     public static final Integer MAX_SCALE;
     public static final Integer POOL_SIZE;
     public static final Integer MAX_ACTIVE_DATASOURCE_CONNECTIONS;
-    //private final static Map<String, ConnectionPool> DATASOURCES = new HashMap<>();
     private final static ThreadPoolExecutor pool;
-    //private final static Map<String, TileSystem> TILE_SYSTEMS = new HashMap<>();
     private final static Logger logger = Logger.getLogger(Main.class.getName());
     public final static Properties PROPERTIES = new Properties();
     public static boolean TEST = false;
@@ -86,7 +84,6 @@ public class Main {
         DBS = PROPERTIES.getProperty("jdbc_databases", "routing").split(" ");
         MIN_SCALE = Integer.valueOf(PROPERTIES.getProperty("min_scale", "13"));
         MAX_SCALE = Integer.valueOf(PROPERTIES.getProperty("max_scale", "17"));
-        
         
         for(String db: DBS) {
             //DATASOURCES.put(db, new ConnectionPool(JDBC_URI, JDBC_USERNAME, JDBC_PASSWORD, db, MAX_ACTIVE_DATASOURCE_CONNECTIONS));
@@ -150,7 +147,7 @@ public class Main {
                 threadedSubgraph(dbName);
         }
         pool.shutdown();
-        if(GOAL_TILES) {
+        if(GOAL_TILES) { // calcola la velocità massima di ciascun tile senza usare gli overlay (max delle strade che intersecano il tile!)
             try {
                 pool.awaitTermination(1, TimeUnit.DAYS);
             } catch (InterruptedException ex) {
